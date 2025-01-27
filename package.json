@@ -1,6 +1,6 @@
 {
   "name": "tsdiapi",
-  "description": "",
+  "description": "CLI tool for initializing and managing TSDIAPI projects with features like Prisma, Socket.IO, and plugin support.",
   "version": "1.0.0",
   "main": "output/index.js",
   "types": "output/index.d.ts",
