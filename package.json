@@ -1,0 +1,55 @@
+{
+  "name": "tsdiapi",
+  "description": "",
+  "version": "1.0.0",
+  "main": "output/index.js",
+  "types": "output/index.d.ts",
+  "bin": {
+    "tsdiapi": "./output/index.js"
+  },
+  "scripts": {
+    "build": "tsc && npm run copy-files",
+    "copy-files": "cpy \"cpy/**/*\" \"output/\" --parents"
+  },
+  "author": {
+    "name": "Artyom Gorlovetskiy",
+    "url": "https://github.com/unbywyd",
+    "email": "unbywyd@gmail.com"
+  },
+  "engines": {
+    "node": ">=18.19.0"
+  },
+  "keywords": [
+    "tsdiapi",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^13.1.0",
+    "cpy-cli": "^5.0.0",
+    "fs-extra": "^11.3.0",
+    "glob": "^11.0.1",
+    "handlebars": "^4.7.8",
+    "inquirer": "^12.3.2",
+    "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.10.10",
+    "typescript": "^5.7.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unbywyd/tsdiapi-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/unbywyd/tsdiapi-cli/issues"
+  },
+  "homepage": "https://github.com/unbywyd/tsdiapi-cli#readme",
+  "files": [
+    "output/",
+    "README.md",
+    "LICENSE"
+  ]
+}

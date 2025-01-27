@@ -1,0 +1,38 @@
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnConnect,
+  OnDisconnect,
+  OnMessage,
+  SocketController,
+} from "socket-controllers";
+import { Service } from "typedi";
+
+import { AppSocketAuthType, AppSocketType, SocketIncomingEvent, SocketPayloads, SocketOutgoingEvent } from "@base/sockets.types";
+
+
+@SocketController()
+@Service()
+export default class SocketsController {
+  @OnConnect()
+  connection(@ConnectedSocket() socket: AppSocketAuthType) {
+    console.log("connect");
+  }
+
+  @OnDisconnect()
+  disconnect(@ConnectedSocket() socket: AppSocketType) {
+    console.log("disconnect");
+  }
+
+  @OnMessage(SocketIncomingEvent.helloWorld)
+  async helloWorld(
+    @ConnectedSocket() socket: AppSocketType,
+    @MessageBody()
+    message: SocketPayloads[SocketIncomingEvent.helloWorld]
+  ) {
+    console.log("message", message);
+    socket.emitSuccess(SocketOutgoingEvent.helloWorld, {
+      message: "Hello World =)",
+    });
+  }
+}

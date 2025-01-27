@@ -1,0 +1,18 @@
+import { AppConfig, createApp } from "tsdiapi-server";
+{{#if plugins}}
+{{#each plugins}}
+import {{this}}Plugin from "tsdiapi-{{this}}";
+{{/each}}
+{{/if}}
+
+{{#if plugins}}
+createApp({ 
+    plugins: [
+    {{#each plugins}}
+        {{this}}Plugin(),
+    {{/each}}
+    ]
+});
+{{else}}
+createApp();
+{{/if}}
