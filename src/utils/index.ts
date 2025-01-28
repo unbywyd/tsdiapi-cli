@@ -157,6 +157,10 @@ generator dto_generator {
                 fs.writeFileSync(generatorConfigPath, dtoConfig);
             }
 
+            const typesContent = buildHandlebarsTemplate("prisma_types", {});
+            const typesFilePath = path.join(projectDir, "src", "prisma.types.ts");
+            fs.writeFileSync(typesFilePath, typesContent);
+
             const testModel = `
             model User {
               id        String   @id @default(cuid())

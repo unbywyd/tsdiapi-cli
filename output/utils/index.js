@@ -150,6 +150,9 @@ generator dto_generator {
                 const dtoConfig = buildHandlebarsTemplate("prisma_dto_config", {});
                 fs_extra_1.default.writeFileSync(generatorConfigPath, dtoConfig);
             }
+            const typesContent = buildHandlebarsTemplate("prisma_types", {});
+            const typesFilePath = path_1.default.join(projectDir, "src", "prisma.types.ts");
+            fs_extra_1.default.writeFileSync(typesFilePath, typesContent);
             const testModel = `
             model User {
               id        String   @id @default(cuid())
