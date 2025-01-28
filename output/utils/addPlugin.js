@@ -7,7 +7,7 @@ exports.addPlugin = void 0;
 const inquirer_1 = __importDefault(require("inquirer"));
 const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("../utils");
-const config_1 = require("@src/config");
+const config_1 = require("../config");
 /**
  * Adds a plugin to the current TSDIAPI project.
  *

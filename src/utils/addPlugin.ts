@@ -1,7 +1,7 @@
 import inquirer from 'inquirer'
 import chalk from 'chalk'
 import { setupCron, setupPrisma, setupSockets, setupEvents, setupS3 } from '../utils'
-import { AvailablePlugins } from '@src/config'
+import { AvailablePlugins } from '../config'
 
 /**
  * Adds a plugin to the current TSDIAPI project.
