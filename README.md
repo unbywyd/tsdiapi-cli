@@ -42,6 +42,3 @@ Follow the prompts to set up your project with desired features.
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
 
----
-
-This README provides a clean, concise overview of the CLI’s functionality and usage.
