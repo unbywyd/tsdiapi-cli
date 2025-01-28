@@ -21,4 +21,10 @@
  * @returns {Promise<void>} - A promise that resolves after the plugin is installed or an error message is displayed.
  */
 export declare const addPlugin: (pluginName?: string) => Promise<void>;
+/**
+ * Finds the root directory of the nearest project containing "tsdiapi-server" in its dependencies.
+ *
+ * @returns The root directory path of the TSDIAPI-Server project or null if not found.
+ */
+export declare function findTSDIAPIServerProject(): Promise<string | null>;
 //# sourceMappingURL=addPlugin.d.ts.map

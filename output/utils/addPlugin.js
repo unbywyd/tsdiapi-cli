@@ -4,10 +4,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addPlugin = void 0;
+exports.findTSDIAPIServerProject = findTSDIAPIServerProject;
 const inquirer_1 = __importDefault(require("inquirer"));
 const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("../utils");
 const config_1 = require("../config");
+const ts_morph_1 = require("ts-morph");
+const fs_1 = __importDefault(require("fs"));
+const find_up_1 = require("find-up");
+const path_1 = __importDefault(require("path"));
+const util_1 = __importDefault(require("util"));
+const child_process_1 = require("child_process");
+const execAsync = util_1.default.promisify(child_process_1.exec);
 /**
  * Adds a plugin to the current TSDIAPI project.
  *
@@ -31,7 +39,11 @@ const config_1 = require("../config");
  * @returns {Promise<void>} - A promise that resolves after the plugin is installed or an error message is displayed.
  */
 const addPlugin = async (pluginName) => {
-    const currentDirectory = process.cwd();
+    const currentDirectory = await findTSDIAPIServerProject();
+    if (!currentDirectory) {
+        return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using tsdiapi-server!`));
+    }
+    const appFilePath = path_1.default.resolve(`${currentDirectory}/src`, 'main.ts');
     if (pluginName) {
         if (config_1.AvailablePlugins.includes(pluginName)) {
             console.log(chalk_1.default.green(`Installing plugin: ${pluginName}...`));
@@ -74,26 +86,126 @@ const addPlugin = async (pluginName) => {
         console.log(chalk_1.default.green(`Installing plugin: ${selectedPlugin}...`));
         switch (selectedPlugin) {
             case 'prisma':
-                await (0, utils_1.setupPrisma)(currentDirectory);
+                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-prisma', currentDirectory))
+                    await (0, utils_1.setupPrisma)(currentDirectory);
+                else
+                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
                 break;
             case 'socket.io':
-                await (0, utils_1.setupSockets)(currentDirectory);
+                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-io', currentDirectory))
+                    await (0, utils_1.setupSockets)(currentDirectory);
+                else
+                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
                 break;
             case 'cron':
-                await (0, utils_1.setupCron)(currentDirectory);
+                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-cron', currentDirectory))
+                    await (0, utils_1.setupCron)(currentDirectory);
+                else
+                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
                 break;
             case 'events':
-                await (0, utils_1.setupEvents)(currentDirectory);
+                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-events', currentDirectory))
+                    await (0, utils_1.setupEvents)(currentDirectory);
+                else
+                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
                 break;
             case 's3':
-                await (0, utils_1.setupS3)(currentDirectory);
+                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-s3', currentDirectory))
+                    await (0, utils_1.setupS3)(currentDirectory);
+                else
+                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
                 break;
             default:
-                console.log(chalk_1.default.red(`No setup logic defined for plugin: ${pluginName}`));
+                console.log(chalk_1.default.red(`No setup logic defined for plugin: ${selectedPlugin}`));
                 return;
         }
         console.log(chalk_1.default.green(`Plugin ${selectedPlugin} successfully installed.`));
     }
 };
 exports.addPlugin = addPlugin;
+async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
+    const project = new ts_morph_1.Project();
+    const sourceFile = project.addSourceFileAtPath(filePath);
+    const existingImport = sourceFile.getImportDeclaration((imp) => imp.getModuleSpecifier().getLiteralValue() === pluginImportPath);
+    if (existingImport) {
+        return false;
+    }
+    sourceFile.addImportDeclaration({
+        defaultImport: pluginName,
+        moduleSpecifier: pluginImportPath,
+    });
+    const createAppCall = sourceFile
+        .getFirstDescendantByKind(ts_morph_1.SyntaxKind.CallExpression)
+        ?.getFirstChildByKind(ts_morph_1.SyntaxKind.Identifier);
+    if (createAppCall?.getText() === 'createApp') {
+        const createAppExpression = createAppCall.getParentIfKind(ts_morph_1.SyntaxKind.CallExpression);
+        const argument = createAppExpression?.getArguments()[0];
+        if (argument?.getKind() === ts_morph_1.SyntaxKind.ObjectLiteralExpression) {
+            const argumentObject = argument.asKindOrThrow(ts_morph_1.SyntaxKind.ObjectLiteralExpression);
+            const pluginsProperty = argumentObject.getProperty('plugins');
+            if (pluginsProperty) {
+                const pluginsArray = pluginsProperty.getFirstChildByKind(ts_morph_1.SyntaxKind.ArrayLiteralExpression);
+                if (pluginsArray) {
+                    const pluginAlreadyAdded = pluginsArray.getText().includes(pluginName);
+                    if (pluginAlreadyAdded) {
+                        console.log(`Plugin "${pluginName}" is already added to plugins.`);
+                        return false;
+                    }
+                    pluginsArray.addElement(`${pluginName}()`);
+                }
+                else {
+                    console.log('The "plugins" property exists but is not an array.');
+                }
+            }
+            else {
+                argumentObject.addPropertyAssignment({
+                    name: 'plugins',
+                    initializer: `[${pluginName}()]`,
+                });
+            }
+        }
+        else {
+            createAppExpression?.addArgument(`{ plugins: [${pluginName}()] }`);
+        }
+        await execAsync(`npm install ${pluginName}`, {
+            cwd: projectDir,
+        });
+    }
+    else {
+        console.error('createApp function not found.');
+        return false;
+    }
+    sourceFile.saveSync();
+    return true;
+}
+/**
+ * Finds the root directory of the nearest project containing "tsdiapi-server" in its dependencies.
+ *
+ * @returns The root directory path of the TSDIAPI-Server project or null if not found.
+ */
+async function findTSDIAPIServerProject() {
+    try {
+        const packageJsonPath = await (0, find_up_1.findUp)('package.json');
+        if (!packageJsonPath) {
+            return null;
+        }
+        const packageJson = JSON.parse(fs_1.default.readFileSync(packageJsonPath, 'utf-8'));
+        const dependencies = {
+            ...packageJson.dependencies,
+            ...packageJson.devDependencies,
+            ...packageJson.peerDependencies,
+            ...packageJson.optionalDependencies,
+        };
+        if (dependencies && dependencies['tsdiapi-server']) {
+            return path_1.default.dirname(packageJsonPath);
+        }
+        const parentDir = path_1.default.dirname(path_1.default.dirname(packageJsonPath));
+        process.chdir(parentDir);
+        return await findTSDIAPIServerProject();
+    }
+    catch (error) {
+        console.error('Error while searching for TSDIAPI-Server project:', error.message);
+        return null;
+    }
+}
 //# sourceMappingURL=addPlugin.js.map
