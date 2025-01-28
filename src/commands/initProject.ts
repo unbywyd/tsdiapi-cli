@@ -2,7 +2,7 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupPrisma, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEvents, setupPrisma, setupS3, setupSockets } from "../utils";
 import { CurrentVersion, DefaultHost, DefaultPort } from "../config";
 
 
@@ -62,6 +62,18 @@ export async function initProject() {
                 name: "installCron",
                 message: "You need cron?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "installEvents",
+                message: "You need events?",
+                default: false
+            },
+            {
+                type: "confirm",
+                name: "installS3",
+                message: "You need s3?",
+                default: false
             }
         ]);
 
@@ -108,6 +120,14 @@ export async function initProject() {
 
         if (answers.installCron) {
             await setupCron(projectDir);
+        }
+
+        if (answers.installS3) {
+            await setupS3(projectDir);
+        }
+        
+        if (answers.installEvents) {
+            await setupEvents(projectDir);
         }
 
     } catch (error) {

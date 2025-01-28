@@ -7,6 +7,7 @@ import util from "util";
 import inquirer from "inquirer";
 import { DefaultHost, DefaultPort } from "../config";
 import { CliOptions } from "@src/commands/initProject";
+import { Project, SourceFile, ClassDeclaration } from "ts-morph";
 const execAsync = util.promisify(exec);
 
 /**
@@ -19,10 +20,7 @@ const execAsync = util.promisify(exec);
 export function buildHandlebarsTemplate(templateName: string, data: any): string {
     try {
         // Define the path to the templates directory
-        const templatesDir = path.join(__dirname, '../', "templates");
-
-        // Define the full path to the template file
-        const templatePath = path.join(templatesDir, `${templateName}.hbs`);
+        const templatePath = path.join(__dirname, '../', "templates", templateName + ".hbs");
 
         // Check if the template file exists
         if (!fs.existsSync(templatePath)) {
@@ -153,11 +151,11 @@ generator dto_generator {
                 }
             }
             if (!fs.existsSync(generatorConfigPath)) {
-                const dtoConfig = buildHandlebarsTemplate("prisma_dto_config", {});
+                const dtoConfig = buildHandlebarsTemplate("prisma/dto_config", {});
                 fs.writeFileSync(generatorConfigPath, dtoConfig);
             }
 
-            const typesContent = buildHandlebarsTemplate("prisma_types", {});
+            const typesContent = buildHandlebarsTemplate("prisma/types", {});
             const typesFilePath = path.join(projectDir, "src", "prisma.types.ts");
             fs.writeFileSync(typesFilePath, typesContent);
 
@@ -167,7 +165,7 @@ generator dto_generator {
               email     String   @unique
             }`;
             fs.appendFileSync(prismaSchemaPath, testModel);
-            
+
             // prisma generate
             console.log(chalk.blue("Generating Prisma client..."));
             await execAsync(`npx prisma generate`, { cwd: projectDir });
@@ -289,6 +287,22 @@ export function updateEnvVariable(envPath: string, key: string, value: string) {
     }
 }
 
+export function updateAllEnvFilesWithVariable(projectDir: string, key: string, value: string) {
+    const envPath = path.join(projectDir, ".env");
+    if (fs.existsSync(envPath)) {
+        updateEnvVariable(envPath, key, value);
+    }
+    const envExamplePath = path.join(projectDir, ".env.development");
+    if (fs.existsSync(envExamplePath)) {
+        updateEnvVariable(envExamplePath, key, value);
+    }
+    const envProductionPath = path.join(projectDir, ".env.production");
+    if (fs.existsSync(envProductionPath)) {
+        updateEnvVariable(envProductionPath, key, value);
+    }
+}
+
+
 
 export async function setupSockets(projectDir: string, options: CliOptions) {
     try {
@@ -300,7 +314,7 @@ export async function setupSockets(projectDir: string, options: CliOptions) {
 
         // Create a sample socket type definition file
         const socketFilePath = path.join(projectDir, "src", "sockets.types.ts");
-        const socketFileContent = buildHandlebarsTemplate("sockets_types", {});
+        const socketFileContent = buildHandlebarsTemplate("sockets/types", {});
         fs.writeFileSync(socketFilePath, socketFileContent);
 
         // Create a sample feature controller
@@ -309,7 +323,7 @@ export async function setupSockets(projectDir: string, options: CliOptions) {
         fs.ensureDirSync(helloControllerPath);
 
         const helloFilePath = path.join(helloControllerPath, "hello.socket.ts");
-        const helloControllerContent = buildHandlebarsTemplate("hello_socket_controller", {});
+        const helloControllerContent = buildHandlebarsTemplate("sockets/example", {});
         fs.writeFileSync(helloFilePath, helloControllerContent);
 
         // Display configuration information
@@ -339,7 +353,7 @@ export function setupCron(projectDir: string) {
         fs.ensureDirSync(helloControllerPath);
 
         const cronFilePath = path.join(helloControllerPath, "hello.cron.ts");
-        const cronFileContent = buildHandlebarsTemplate("sample_cron_job", {});
+        const cronFileContent = buildHandlebarsTemplate("cron/example", {});
         fs.writeFileSync(cronFilePath, cronFileContent);
 
         // Display configuration information
@@ -351,4 +365,214 @@ The server will automatically detect and run cron jobs.`));
     } catch (error) {
         console.error(chalk.red("An error occurred while setting up node-cron:"), error.message);
     }
+}
+
+/*
+*   Use this function to setup events in your project  
+*/
+export function setupEvents(projectDir: string) {
+    try {
+        // Create a sample event type definition file
+        const eventsFilePath = path.join(projectDir, "src", "events.types.ts");
+        const eventsFileContent = buildHandlebarsTemplate("events/types", {});
+        fs.writeFileSync(eventsFilePath, eventsFileContent);
+
+        const helloControllerPath = path.join(projectDir, "src", "api", "features", "hello");
+        fs.ensureDirSync(helloControllerPath);
+
+        const eventsExamplePath = path.join(helloControllerPath, "hello.event.ts");
+        const eventsExampleContent = buildHandlebarsTemplate("events/example", {});
+        fs.writeFileSync(eventsExamplePath, eventsExampleContent);
+
+        console.log(chalk.green("Events are ready to use!"));
+        console.log(chalk.blue(`
+You can now create event handlers by placing files ending with *.event.ts
+anywhere inside the "api" directory of your project. A sample event handler is available at:
+    ${eventsExamplePath}
+        `));
+    } catch (error) {
+        console.error(chalk.red("An error occurred while setting up events:"), error.message);
+    }
+}
+
+export type AppParam = {
+    key: string;
+    type: "string" | "number" | "boolean";
+};
+
+
+export async function setupS3(projectDir: string) {
+    try {
+        console.log(chalk.blue("Configuring AWS settings..."));
+
+        try {
+            await addS3AppParams(projectDir);
+        } catch (error) {
+            console.error(chalk.red("Something went wrong while configuring app.config.ts. Please configure it manually."));
+        }
+
+        const { setupAWS } = await inquirer.prompt([
+            {
+                type: "confirm",
+                name: "setupAWS",
+                message: "Do you want to configure AWS settings?",
+                default: true,
+            },
+        ]);
+        if (!setupAWS) {
+            return;
+        }
+
+        // Prompt user for AWS configuration
+        const awsConfig = await inquirer.prompt([
+            {
+                type: "input",
+                name: "AWS_PUBLIC_BUCKET_NAME",
+                message: "Enter the name of the AWS public bucket:",
+                validate: (input) => (input ? true : "AWS public bucket name cannot be empty."),
+            },
+            {
+                type: "input",
+                name: "AWS_PRIVATE_BUCKET_NAME",
+                message: "Enter the name of the AWS private bucket:",
+                validate: (input) => (input ? true : "AWS private bucket name cannot be empty."),
+            },
+            {
+                type: "input",
+                name: "AWS_ACCESS_KEY_ID",
+                message: "Enter the AWS Access Key ID:",
+                validate: (input) => (input ? true : "AWS Access Key ID cannot be empty."),
+            },
+            {
+                type: "password",
+                name: "AWS_SECRET_ACCESS_KEY",
+                message: "Enter the AWS Secret Access Key:",
+                validate: (input) => (input ? true : "AWS Secret Access Key cannot be empty."),
+                mask: "*", // Hide input for security
+            },
+            {
+                type: "input",
+                name: "AWS_REGION",
+                message: "Enter the AWS region:",
+                default: "us-east-1", // Provide a default region
+            },
+        ]);
+
+        for (const key in awsConfig) {
+            updateAllEnvFilesWithVariable(projectDir, key, (awsConfig as any)[key]);
+        }
+
+        console.log(chalk.green(".env file has been successfully updated with AWS settings."));
+    } catch (error) {
+        console.error(chalk.red("An error occurred while setting up AWS configuration:"), error.message);
+    }
+}
+
+
+/*
+*   Use this function to add S3 parameters to your project
+*/
+export async function addS3AppParams(projectDir: string) {
+    const paramsConfig = {
+        AWS_PUBLIC_BUCKET_NAME: "string",
+        AWS_PRIVATE_BUCKET_NAME: "string",
+        AWS_ACCESS_KEY_ID: "string",
+        AWS_SECRET_ACCESS_KEY: "string",
+        AWS_REGION: "string"
+    }
+    const params: AppParam[] = [];
+    for (const key in paramsConfig) {
+        params.push({ key, type: (paramsConfig as any)[key] as "string" | "number" | "boolean" });
+    }
+    await addAppConfigParams(projectDir, params);
+}
+
+export async function addAppConfigParams(projectDir: string, params: AppParam[]) {
+    try {
+        const appConfigPath = path.join(projectDir, "src/app.config.ts");
+
+        // Initialize ts-morph project
+        const project = new Project();
+        const sourceFile: SourceFile = project.addSourceFileAtPath(appConfigPath);
+
+        // Ensure required imports are present
+        ensureImports(sourceFile, [
+            { name: "Expose", moduleSpecifier: "class-transformer" },
+            { name: "Type", moduleSpecifier: "class-transformer" },
+            { name: "IsString", moduleSpecifier: "class-validator" },
+            { name: "IsNumber", moduleSpecifier: "class-validator" },
+            { name: "IsBoolean", moduleSpecifier: "class-validator" },
+        ]);
+
+        // Find the class declaration
+        const classDeclaration: ClassDeclaration | undefined = sourceFile.getClass("ConfigSchema");
+        if (!classDeclaration) {
+            return;
+        }
+
+        params.forEach((param) => {
+            // Check if the property already exists
+            const existingProperty = classDeclaration.getProperty(param.key);
+            if (existingProperty) {
+                console.log(chalk.yellow(`Property '${param.key}' already exists in ConfigSchema.`));
+                return;
+            }
+
+            // Add the new property with decorators based on the type
+            const typeMap = {
+                string: "String",
+                number: "Number",
+                boolean: "Boolean",
+            };
+
+            const property = classDeclaration.addProperty({
+                name: param.key,
+                type: param.type,
+            });
+
+            property.addDecorator({ name: "Is" + capitalize(param.type), arguments: [] });
+            property.addDecorator({ name: "Expose", arguments: [] });
+            property.addDecorator({
+                name: "Type",
+                arguments: [`() => ${typeMap[param.type]}`],
+            });
+        });
+
+        // Save the modified file
+        await sourceFile.save();
+        console.log(chalk.green("app.config.ts has been successfully updated."));
+    } catch (error) {
+        console.error(chalk.red("An error occurred while updating app.config.ts:"), error.message);
+    }
+}
+
+// Utility function to ensure imports are present or add them if missing
+function ensureImports(
+    sourceFile: SourceFile,
+    imports: { name: string; moduleSpecifier: string }[]
+) {
+    imports.forEach(({ name, moduleSpecifier }) => {
+        const existingImport = sourceFile
+            .getImportDeclarations()
+            .find((imp) => imp.getModuleSpecifierValue() === moduleSpecifier);
+
+        if (existingImport) {
+            // Check if the named import already exists
+            const existingNamedImport = existingImport.getNamedImports().find((n) => n.getName() === name);
+            if (!existingNamedImport) {
+                existingImport.addNamedImport(name);
+            }
+        } else {
+            // Add the new import declaration
+            sourceFile.addImportDeclaration({
+                moduleSpecifier,
+                namedImports: [name],
+            });
+        }
+    });
+}
+
+// Utility function to capitalize a string
+function capitalize(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
