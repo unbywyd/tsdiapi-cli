@@ -63,6 +63,18 @@ async function initProject() {
                 name: "installCron",
                 message: "You need cron?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "installEvents",
+                message: "You need events?",
+                default: false
+            },
+            {
+                type: "confirm",
+                name: "installS3",
+                message: "You need s3?",
+                default: false
             }
         ]);
         // check npm name is valid
@@ -99,6 +111,12 @@ async function initProject() {
         }
         if (answers.installCron) {
             await (0, utils_1.setupCron)(projectDir);
+        }
+        if (answers.installS3) {
+            await (0, utils_1.setupS3)(projectDir);
+        }
+        if (answers.installEvents) {
+            await (0, utils_1.setupEvents)(projectDir);
         }
     }
     catch (error) {

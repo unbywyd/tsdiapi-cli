@@ -1,0 +1,15 @@
+import { EventType, EventPayloads } from "@base/events.types";
+import { On, dispatchEvent} from "tsdiapi-events";
+
+@Service()
+export class HelloEvents {
+    @On(EventType.onHello)
+    public onHello(payload: EventPayloads[EventType.onHello]) {
+        console.log(`Hello ${payload.message}!`);
+    }
+}
+
+setTimeout(() => {
+    // Dispatch an event
+    dispatchEvent(EventType.onHello, { message: "Buffalo" });
+}, 1000);

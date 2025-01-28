@@ -1,4 +1,4 @@
-import { CliOptions } from "@src/commands/initProject";
+import { CliOptions } from '@src/commands/initProject';
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
  *
@@ -21,6 +21,15 @@ export declare function setupPrisma(projectDir: string): Promise<void>;
  * @param value - The value to set for the key.
  */
 export declare function updateEnvVariable(envPath: string, key: string, value: string): void;
-export declare function setupSockets(projectDir: string, options: CliOptions): Promise<void>;
+export declare function updateAllEnvFilesWithVariable(projectDir: string, key: string, value: string): void;
+export declare function setupSockets(projectDir: string, options?: CliOptions): Promise<void>;
 export declare function setupCron(projectDir: string): void;
+export declare function setupEvents(projectDir: string): void;
+export type AppParam = {
+    key: string;
+    type: 'string' | 'number' | 'boolean';
+};
+export declare function setupS3(projectDir: string): Promise<void>;
+export declare function addS3AppParams(projectDir: string): Promise<void>;
+export declare function addAppConfigParams(projectDir: string, params: AppParam[]): Promise<void>;
 //# sourceMappingURL=index.d.ts.map

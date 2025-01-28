@@ -7,8 +7,13 @@ exports.buildHandlebarsTemplate = buildHandlebarsTemplate;
 exports.runNpmInstall = runNpmInstall;
 exports.setupPrisma = setupPrisma;
 exports.updateEnvVariable = updateEnvVariable;
+exports.updateAllEnvFilesWithVariable = updateAllEnvFilesWithVariable;
 exports.setupSockets = setupSockets;
 exports.setupCron = setupCron;
+exports.setupEvents = setupEvents;
+exports.setupS3 = setupS3;
+exports.addS3AppParams = addS3AppParams;
+exports.addAppConfigParams = addAppConfigParams;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const handlebars_1 = __importDefault(require("handlebars"));
@@ -17,6 +22,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const util_1 = __importDefault(require("util"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const config_1 = require("../config");
+const ts_morph_1 = require("ts-morph");
 const execAsync = util_1.default.promisify(child_process_1.exec);
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
@@ -28,15 +34,13 @@ const execAsync = util_1.default.promisify(child_process_1.exec);
 function buildHandlebarsTemplate(templateName, data) {
     try {
         // Define the path to the templates directory
-        const templatesDir = path_1.default.join(__dirname, '../', "templates");
-        // Define the full path to the template file
-        const templatePath = path_1.default.join(templatesDir, `${templateName}.hbs`);
+        const templatePath = path_1.default.join(__dirname, '../', 'templates', templateName + '.hbs');
         // Check if the template file exists
         if (!fs_extra_1.default.existsSync(templatePath)) {
             throw new Error(`Template file not found: ${templatePath}`);
         }
         // Load the template content
-        const templateContent = fs_extra_1.default.readFileSync(templatePath, "utf8");
+        const templateContent = fs_extra_1.default.readFileSync(templatePath, 'utf8');
         // Compile the template using Handlebars
         const template = handlebars_1.default.compile(templateContent);
         // Generate the output by passing the data to the compiled template
@@ -52,106 +56,108 @@ function buildHandlebarsTemplate(templateName, data) {
  * @param projectDir The directory where the command should be executed.
  */
 async function runNpmInstall(projectDir) {
-    console.log(chalk_1.default.blue("Installing dependencies..."));
+    console.log(chalk_1.default.blue('Installing dependencies...'));
     return new Promise((resolve, reject) => {
-        const npmProcess = (0, child_process_1.spawn)("npm", ["install", "--omit=optional"], {
+        const npmProcess = (0, child_process_1.spawn)('npm', ['install', '--omit=optional'], {
             cwd: projectDir, // Указание директории, где будет запущена команда
-            stdio: "inherit", // Подключение потоков вывода/ввода, чтобы видеть вывод команды
+            stdio: 'inherit', // Подключение потоков вывода/ввода, чтобы видеть вывод команды
             shell: true, // Для поддержки команд на всех платформах
         });
-        npmProcess.on("close", (code) => {
+        npmProcess.on('close', (code) => {
             if (code === 0) {
-                console.log(chalk_1.default.green("Dependencies installed successfully!"));
+                console.log(chalk_1.default.green('Dependencies installed successfully!'));
                 resolve();
             }
             else {
                 console.log(chalk_1.default.red(`npm install exited with code ${code}`));
-                reject(new Error("Failed to install dependencies."));
+                reject(new Error('Failed to install dependencies.'));
             }
         });
     });
 }
 async function setupPrisma(projectDir) {
     try {
-        console.log(chalk_1.default.blue("Installing Prisma and Prisma Client..."));
+        console.log(chalk_1.default.blue('Installing Prisma and Prisma Client...'));
         // Устанавливаем prisma и @prisma/client
-        await execAsync(`npm install prisma @prisma/client prisma-class-dto-generator`, { cwd: projectDir });
-        console.log(chalk_1.default.green("Prisma and Prisma Client installed successfully."));
+        await execAsync(`npm install prisma @prisma/client prisma-class-dto-generator`, {
+            cwd: projectDir,
+        });
+        console.log(chalk_1.default.green('Prisma and Prisma Client installed successfully.'));
         // Уточняем, нужно ли инициализировать Prisma
         const { initPrisma } = await inquirer_1.default.prompt([
             {
-                type: "confirm",
-                name: "initPrisma",
-                message: "Do you want to initialize Prisma now? (Creates schema.prisma and .env)",
-                default: true
-            }
+                type: 'confirm',
+                name: 'initPrisma',
+                message: 'Do you want to initialize Prisma now? (Creates schema.prisma and .env)',
+                default: true,
+            },
         ]);
         if (initPrisma) {
-            console.log(chalk_1.default.blue("Initializing Prisma..."));
+            console.log(chalk_1.default.blue('Initializing Prisma...'));
             await execAsync(`npx prisma init`, { cwd: projectDir });
-            console.log(chalk_1.default.green("Prisma initialized successfully."));
+            console.log(chalk_1.default.green('Prisma initialized successfully.'));
             const { dbConfig } = await inquirer_1.default.prompt([
                 {
-                    type: "confirm",
-                    name: "dbConfig",
-                    message: "Do you want to configure your database connection now?",
-                    default: true
-                }
+                    type: 'confirm',
+                    name: 'dbConfig',
+                    message: 'Do you want to configure your database connection now?',
+                    default: true,
+                },
             ]);
             if (dbConfig) {
                 const { dbType } = await inquirer_1.default.prompt([
                     {
-                        type: "list",
-                        name: "dbType",
-                        message: "Select your database type:",
-                        choices: ["PostgreSQL", "MySQL", "SQLite", "SQL Server"],
+                        type: 'list',
+                        name: 'dbType',
+                        message: 'Select your database type:',
+                        choices: ['PostgreSQL', 'MySQL', 'SQLite', 'SQL Server'],
                     },
                 ]);
-                let dbUrl = "";
+                let dbUrl = '';
                 switch (dbType) {
-                    case "PostgreSQL":
+                    case 'PostgreSQL':
                         dbUrl = await configurePostgres();
                         break;
-                    case "MySQL":
+                    case 'MySQL':
                         dbUrl = await configureMySQL();
                         break;
-                    case "SQLite":
+                    case 'SQLite':
                         dbUrl = configureSQLite(projectDir);
                         break;
-                    case "SQL Server":
+                    case 'SQL Server':
                         dbUrl = await configureSQLServer();
                         break;
                     default:
-                        console.log(chalk_1.default.red("Unsupported database type selected."));
+                        console.log(chalk_1.default.red('Unsupported database type selected.'));
                         process.exit(1);
                 }
-                const envPath = path_1.default.join(projectDir, ".env");
-                await updateEnvVariable(envPath, "DATABASE_URL", dbUrl);
+                const envPath = path_1.default.join(projectDir, '.env');
+                await updateEnvVariable(envPath, 'DATABASE_URL', dbUrl);
             }
-            const prismaSchemaPath = path_1.default.join(projectDir, "prisma", "schema.prisma");
-            const generatorConfigPath = path_1.default.join(projectDir, "prisma", "generator-config.json");
+            const prismaSchemaPath = path_1.default.join(projectDir, 'prisma', 'schema.prisma');
+            const generatorConfigPath = path_1.default.join(projectDir, 'prisma', 'generator-config.json');
             if (fs_extra_1.default.existsSync(prismaSchemaPath)) {
-                const schemaContent = fs_extra_1.default.readFileSync(prismaSchemaPath, "utf8");
+                const schemaContent = fs_extra_1.default.readFileSync(prismaSchemaPath, 'utf8');
                 const generatorBlock = `
 generator dto_generator {
     provider = "node node_modules/prisma-class-dto-generator"
     output   = "../src/generated_prisma_dto"
 }
 `;
-                if (!schemaContent.includes("generator dto_generator")) {
+                if (!schemaContent.includes('generator dto_generator')) {
                     fs_extra_1.default.appendFileSync(prismaSchemaPath, generatorBlock);
-                    console.log(chalk_1.default.green("Generator block for class-validator added to schema.prisma."));
+                    console.log(chalk_1.default.green('Generator block for class-validator added to schema.prisma.'));
                 }
                 else {
-                    console.log(chalk_1.default.yellow("Generator block for class-validator already exists in schema.prisma."));
+                    console.log(chalk_1.default.yellow('Generator block for class-validator already exists in schema.prisma.'));
                 }
             }
             if (!fs_extra_1.default.existsSync(generatorConfigPath)) {
-                const dtoConfig = buildHandlebarsTemplate("prisma_dto_config", {});
+                const dtoConfig = buildHandlebarsTemplate('prisma/dto_config', {});
                 fs_extra_1.default.writeFileSync(generatorConfigPath, dtoConfig);
             }
-            const typesContent = buildHandlebarsTemplate("prisma_types", {});
-            const typesFilePath = path_1.default.join(projectDir, "src", "prisma.types.ts");
+            const typesContent = buildHandlebarsTemplate('prisma/types', {});
+            const typesFilePath = path_1.default.join(projectDir, 'src', 'prisma.types.ts');
             fs_extra_1.default.writeFileSync(typesFilePath, typesContent);
             const testModel = `
             model User {
@@ -160,22 +166,22 @@ generator dto_generator {
             }`;
             fs_extra_1.default.appendFileSync(prismaSchemaPath, testModel);
             // prisma generate
-            console.log(chalk_1.default.blue("Generating Prisma client..."));
+            console.log(chalk_1.default.blue('Generating Prisma client...'));
             await execAsync(`npx prisma generate`, { cwd: projectDir });
-            console.log(chalk_1.default.green("Prisma client generated successfully."));
+            console.log(chalk_1.default.green('Prisma client generated successfully.'));
             // Обновляем package.json
-            const packageJsonPath = path_1.default.join(projectDir, "package.json");
-            const packageJson = JSON.parse(fs_extra_1.default.readFileSync(packageJsonPath, "utf-8"));
+            const packageJsonPath = path_1.default.join(projectDir, 'package.json');
+            const packageJson = JSON.parse(fs_extra_1.default.readFileSync(packageJsonPath, 'utf-8'));
             if (!packageJson.scripts) {
                 packageJson.scripts = {};
             }
             if (!packageJson.scripts.postinstall) {
-                packageJson.scripts.postinstall = "prisma generate";
+                packageJson.scripts.postinstall = 'prisma generate';
                 fs_extra_1.default.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
                 console.log(chalk_1.default.green("Added 'prisma generate' to postinstall script in package.json."));
             }
             // Вывод инструкций
-            console.log(chalk_1.default.blue("Prisma setup is complete! Next steps:"));
+            console.log(chalk_1.default.blue('Prisma setup is complete! Next steps:'));
             console.log(chalk_1.default.green(`
 1. Verify your database configuration in the .env file
 2. Run migrations: npx prisma migrate dev
@@ -187,45 +193,45 @@ generator dto_generator {
         }
     }
     catch (error) {
-        console.error(chalk_1.default.red("An error occurred while setting up Prisma:"), error.message);
+        console.error(chalk_1.default.red('An error occurred while setting up Prisma:'), error.message);
         //process.exit(1);
     }
 }
 // Функция для настройки PostgreSQL
 async function configurePostgres() {
     const answers = await inquirer_1.default.prompt([
-        { type: "input", name: "host", message: "PostgreSQL host:", default: "localhost" },
-        { type: "input", name: "port", message: "PostgreSQL port:", default: "5432" },
-        { type: "input", name: "user", message: "PostgreSQL user:", default: "postgres" },
-        { type: "password", name: "password", message: "PostgreSQL password:" },
-        { type: "input", name: "database", message: "PostgreSQL database name:", default: "mydb" },
+        { type: 'input', name: 'host', message: 'PostgreSQL host:', default: 'localhost' },
+        { type: 'input', name: 'port', message: 'PostgreSQL port:', default: '5432' },
+        { type: 'input', name: 'user', message: 'PostgreSQL user:', default: 'postgres' },
+        { type: 'password', name: 'password', message: 'PostgreSQL password:' },
+        { type: 'input', name: 'database', message: 'PostgreSQL database name:', default: 'mydb' },
     ]);
     return `postgresql://${answers.user}:${answers.password}@${answers.host}:${answers.port}/${answers.database}`;
 }
 // Функция для настройки MySQL
 async function configureMySQL() {
     const answers = await inquirer_1.default.prompt([
-        { type: "input", name: "host", message: "MySQL host:", default: "localhost" },
-        { type: "input", name: "port", message: "MySQL port:", default: "3306" },
-        { type: "input", name: "user", message: "MySQL user:", default: "root" },
-        { type: "password", name: "password", message: "MySQL password:" },
-        { type: "input", name: "database", message: "MySQL database name:", default: "mydb" },
+        { type: 'input', name: 'host', message: 'MySQL host:', default: 'localhost' },
+        { type: 'input', name: 'port', message: 'MySQL port:', default: '3306' },
+        { type: 'input', name: 'user', message: 'MySQL user:', default: 'root' },
+        { type: 'password', name: 'password', message: 'MySQL password:' },
+        { type: 'input', name: 'database', message: 'MySQL database name:', default: 'mydb' },
     ]);
     return `mysql://${answers.user}:${answers.password}@${answers.host}:${answers.port}/${answers.database}`;
 }
 // Функция для настройки SQLite
 function configureSQLite(projectDir) {
-    const dbPath = path_1.default.join(projectDir, "prisma", "dev.db");
+    const dbPath = path_1.default.join(projectDir, 'prisma', 'dev.db');
     return `file:${dbPath}`;
 }
 // Функция для настройки SQL Server
 async function configureSQLServer() {
     const answers = await inquirer_1.default.prompt([
-        { type: "input", name: "host", message: "SQL Server host:", default: "localhost" },
-        { type: "input", name: "port", message: "SQL Server port:", default: "1433" },
-        { type: "input", name: "user", message: "SQL Server user:", default: "sa" },
-        { type: "password", name: "password", message: "SQL Server password:" },
-        { type: "input", name: "database", message: "SQL Server database name:", default: "mydb" },
+        { type: 'input', name: 'host', message: 'SQL Server host:', default: 'localhost' },
+        { type: 'input', name: 'port', message: 'SQL Server port:', default: '1433' },
+        { type: 'input', name: 'user', message: 'SQL Server user:', default: 'sa' },
+        { type: 'password', name: 'password', message: 'SQL Server password:' },
+        { type: 'input', name: 'database', message: 'SQL Server database name:', default: 'mydb' },
     ]);
     return `sqlserver://${answers.user}:${answers.password}@${answers.host}:${answers.port};database=${answers.database}`;
 }
@@ -238,21 +244,21 @@ async function configureSQLServer() {
  */
 function updateEnvVariable(envPath, key, value) {
     try {
-        let envContent = "";
+        let envContent = '';
         // Check if .env exists, if not create an empty one
         if (fs_extra_1.default.existsSync(envPath)) {
-            envContent = fs_extra_1.default.readFileSync(envPath, "utf8");
+            envContent = fs_extra_1.default.readFileSync(envPath, 'utf8');
         }
         else {
             console.log(chalk_1.default.yellow(`.env file not found. Creating a new one at ${envPath}.`));
-            fs_extra_1.default.writeFileSync(envPath, "");
+            fs_extra_1.default.writeFileSync(envPath, '');
         }
         // Split the content into lines
-        const lines = envContent.split("\n");
+        const lines = envContent.split('\n');
         // Update the key-value pair if it exists, or add a new one if it doesn't
         let found = false;
         const updatedLines = lines.map((line) => {
-            const [currentKey, ...rest] = line.split("=");
+            const [currentKey, ...rest] = line.split('=');
             if (currentKey.trim() === key) {
                 found = true;
                 return `${key}="${value}"`; // Replace the value
@@ -263,31 +269,45 @@ function updateEnvVariable(envPath, key, value) {
             updatedLines.push(`${key}="${value}"`); // Add the new key-value pair
         }
         // Write the updated content back to the .env file
-        fs_extra_1.default.writeFileSync(envPath, updatedLines.join("\n"), "utf8");
+        fs_extra_1.default.writeFileSync(envPath, updatedLines.join('\n'), 'utf8');
         console.log(chalk_1.default.green(`${key} updated in .env.`));
     }
     catch (error) {
         console.error(chalk_1.default.red(`Failed to update ${key} in .env:`), error.message);
     }
 }
+function updateAllEnvFilesWithVariable(projectDir, key, value) {
+    const envPath = path_1.default.join(projectDir, '.env');
+    if (fs_extra_1.default.existsSync(envPath)) {
+        updateEnvVariable(envPath, key, value);
+    }
+    const envExamplePath = path_1.default.join(projectDir, '.env.development');
+    if (fs_extra_1.default.existsSync(envExamplePath)) {
+        updateEnvVariable(envExamplePath, key, value);
+    }
+    const envProductionPath = path_1.default.join(projectDir, '.env.production');
+    if (fs_extra_1.default.existsSync(envProductionPath)) {
+        updateEnvVariable(envProductionPath, key, value);
+    }
+}
 async function setupSockets(projectDir, options) {
     try {
-        console.log(chalk_1.default.blue("Installing Socket.IO and Socket-Controllers..."));
+        console.log(chalk_1.default.blue('Installing Socket.IO and Socket-Controllers...'));
         // Install socket.io and socket-controllers
         await execAsync(`npm install socket.io socket-controllers`, { cwd: projectDir });
-        console.log(chalk_1.default.green("Socket.IO and Socket-Controllers installed successfully."));
+        console.log(chalk_1.default.green('Socket.IO and Socket-Controllers installed successfully.'));
         // Create a sample socket type definition file
-        const socketFilePath = path_1.default.join(projectDir, "src", "sockets.types.ts");
-        const socketFileContent = buildHandlebarsTemplate("sockets_types", {});
+        const socketFilePath = path_1.default.join(projectDir, 'src', 'sockets.types.ts');
+        const socketFileContent = buildHandlebarsTemplate('sockets/types', {});
         fs_extra_1.default.writeFileSync(socketFilePath, socketFileContent);
         // Create a sample feature controller
-        const helloControllerPath = path_1.default.join(projectDir, "src", "api", "features", "hello");
+        const helloControllerPath = path_1.default.join(projectDir, 'src', 'api', 'features', 'hello');
         fs_extra_1.default.ensureDirSync(helloControllerPath);
-        const helloFilePath = path_1.default.join(helloControllerPath, "hello.socket.ts");
-        const helloControllerContent = buildHandlebarsTemplate("hello_socket_controller", {});
+        const helloFilePath = path_1.default.join(helloControllerPath, 'hello.socket.ts');
+        const helloControllerContent = buildHandlebarsTemplate('sockets/example', {});
         fs_extra_1.default.writeFileSync(helloFilePath, helloControllerContent);
         // Display configuration information
-        console.log(chalk_1.default.green("Sockets are ready to use!"));
+        console.log(chalk_1.default.green('Sockets are ready to use!'));
         console.log(chalk_1.default.blue(`
 You can now create socket controllers by placing files ending with *.socket.ts
 anywhere inside the "api" directory of your project. A sample controller is available at:
@@ -296,32 +316,216 @@ anywhere inside the "api" directory of your project. A sample controller is avai
 The server will automatically detect and load socket controllers.
 Make sure to configure your host and port in the .env file:
   HOST=${config_1.DefaultHost}
-  PORT=${options.port || config_1.DefaultPort}
+  PORT=${options?.port || config_1.DefaultPort}
         `));
     }
     catch (error) {
-        console.error(chalk_1.default.red("An error occurred while setting up Socket.IO:"), error.message);
+        console.error(chalk_1.default.red('An error occurred while setting up Socket.IO:'), error.message);
     }
 }
 function setupCron(projectDir) {
     try {
         // Install node-cron
-        console.log(chalk_1.default.green("node-cron installed successfully."));
+        console.log(chalk_1.default.green('node-cron installed successfully.'));
         // Create a sample cron job
-        const helloControllerPath = path_1.default.join(projectDir, "src", "api", "features", "hello");
+        const helloControllerPath = path_1.default.join(projectDir, 'src', 'api', 'features', 'hello');
         fs_extra_1.default.ensureDirSync(helloControllerPath);
-        const cronFilePath = path_1.default.join(helloControllerPath, "hello.cron.ts");
-        const cronFileContent = buildHandlebarsTemplate("sample_cron_job", {});
+        const cronFilePath = path_1.default.join(helloControllerPath, 'hello.cron.ts');
+        const cronFileContent = buildHandlebarsTemplate('cron/example', {});
         fs_extra_1.default.writeFileSync(cronFilePath, cronFileContent);
         // Display configuration information
-        console.log(chalk_1.default.green("Cron jobs are ready to use!"));
+        console.log(chalk_1.default.green('Cron jobs are ready to use!'));
         console.log(chalk_1.default.blue(`
 You can now create cron jobs by placing files ending with *.cron.ts
 inside the "cron" directory of your project. A sample cron job is available at: ${cronFilePath}
 The server will automatically detect and run cron jobs.`));
     }
     catch (error) {
-        console.error(chalk_1.default.red("An error occurred while setting up node-cron:"), error.message);
+        console.error(chalk_1.default.red('An error occurred while setting up node-cron:'), error.message);
     }
+}
+/*
+ *   Use this function to setup events in your project
+ */
+function setupEvents(projectDir) {
+    try {
+        // Create a sample event type definition file
+        const eventsFilePath = path_1.default.join(projectDir, 'src', 'events.types.ts');
+        const eventsFileContent = buildHandlebarsTemplate('events/types', {});
+        fs_extra_1.default.writeFileSync(eventsFilePath, eventsFileContent);
+        const helloControllerPath = path_1.default.join(projectDir, 'src', 'api', 'features', 'hello');
+        fs_extra_1.default.ensureDirSync(helloControllerPath);
+        const eventsExamplePath = path_1.default.join(helloControllerPath, 'hello.event.ts');
+        const eventsExampleContent = buildHandlebarsTemplate('events/example', {});
+        fs_extra_1.default.writeFileSync(eventsExamplePath, eventsExampleContent);
+        console.log(chalk_1.default.green('Events are ready to use!'));
+        console.log(chalk_1.default.blue(`
+You can now create event handlers by placing files ending with *.event.ts
+anywhere inside the "api" directory of your project. A sample event handler is available at:
+    ${eventsExamplePath}
+        `));
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('An error occurred while setting up events:'), error.message);
+    }
+}
+async function setupS3(projectDir) {
+    try {
+        console.log(chalk_1.default.blue('Configuring AWS settings...'));
+        try {
+            await addS3AppParams(projectDir);
+        }
+        catch (error) {
+            console.error(chalk_1.default.red('Something went wrong while configuring app.config.ts. Please configure it manually.'));
+        }
+        const { setupAWS } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'setupAWS',
+                message: 'Do you want to configure AWS settings?',
+                default: true,
+            },
+        ]);
+        if (!setupAWS) {
+            return;
+        }
+        // Prompt user for AWS configuration
+        const awsConfig = await inquirer_1.default.prompt([
+            {
+                type: 'input',
+                name: 'AWS_PUBLIC_BUCKET_NAME',
+                message: 'Enter the name of the AWS public bucket:',
+                validate: (input) => (input ? true : 'AWS public bucket name cannot be empty.'),
+            },
+            {
+                type: 'input',
+                name: 'AWS_PRIVATE_BUCKET_NAME',
+                message: 'Enter the name of the AWS private bucket:',
+                validate: (input) => (input ? true : 'AWS private bucket name cannot be empty.'),
+            },
+            {
+                type: 'input',
+                name: 'AWS_ACCESS_KEY_ID',
+                message: 'Enter the AWS Access Key ID:',
+                validate: (input) => (input ? true : 'AWS Access Key ID cannot be empty.'),
+            },
+            {
+                type: 'password',
+                name: 'AWS_SECRET_ACCESS_KEY',
+                message: 'Enter the AWS Secret Access Key:',
+                validate: (input) => (input ? true : 'AWS Secret Access Key cannot be empty.'),
+                mask: '*', // Hide input for security
+            },
+            {
+                type: 'input',
+                name: 'AWS_REGION',
+                message: 'Enter the AWS region:',
+                default: 'us-east-1', // Provide a default region
+            },
+        ]);
+        for (const key in awsConfig) {
+            updateAllEnvFilesWithVariable(projectDir, key, awsConfig[key]);
+        }
+        console.log(chalk_1.default.green('.env file has been successfully updated with AWS settings.'));
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('An error occurred while setting up AWS configuration:'), error.message);
+    }
+}
+/*
+ *   Use this function to add S3 parameters to your project
+ */
+async function addS3AppParams(projectDir) {
+    const paramsConfig = {
+        AWS_PUBLIC_BUCKET_NAME: 'string',
+        AWS_PRIVATE_BUCKET_NAME: 'string',
+        AWS_ACCESS_KEY_ID: 'string',
+        AWS_SECRET_ACCESS_KEY: 'string',
+        AWS_REGION: 'string',
+    };
+    const params = [];
+    for (const key in paramsConfig) {
+        params.push({ key, type: paramsConfig[key] });
+    }
+    await addAppConfigParams(projectDir, params);
+}
+async function addAppConfigParams(projectDir, params) {
+    try {
+        const appConfigPath = path_1.default.join(projectDir, 'src/app.config.ts');
+        // Initialize ts-morph project
+        const project = new ts_morph_1.Project();
+        const sourceFile = project.addSourceFileAtPath(appConfigPath);
+        // Ensure required imports are present
+        ensureImports(sourceFile, [
+            { name: 'Expose', moduleSpecifier: 'class-transformer' },
+            { name: 'Type', moduleSpecifier: 'class-transformer' },
+            { name: 'IsString', moduleSpecifier: 'class-validator' },
+            { name: 'IsNumber', moduleSpecifier: 'class-validator' },
+            { name: 'IsBoolean', moduleSpecifier: 'class-validator' },
+        ]);
+        // Find the class declaration
+        const classDeclaration = sourceFile.getClass('ConfigSchema');
+        if (!classDeclaration) {
+            return;
+        }
+        params.forEach((param) => {
+            // Check if the property already exists
+            const existingProperty = classDeclaration.getProperty(param.key);
+            if (existingProperty) {
+                console.log(chalk_1.default.yellow(`Property '${param.key}' already exists in ConfigSchema.`));
+                return;
+            }
+            // Add the new property with decorators based on the type
+            const typeMap = {
+                string: 'String',
+                number: 'Number',
+                boolean: 'Boolean',
+            };
+            const property = classDeclaration.addProperty({
+                name: param.key,
+                type: param.type,
+            });
+            property.addDecorator({ name: 'Is' + capitalize(param.type), arguments: [] });
+            property.addDecorator({ name: 'Expose', arguments: [] });
+            property.addDecorator({
+                name: 'Type',
+                arguments: [`() => ${typeMap[param.type]}`],
+            });
+        });
+        // Save the modified file
+        await sourceFile.save();
+        console.log(chalk_1.default.green('app.config.ts has been successfully updated.'));
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('An error occurred while updating app.config.ts:'), error.message);
+    }
+}
+// Utility function to ensure imports are present or add them if missing
+function ensureImports(sourceFile, imports) {
+    imports.forEach(({ name, moduleSpecifier }) => {
+        const existingImport = sourceFile
+            .getImportDeclarations()
+            .find((imp) => imp.getModuleSpecifierValue() === moduleSpecifier);
+        if (existingImport) {
+            // Check if the named import already exists
+            const existingNamedImport = existingImport
+                .getNamedImports()
+                .find((n) => n.getName() === name);
+            if (!existingNamedImport) {
+                existingImport.addNamedImport(name);
+            }
+        }
+        else {
+            // Add the new import declaration
+            sourceFile.addImportDeclaration({
+                moduleSpecifier,
+                namedImports: [name],
+            });
+        }
+    });
+}
+// Utility function to capitalize a string
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 //# sourceMappingURL=index.js.map
