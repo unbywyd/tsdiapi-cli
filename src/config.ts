@@ -1,4 +1,28 @@
 export const CurrentVersion = '1.0.0'
 export const DefaultPort = 3100
 export const DefaultHost = 'localhost'
-export const AvailablePlugins = ['prisma', 'socket.io', 'cron', 'events', 's3']
+
+export const RegisteredPlugins = {
+    'prisma': 'tsdiapi-prisma',
+    'socket.io': 'tsdiapi-io',
+    'cron': 'tsdiapi-cron',
+    'events': 'tsdiapi-events',
+    's3': 'tsdiapi-s3',
+    'jwt-auth': 'tsdiapi-jwt-auth',
+    'inforu': 'tsdiapi-inforu'
+}
+
+export const AvailablePlugins: Array<PluginName> = Object.keys(RegisteredPlugins) as Array<PluginName>;
+
+export const getPackageName = (plugin: PluginName) => {
+    return RegisteredPlugins[plugin];
+}
+
+export const getPackageVersion = (name: PluginName) => {
+    return IsDev ? "github:unbywyd/" + getPackageName(name) + "#master" : "^" + CurrentVersion;
+};
+
+
+
+export type PluginName = keyof typeof RegisteredPlugins;
+export const IsDev = true;

@@ -27,4 +27,5 @@ export declare const addPlugin: (pluginName?: string) => Promise<void>;
  * @returns The root directory path of the TSDIAPI-Server project or null if not found.
  */
 export declare function findTSDIAPIServerProject(): Promise<string | null>;
+export declare function isPackageInstalled(projectPath: string, packageName: string): boolean;
 //# sourceMappingURL=addPlugin.d.ts.map

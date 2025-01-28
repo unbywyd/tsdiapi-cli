@@ -4,12 +4,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initProject = initProject;
+const config_1 = require("./../config");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
-const config_1 = require("../config");
+const config_2 = require("../config");
 async function initProject() {
     try {
         // Welcome message
@@ -38,7 +39,7 @@ async function initProject() {
                 type: "number",
                 name: "port",
                 message: "Port:",
-                default: config_1.DefaultPort,
+                default: config_2.DefaultPort,
                 validate: (input) => {
                     if (input < 1 || input > 65535) {
                         return "Port number must be between 1 and 65535.";
@@ -74,6 +75,18 @@ async function initProject() {
                 type: "confirm",
                 name: "installS3",
                 message: "You need s3?",
+                default: false
+            },
+            {
+                type: "confirm",
+                name: "installJwt",
+                message: "You need jwt auth?",
+                default: false
+            },
+            {
+                type: "confirm",
+                name: "installInforu",
+                message: "You need inforu for sms sending?",
                 default: false
             }
         ]);
@@ -118,11 +131,46 @@ async function initProject() {
         if (answers.installEvents) {
             await (0, utils_1.setupEvents)(projectDir);
         }
+        if (answers.installJwt) {
+            await (0, utils_1.setupJWTAuth)(projectDir);
+        }
+        if (answers.installInforu) {
+            await (0, utils_1.setupInforu)(projectDir);
+        }
     }
     catch (error) {
         console.error(chalk_1.default.red("An unexpected error occurred during project initialization."), error.message);
         process.exit(1);
     }
+}
+function preparePluginsAndDependencies(options) {
+    const plugins = [];
+    const dependencies = [];
+    const getDependency = (name) => {
+        return {
+            name: (0, config_1.getPackageName)(name),
+            version: (0, config_1.getPackageVersion)(name)
+        };
+    };
+    const optionsByPlugins = {
+        "prisma": options.installPrisma,
+        "socket.io": options.installSocket,
+        "cron": options.installCron,
+        "events": options.installEvents,
+        "s3": options.installS3,
+        "jwt-auth": options.installJwt,
+        "inforu": options.installInforu
+    };
+    for (const [plugin, install] of Object.entries(optionsByPlugins)) {
+        if (install) {
+            plugins.push(plugin);
+            dependencies.push(getDependency(plugin));
+        }
+    }
+    return {
+        plugins,
+        dependencies
+    };
 }
 async function populateProjectFiles(projectDir, options) {
     console.log(chalk_1.default.blue("Copying files to the project directory..."));
@@ -131,38 +179,13 @@ async function populateProjectFiles(projectDir, options) {
         // Copy all files from the source directory to the project directory
         await fs_extra_1.default.copy(sourceDir, projectDir);
         // cron, prisma, io
-        const plugins = [];
-        const scripts = [];
-        const dependencies = [];
-        // ^${CurrentVersion}
-        if (options.installPrisma) {
-            plugins.push("prisma");
-            dependencies.push({
-                name: "tsdiapi-prisma",
-                version: "github:unbywyd/tsdiapi-prisma#master"
-            });
-        }
-        if (options.installSocket) {
-            plugins.push("io");
-            dependencies.push({
-                name: "tsdiapi-io",
-                version: "github:unbywyd/tsdiapi-io#master"
-            });
-        }
-        if (options.installCron) {
-            plugins.push("cron");
-            dependencies.push({
-                name: "tsdiapi-cron",
-                version: "github:unbywyd/tsdiapi-cron#master"
-            });
-        }
+        const { plugins, dependencies } = preparePluginsAndDependencies(options);
         const payload = {
             ...options,
             plugins: plugins?.length ? plugins : false,
             dependencies: dependencies?.length ? dependencies : false,
-            scripts: scripts?.length ? scripts : false,
-            host: config_1.DefaultHost,
-            port: options.port || config_1.DefaultPort
+            host: config_2.DefaultHost,
+            port: options.port || config_2.DefaultPort
         };
         const envDevPath = path_1.default.join(projectDir, ".env.development");
         const envProdPath = path_1.default.join(projectDir, ".env.production");

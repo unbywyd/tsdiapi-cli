@@ -29,6 +29,11 @@ export type AppParam = {
     key: string;
     type: 'string' | 'number' | 'boolean';
 };
+export declare function setupJWTAuth(projectDir: string): Promise<void>;
+export declare function setupInforu(projectDir: string): Promise<void>;
+export declare function configInforu(projectDir: string): Promise<void>;
+export declare function addInforuAppParams(projectDir: string): Promise<void>;
+export declare function addJWTAppParams(projectDir: string): Promise<void>;
 export declare function setupS3(projectDir: string): Promise<void>;
 export declare function addS3AppParams(projectDir: string): Promise<void>;
 export declare function addAppConfigParams(projectDir: string, params: AppParam[]): Promise<void>;

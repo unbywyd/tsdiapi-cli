@@ -11,6 +11,11 @@ exports.updateAllEnvFilesWithVariable = updateAllEnvFilesWithVariable;
 exports.setupSockets = setupSockets;
 exports.setupCron = setupCron;
 exports.setupEvents = setupEvents;
+exports.setupJWTAuth = setupJWTAuth;
+exports.setupInforu = setupInforu;
+exports.configInforu = configInforu;
+exports.addInforuAppParams = addInforuAppParams;
+exports.addJWTAppParams = addJWTAppParams;
 exports.setupS3 = setupS3;
 exports.addS3AppParams = addS3AppParams;
 exports.addAppConfigParams = addAppConfigParams;
@@ -23,6 +28,7 @@ const util_1 = __importDefault(require("util"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const config_1 = require("../config");
 const ts_morph_1 = require("ts-morph");
+const crypto_1 = __importDefault(require("crypto"));
 const execAsync = util_1.default.promisify(child_process_1.exec);
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
@@ -368,6 +374,114 @@ anywhere inside the "api" directory of your project. A sample event handler is a
     catch (error) {
         console.error(chalk_1.default.red('An error occurred while setting up events:'), error.message);
     }
+}
+async function setupJWTAuth(projectDir) {
+    console.log(chalk_1.default.blue('Configuring JWT settings...'));
+    try {
+        const { setupJWT } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'setupJWT',
+                message: 'Do you want to configure JWT settings?',
+                default: true,
+            },
+        ]);
+        if (!setupJWT) {
+            return;
+        }
+        const randomSecret = crypto_1.default.randomBytes(32).toString('hex');
+        const envName = "JWT_SECRET_KEY";
+        updateAllEnvFilesWithVariable(projectDir, envName, randomSecret);
+        const days30 = 30 * 24 * 60 * 60;
+        const envName2 = "JWT_EXPIRATION_TIME";
+        updateAllEnvFilesWithVariable(projectDir, envName2, days30.toString());
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('An error occurred while setting up JWT:'), error.message);
+    }
+    try {
+        await addJWTAppParams(projectDir);
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('Something went wrong while configuring app.config.ts. Please configure it manually.'));
+    }
+}
+async function setupInforu(projectDir) {
+    console.log(chalk_1.default.blue('Configuring Inforu settings...'));
+    try {
+        await addInforuAppParams(projectDir);
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('Something went wrong while configuring app.config.ts. Please configure it manually.'));
+    }
+    await configInforu(projectDir);
+}
+async function configInforu(projectDir) {
+    try {
+        const { setupInforu } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'setupInforu',
+                message: 'Do you want to configure Inforu settings?',
+                default: true,
+            },
+        ]);
+        if (!setupInforu) {
+            // manual setup notification
+            console.log(chalk_1.default.yellow(`You can configure Inforu settings manually by adding the following variables to your .env file: INFORU_USERNAME, INFORU_PASSWORD, INFORU_SENDER_NAME`));
+            return;
+        }
+        const inforuConfig = await inquirer_1.default.prompt([
+            {
+                type: 'input',
+                name: 'INFORU_USERNAME',
+                message: 'Enter your Inforu username:',
+                validate: (input) => (input ? true : 'Inforu username cannot be empty.'),
+            },
+            {
+                type: 'password',
+                name: 'INFORU_PASSWORD',
+                message: 'Enter your Inforu password:',
+                mask: '*',
+                validate: (input) => (input ? true : 'Inforu password cannot be empty.'),
+            },
+            {
+                type: 'input',
+                name: 'INFORU_SENDER_NAME',
+                message: 'Enter your Inforu sender name:',
+                validate: (input) => (input ? true : 'Inforu sender name cannot be empty.'),
+            },
+        ]);
+        for (const key in inforuConfig) {
+            updateAllEnvFilesWithVariable(projectDir, key, inforuConfig[key]);
+        }
+        console.log(chalk_1.default.green('.env file has been successfully updated with Inforu settings.'));
+    }
+    catch (e) {
+        console.error(chalk_1.default.red('An error occurred while setting up Inforu:'), e.message);
+    }
+}
+async function addInforuAppParams(projectDir) {
+    const paramsConfig = {
+        INFORU_USERNAME: 'string',
+        INFORU_PASSWORD: 'string',
+        INFORU_SENDER_NAME: 'string',
+    };
+    const params = [];
+    for (const key in paramsConfig) {
+        params.push({ key, type: paramsConfig[key] });
+    }
+}
+async function addJWTAppParams(projectDir) {
+    const paramsConfig = {
+        JWT_SECRET_KEY: 'string',
+        JWT_EXPIRATION_TIME: 'number',
+    };
+    const params = [];
+    for (const key in paramsConfig) {
+        params.push({ key, type: paramsConfig[key] });
+    }
+    await addAppConfigParams(projectDir, params);
 }
 async function setupS3(projectDir) {
     try {

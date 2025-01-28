@@ -1,7 +1,7 @@
 import inquirer from 'inquirer'
 import chalk from 'chalk'
-import { setupCron, setupPrisma, setupSockets, setupEvents, setupS3 } from '../utils'
-import { AvailablePlugins } from '../config'
+import { setupCron, setupPrisma, setupSockets, setupEvents, setupS3, setupJWTAuth, setupInforu } from '../utils'
+import { RegisteredPlugins, PluginName, AvailablePlugins, getPackageName } from '../config'
 import { Project, SyntaxKind } from 'ts-morph'
 import fs from 'fs'
 import { findUp } from 'find-up'
@@ -41,41 +41,14 @@ export const addPlugin = async (pluginName?: string) => {
     )
   }
 
-  const appFilePath = path.resolve(`${currentDirectory}/src`, 'main.ts')
+  let selectedPluginName = pluginName;
+  const appFilePath = path.resolve(`${currentDirectory}/src`, 'main.ts');
 
-  if (pluginName) {
-    if (AvailablePlugins.includes(pluginName)) {
-      console.log(chalk.green(`Installing plugin: ${pluginName}...`))
-      switch (pluginName) {
-        case 'prisma':
-          await setupPrisma(currentDirectory)
-          break
 
-        case 'socket.io':
-          await setupSockets(currentDirectory)
-          break
-
-        case 'cron':
-          await setupCron(currentDirectory)
-          break
-
-        case 'events':
-          await setupEvents(currentDirectory)
-          break
-
-        case 's3':
-          await setupS3(currentDirectory)
-          break
-
-        default:
-          console.log(chalk.red(`No setup logic defined for plugin: ${pluginName}`))
-          return
-      }
-      console.log(chalk.green(`Plugin ${pluginName} successfully installed.`))
-    } else {
-      console.log(chalk.red(`Plugin ${pluginName} is not available.`))
-    }
-  } else {
+  if (pluginName && !AvailablePlugins.includes(pluginName as PluginName)) {
+    return console.log(chalk.red(`Plugin ${pluginName} is not available.`))
+  }
+  if (!pluginName) {
     const answer = await inquirer.prompt([
       {
         type: 'list',
@@ -83,49 +56,49 @@ export const addPlugin = async (pluginName?: string) => {
         message: 'Select a plugin to install:',
         choices: AvailablePlugins,
       },
-    ])
+    ]);
+    selectedPluginName = answer.selectedPlugin
+  }
 
-    const selectedPlugin = answer.selectedPlugin
-    console.log(chalk.green(`Installing plugin: ${selectedPlugin}...`))
+  const packageName = getPackageName(selectedPluginName as PluginName);
+  const isInstalled = isPackageInstalled(currentDirectory, packageName);
+  if (isInstalled) {
+    return console.log(chalk.red(`Plugin ${packageName} already installed!`))
+  }
 
-    switch (selectedPlugin) {
+  await addPluginToApp(appFilePath, selectedPluginName, packageName, currentDirectory);
+
+  try {
+    switch (selectedPluginName) {
       case 'prisma':
-        if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-prisma', currentDirectory))
-          await setupPrisma(currentDirectory)
-        else return console.log(chalk.red(`Plugin: ${selectedPlugin} already added!`))
+        await setupPrisma(currentDirectory);
         break
-
       case 'socket.io':
-        if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-io', currentDirectory))
-          await setupSockets(currentDirectory)
-        else return console.log(chalk.red(`Plugin: ${selectedPlugin} already added!`))
+        await setupSockets(currentDirectory);
         break
-
       case 'cron':
-        if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-cron', currentDirectory))
-          await setupCron(currentDirectory)
-        else return console.log(chalk.red(`Plugin: ${selectedPlugin} already added!`))
+        await setupCron(currentDirectory);
         break
-
       case 'events':
-        if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-events', currentDirectory))
-          await setupEvents(currentDirectory)
-        else return console.log(chalk.red(`Plugin: ${selectedPlugin} already added!`))
+        await setupEvents(currentDirectory);
         break
-
       case 's3':
-        if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-s3', currentDirectory))
-          await setupS3(currentDirectory)
-        else return console.log(chalk.red(`Plugin: ${selectedPlugin} already added!`))
+        await setupS3(currentDirectory);
         break
-
+      case 'jwt-auth':
+        await setupJWTAuth(currentDirectory);
+        break
+      case 'inforu':
+        await setupInforu(currentDirectory);
+        break
       default:
-        console.log(chalk.red(`No setup logic defined for plugin: ${selectedPlugin}`))
+        console.log(chalk.red(`No setup logic defined for plugin: ${selectedPluginName}`));
         return
     }
-
-    console.log(chalk.green(`Plugin ${selectedPlugin} successfully installed.`))
+  } catch (error) {
+    console.error(`Error adding plugin ${selectedPluginName}: ${error.message}`)
   }
+  console.log(chalk.green(`Plugin ${selectedPluginName} successfully installed.`))
 }
 
 async function addPluginToApp(
@@ -223,5 +196,32 @@ export async function findTSDIAPIServerProject(): Promise<string | null> {
   } catch (error) {
     console.error('Error while searching for TSDIAPI-Server project:', error.message)
     return null
+  }
+}
+
+
+export function isPackageInstalled(projectPath: string, packageName: string): boolean {
+  try {
+    const packageJsonPath = path.resolve(projectPath, 'package.json');
+
+    if (!fs.existsSync(packageJsonPath)) {
+      console.error(`package.json not found in the directory: ${projectPath}`);
+      return false;
+    }
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+    const dependencies = packageJson.dependencies || {};
+    const devDependencies = packageJson.devDependencies || {};
+    const peerDependencies = packageJson.peerDependencies || {};
+
+    return Boolean(
+      dependencies[packageName] ||
+      devDependencies[packageName] ||
+      peerDependencies[packageName]
+    );
+  } catch (error) {
+    console.error(`Error checking package.json: ${error.message}`);
+    return false;
   }
 }

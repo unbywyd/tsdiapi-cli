@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addPlugin = void 0;
 exports.findTSDIAPIServerProject = findTSDIAPIServerProject;
+exports.isPackageInstalled = isPackageInstalled;
 const inquirer_1 = __importDefault(require("inquirer"));
 const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("../utils");
@@ -43,37 +44,12 @@ const addPlugin = async (pluginName) => {
     if (!currentDirectory) {
         return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using tsdiapi-server!`));
     }
+    let selectedPluginName = pluginName;
     const appFilePath = path_1.default.resolve(`${currentDirectory}/src`, 'main.ts');
-    if (pluginName) {
-        if (config_1.AvailablePlugins.includes(pluginName)) {
-            console.log(chalk_1.default.green(`Installing plugin: ${pluginName}...`));
-            switch (pluginName) {
-                case 'prisma':
-                    await (0, utils_1.setupPrisma)(currentDirectory);
-                    break;
-                case 'socket.io':
-                    await (0, utils_1.setupSockets)(currentDirectory);
-                    break;
-                case 'cron':
-                    await (0, utils_1.setupCron)(currentDirectory);
-                    break;
-                case 'events':
-                    await (0, utils_1.setupEvents)(currentDirectory);
-                    break;
-                case 's3':
-                    await (0, utils_1.setupS3)(currentDirectory);
-                    break;
-                default:
-                    console.log(chalk_1.default.red(`No setup logic defined for plugin: ${pluginName}`));
-                    return;
-            }
-            console.log(chalk_1.default.green(`Plugin ${pluginName} successfully installed.`));
-        }
-        else {
-            console.log(chalk_1.default.red(`Plugin ${pluginName} is not available.`));
-        }
+    if (pluginName && !config_1.AvailablePlugins.includes(pluginName)) {
+        return console.log(chalk_1.default.red(`Plugin ${pluginName} is not available.`));
     }
-    else {
+    if (!pluginName) {
         const answer = await inquirer_1.default.prompt([
             {
                 type: 'list',
@@ -82,45 +58,46 @@ const addPlugin = async (pluginName) => {
                 choices: config_1.AvailablePlugins,
             },
         ]);
-        const selectedPlugin = answer.selectedPlugin;
-        console.log(chalk_1.default.green(`Installing plugin: ${selectedPlugin}...`));
-        switch (selectedPlugin) {
+        selectedPluginName = answer.selectedPlugin;
+    }
+    const packageName = (0, config_1.getPackageName)(selectedPluginName);
+    const isInstalled = isPackageInstalled(currentDirectory, packageName);
+    if (isInstalled) {
+        return console.log(chalk_1.default.red(`Plugin ${packageName} already installed!`));
+    }
+    await addPluginToApp(appFilePath, selectedPluginName, packageName, currentDirectory);
+    try {
+        switch (selectedPluginName) {
             case 'prisma':
-                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-prisma', currentDirectory))
-                    await (0, utils_1.setupPrisma)(currentDirectory);
-                else
-                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
+                await (0, utils_1.setupPrisma)(currentDirectory);
                 break;
             case 'socket.io':
-                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-io', currentDirectory))
-                    await (0, utils_1.setupSockets)(currentDirectory);
-                else
-                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
+                await (0, utils_1.setupSockets)(currentDirectory);
                 break;
             case 'cron':
-                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-cron', currentDirectory))
-                    await (0, utils_1.setupCron)(currentDirectory);
-                else
-                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
+                await (0, utils_1.setupCron)(currentDirectory);
                 break;
             case 'events':
-                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-events', currentDirectory))
-                    await (0, utils_1.setupEvents)(currentDirectory);
-                else
-                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
+                await (0, utils_1.setupEvents)(currentDirectory);
                 break;
             case 's3':
-                if (await addPluginToApp(appFilePath, selectedPlugin, 'tsdiapi-s3', currentDirectory))
-                    await (0, utils_1.setupS3)(currentDirectory);
-                else
-                    return console.log(chalk_1.default.red(`Plugin: ${selectedPlugin} already added!`));
+                await (0, utils_1.setupS3)(currentDirectory);
+                break;
+            case 'jwt-auth':
+                await (0, utils_1.setupJWTAuth)(currentDirectory);
+                break;
+            case 'inforu':
+                await (0, utils_1.setupInforu)(currentDirectory);
                 break;
             default:
-                console.log(chalk_1.default.red(`No setup logic defined for plugin: ${selectedPlugin}`));
+                console.log(chalk_1.default.red(`No setup logic defined for plugin: ${selectedPluginName}`));
                 return;
         }
-        console.log(chalk_1.default.green(`Plugin ${selectedPlugin} successfully installed.`));
     }
+    catch (error) {
+        console.error(`Error adding plugin ${selectedPluginName}: ${error.message}`);
+    }
+    console.log(chalk_1.default.green(`Plugin ${selectedPluginName} successfully installed.`));
 };
 exports.addPlugin = addPlugin;
 async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
@@ -206,6 +183,26 @@ async function findTSDIAPIServerProject() {
     catch (error) {
         console.error('Error while searching for TSDIAPI-Server project:', error.message);
         return null;
+    }
+}
+function isPackageInstalled(projectPath, packageName) {
+    try {
+        const packageJsonPath = path_1.default.resolve(projectPath, 'package.json');
+        if (!fs_1.default.existsSync(packageJsonPath)) {
+            console.error(`package.json not found in the directory: ${projectPath}`);
+            return false;
+        }
+        const packageJson = JSON.parse(fs_1.default.readFileSync(packageJsonPath, 'utf8'));
+        const dependencies = packageJson.dependencies || {};
+        const devDependencies = packageJson.devDependencies || {};
+        const peerDependencies = packageJson.peerDependencies || {};
+        return Boolean(dependencies[packageName] ||
+            devDependencies[packageName] ||
+            peerDependencies[packageName]);
+    }
+    catch (error) {
+        console.error(`Error checking package.json: ${error.message}`);
+        return false;
     }
 }
 //# sourceMappingURL=addPlugin.js.map

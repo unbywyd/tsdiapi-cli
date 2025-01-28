@@ -4,6 +4,10 @@ export type CliOptions = {
     installPrisma: boolean;
     installSocket: boolean;
     installCron: boolean;
+    installInforu: boolean;
+    installEvents: boolean;
+    installS3: boolean;
+    installJwt: boolean;
     port?: number;
     host?: string;
 };

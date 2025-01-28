@@ -1,8 +1,9 @@
+import { RegisteredPlugins, IsDev, PluginName, getPackageVersion, getPackageName } from './../config';
 import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEvents, setupPrisma, setupS3, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { CurrentVersion, DefaultHost, DefaultPort } from "../config";
 
 
@@ -74,6 +75,18 @@ export async function initProject() {
                 name: "installS3",
                 message: "You need s3?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "installJwt",
+                message: "You need jwt auth?",
+                default: false
+            },
+            {
+                type: "confirm",
+                name: "installInforu",
+                message: "You need inforu for sms sending?",
+                default: false
             }
         ]);
 
@@ -125,9 +138,17 @@ export async function initProject() {
         if (answers.installS3) {
             await setupS3(projectDir);
         }
-        
+
         if (answers.installEvents) {
             await setupEvents(projectDir);
+        }
+
+        if (answers.installJwt) {
+            await setupJWTAuth(projectDir);
+        }
+
+        if (answers.installInforu) {
+            await setupInforu(projectDir);
         }
 
     } catch (error) {
@@ -141,9 +162,57 @@ export type CliOptions = {
     installPrisma: boolean;
     installSocket: boolean;
     installCron: boolean;
+    installInforu: boolean;
+    installEvents: boolean;
+    installS3: boolean;
+    installJwt: boolean;
     port?: number;
     host?: string;
 };
+
+type Depenpendency = {
+    name: string;
+    version: string;
+};
+
+type PreparePluginsAndDependencies = {
+    plugins: Array<PluginName>;
+    dependencies: Array<Depenpendency>;
+}
+
+function preparePluginsAndDependencies(options: CliOptions): PreparePluginsAndDependencies {
+    const plugins: Array<PluginName> = [];
+    const dependencies: Array<Depenpendency> = [];
+
+    const getDependency = (name: PluginName) => {
+        return {
+            name: getPackageName(name),
+            version: getPackageVersion(name)
+        };
+    }
+
+    const optionsByPlugins: Record<PluginName, boolean> = {
+        "prisma": options.installPrisma,
+        "socket.io": options.installSocket,
+        "cron": options.installCron,
+        "events": options.installEvents,
+        "s3": options.installS3,
+        "jwt-auth": options.installJwt,
+        "inforu": options.installInforu
+    }
+
+    for (const [plugin, install] of Object.entries(optionsByPlugins) as Array<[PluginName, boolean]>) {
+        if (install) {
+            plugins.push(plugin as PluginName);
+            dependencies.push(getDependency(plugin));
+        }
+    }
+
+    return {
+        plugins,
+        dependencies
+    }
+}
 
 async function populateProjectFiles(projectDir: string, options: CliOptions) {
     console.log(chalk.blue("Copying files to the project directory..."));
@@ -155,41 +224,13 @@ async function populateProjectFiles(projectDir: string, options: CliOptions) {
 
 
         // cron, prisma, io
-        const plugins = [];
-        const scripts: Array<{
-            name: string;
-            value: string;
-        }> = [];
-        const dependencies = [];
+        const { plugins, dependencies } = preparePluginsAndDependencies(options);
 
-        // ^${CurrentVersion}
-        if (options.installPrisma) {
-            plugins.push("prisma");
-            dependencies.push({
-                name: "tsdiapi-prisma",
-                version: "github:unbywyd/tsdiapi-prisma#master"
-            });
-        }
-        if (options.installSocket) {
-            plugins.push("io");
-            dependencies.push({
-                name: "tsdiapi-io",
-                version: "github:unbywyd/tsdiapi-io#master"
-            });
-        }
-        if (options.installCron) {
-            plugins.push("cron");
-            dependencies.push({
-                name: "tsdiapi-cron",
-                version: "github:unbywyd/tsdiapi-cron#master"
-            });
-        }
 
         const payload = {
             ...options,
             plugins: plugins?.length ? plugins : false,
             dependencies: dependencies?.length ? dependencies : false,
-            scripts: scripts?.length ? scripts : false,
             host: DefaultHost,
             port: options.port || DefaultPort
         };

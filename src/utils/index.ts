@@ -8,6 +8,7 @@ import inquirer from 'inquirer'
 import { DefaultHost, DefaultPort } from '../config'
 import { CliOptions } from '@src/commands/initProject'
 import { Project, SourceFile, ClassDeclaration } from 'ts-morph'
+import crypto from 'crypto'
 const execAsync = util.promisify(exec)
 
 /**
@@ -410,6 +411,134 @@ export type AppParam = {
   type: 'string' | 'number' | 'boolean'
 }
 
+export async function setupJWTAuth(projectDir: string) {
+  console.log(chalk.blue('Configuring JWT settings...'));
+
+  try {
+    const { setupJWT } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'setupJWT',
+        message: 'Do you want to configure JWT settings?',
+        default: true,
+      },
+    ]);
+    if (!setupJWT) {
+      return;
+    }
+
+    const randomSecret = crypto.randomBytes(32).toString('hex');
+    const envName = "JWT_SECRET_KEY";
+    updateAllEnvFilesWithVariable(projectDir, envName, randomSecret);
+
+    const days30 = 30 * 24 * 60 * 60;
+    const envName2 = "JWT_EXPIRATION_TIME";
+    updateAllEnvFilesWithVariable(projectDir, envName2, days30.toString());
+
+  } catch (error) {
+    console.error(chalk.red('An error occurred while setting up JWT:'), error.message);
+  }
+
+  try {
+    await addJWTAppParams(projectDir);
+  } catch (error) {
+    console.error(
+      chalk.red(
+        'Something went wrong while configuring app.config.ts. Please configure it manually.'
+      )
+    );
+  }
+}
+
+export async function setupInforu(projectDir: string) {
+  console.log(chalk.blue('Configuring Inforu settings...'));
+  try {
+    await addInforuAppParams(projectDir);
+  } catch (error) {
+    console.error(
+      chalk.red(
+        'Something went wrong while configuring app.config.ts. Please configure it manually.'
+      )
+    );
+  }
+  await configInforu(projectDir);
+}
+
+export async function configInforu(projectDir: string) {
+  try {
+    const { setupInforu } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'setupInforu',
+        message: 'Do you want to configure Inforu settings?',
+        default: true,
+      },
+    ]);
+
+    if (!setupInforu) {
+      // manual setup notification
+      console.log(
+        chalk.yellow(
+          `You can configure Inforu settings manually by adding the following variables to your .env file: INFORU_USERNAME, INFORU_PASSWORD, INFORU_SENDER_NAME`
+        )
+      );
+      return;
+    }
+    const inforuConfig = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'INFORU_USERNAME',
+        message: 'Enter your Inforu username:',
+        validate: (input) => (input ? true : 'Inforu username cannot be empty.'),
+      },
+      {
+        type: 'password',
+        name: 'INFORU_PASSWORD',
+        message: 'Enter your Inforu password:',
+        mask: '*',
+        validate: (input) => (input ? true : 'Inforu password cannot be empty.'),
+      },
+      {
+        type: 'input',
+        name: 'INFORU_SENDER_NAME',
+        message: 'Enter your Inforu sender name:',
+        validate: (input) => (input ? true : 'Inforu sender name cannot be empty.'),
+      },
+    ]);
+
+    for (const key in inforuConfig) {
+      updateAllEnvFilesWithVariable(projectDir, key, (inforuConfig as any)[key]);
+    }
+    console.log(chalk.green('.env file has been successfully updated with Inforu settings.'));
+  } catch (e) {
+    console.error(chalk.red('An error occurred while setting up Inforu:'), e.message);
+  }
+}
+
+export async function addInforuAppParams(projectDir: string) {
+  const paramsConfig = {
+    INFORU_USERNAME: 'string',
+    INFORU_PASSWORD: 'string',
+    INFORU_SENDER_NAME: 'string',
+  }
+  const params: AppParam[] = []
+  for (const key in paramsConfig) {
+    params.push({ key, type: (paramsConfig as any)[key] as 'string' | 'number' | 'boolean' })
+  }
+}
+
+export async function addJWTAppParams(projectDir: string) {
+  const paramsConfig = {
+    JWT_SECRET_KEY: 'string',
+    JWT_EXPIRATION_TIME: 'number',
+  }
+  const params: AppParam[] = []
+  for (const key in paramsConfig) {
+    params.push({ key, type: (paramsConfig as any)[key] as 'string' | 'number' | 'boolean' })
+  }
+  await addAppConfigParams(projectDir, params)
+}
+
 export async function setupS3(projectDir: string) {
   try {
     console.log(chalk.blue('Configuring AWS settings...'))
@@ -590,3 +719,4 @@ function ensureImports(
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
+
