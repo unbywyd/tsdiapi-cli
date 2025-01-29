@@ -1,13 +1,13 @@
 import inquirer from 'inquirer'
 import chalk from 'chalk'
-import { setupCron, setupPrisma, setupSockets, setupEvents, setupS3, setupJWTAuth, setupInforu } from '../utils'
-import { RegisteredPlugins, PluginName, AvailablePlugins, getPackageName } from '../config'
+import { setupCron, setupPrisma, setupSockets, setupEvents, setupS3, setupJWTAuth, setupInforu, setupEmail, buildHandlebarsTemplate } from '../utils'
+import { RegisteredPlugins, PluginName, AvailablePlugins, getPackageName, IsDev } from '../config'
 import { Project, SyntaxKind } from 'ts-morph'
 import fs from 'fs'
-import { findUp } from 'find-up'
 import path from 'path'
 import util from 'util'
 import { exec } from 'child_process'
+import { findNearestPackageJson } from './cwd'
 const execAsync = util.promisify(exec)
 
 /**
@@ -33,72 +33,80 @@ const execAsync = util.promisify(exec)
  * @returns {Promise<void>} - A promise that resolves after the plugin is installed or an error message is displayed.
  */
 export const addPlugin = async (pluginName?: string) => {
-  const currentDirectory = await findTSDIAPIServerProject()
-
-  if (!currentDirectory) {
-    return console.log(
-      chalk.red(`Not found package.json or maybe you are not using tsdiapi-server!`)
-    )
-  }
-
-  let selectedPluginName = pluginName;
-  const appFilePath = path.resolve(`${currentDirectory}/src`, 'main.ts');
-
-
-  if (pluginName && !AvailablePlugins.includes(pluginName as PluginName)) {
-    return console.log(chalk.red(`Plugin ${pluginName} is not available.`))
-  }
-  if (!pluginName) {
-    const answer = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'selectedPlugin',
-        message: 'Select a plugin to install:',
-        choices: AvailablePlugins,
-      },
-    ]);
-    selectedPluginName = answer.selectedPlugin
-  }
-
-  const packageName = getPackageName(selectedPluginName as PluginName);
-  const isInstalled = isPackageInstalled(currentDirectory, packageName);
-  if (isInstalled) {
-    return console.log(chalk.red(`Plugin ${packageName} already installed!`))
-  }
-
-  await addPluginToApp(appFilePath, selectedPluginName, packageName, currentDirectory);
-
   try {
-    switch (selectedPluginName) {
-      case 'prisma':
-        await setupPrisma(currentDirectory);
-        break
-      case 'socket.io':
-        await setupSockets(currentDirectory);
-        break
-      case 'cron':
-        await setupCron(currentDirectory);
-        break
-      case 'events':
-        await setupEvents(currentDirectory);
-        break
-      case 's3':
-        await setupS3(currentDirectory);
-        break
-      case 'jwt-auth':
-        await setupJWTAuth(currentDirectory);
-        break
-      case 'inforu':
-        await setupInforu(currentDirectory);
-        break
-      default:
-        console.log(chalk.red(`No setup logic defined for plugin: ${selectedPluginName}`));
-        return
+    const currentDirectory = await findTSDIAPIServerProject()
+
+    if (!currentDirectory) {
+      return console.log(
+        chalk.red(`Not found package.json or maybe you are not using tsdiapi-server!`)
+      )
     }
-  } catch (error) {
-    console.error(`Error adding plugin ${selectedPluginName}: ${error.message}`)
+
+    let selectedPluginName = pluginName;
+    const appFilePath = path.resolve(`${currentDirectory}/src`, 'main.ts');
+
+
+    if (pluginName && !AvailablePlugins.includes(pluginName as PluginName)) {
+      return console.log(chalk.red(`Plugin ${pluginName} is not available.`))
+    }
+    if (!pluginName) {
+      const answer = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'selectedPlugin',
+          message: 'Select a plugin to install:',
+          choices: AvailablePlugins,
+        },
+      ]);
+      selectedPluginName = answer.selectedPlugin
+    }
+
+    const packageName = getPackageName(selectedPluginName as PluginName);
+    const isInstalled = isPackageInstalled(currentDirectory, packageName);
+    if (isInstalled) {
+      return console.log(chalk.red(`Plugin ${packageName} already installed!`))
+    }
+
+    await addPluginToApp(appFilePath, selectedPluginName + 'Plugin', packageName, currentDirectory);
+
+    try {
+      switch (selectedPluginName) {
+        case 'prisma':
+          await setupPrisma(currentDirectory);
+          break
+        case 'socket.io':
+          await setupSockets(currentDirectory);
+          break
+        case 'cron':
+          await setupCron(currentDirectory);
+          break
+        case 'events':
+          await setupEvents(currentDirectory);
+          break
+        case 's3':
+          await setupS3(currentDirectory);
+          break
+        case 'jwt-auth':
+          await setupJWTAuth(currentDirectory);
+          break
+        case 'inforu':
+          await setupInforu(currentDirectory);
+          break
+        case 'email':
+          await setupEmail(currentDirectory);
+          break
+        default:
+          console.log(chalk.red(`No setup logic defined for plugin: ${selectedPluginName}`));
+          return
+      }
+    } catch (error) {
+      console.error(`Error adding plugin ${selectedPluginName}: ${error.message}`)
+    }
+    console.log(chalk.green(`Plugin ${selectedPluginName} successfully installed.`))
+  } catch (e) {
+    console.error(chalk.red("An unexpected error occurred: ", e.message));
+    process.exit(1);
   }
-  console.log(chalk.green(`Plugin ${selectedPluginName} successfully installed.`))
 }
 
 async function addPluginToApp(
@@ -140,13 +148,13 @@ async function addPluginToApp(
         if (pluginsArray) {
           const pluginAlreadyAdded = pluginsArray.getText().includes(pluginName)
           if (pluginAlreadyAdded) {
-            console.log(`Plugin "${pluginName}" is already added to plugins.`)
+            console.log(chalk.yellow(`Plugin ${pluginName} already added to the app.`))
             return false
           }
 
           pluginsArray.addElement(`${pluginName}()`)
         } else {
-          console.log('The "plugins" property exists but is not an array.')
+          console.log(chalk.red('Error adding plugin to app.'))
         }
       } else {
         argumentObject.addPropertyAssignment({
@@ -157,9 +165,13 @@ async function addPluginToApp(
     } else {
       createAppExpression?.addArgument(`{ plugins: [${pluginName}()] }`)
     }
-    await execAsync(`npm install ${pluginName}`, {
-      cwd: projectDir,
-    })
+    if (!IsDev) {
+      await execAsync(`npm install ${pluginName}`, {
+        cwd: projectDir,
+      })
+    } else {
+      console.log(chalk.yellow(`Skipping npm install in dev mode.`))
+    }
   } else {
     console.error('createApp function not found.')
     return false
@@ -176,7 +188,7 @@ async function addPluginToApp(
  */
 export async function findTSDIAPIServerProject(): Promise<string | null> {
   try {
-    const packageJsonPath = await findUp('package.json')
+    const packageJsonPath = findNearestPackageJson();
     if (!packageJsonPath) {
       return null
     }
@@ -190,9 +202,7 @@ export async function findTSDIAPIServerProject(): Promise<string | null> {
     if (dependencies && dependencies['tsdiapi-server']) {
       return path.dirname(packageJsonPath)
     }
-    const parentDir = path.dirname(path.dirname(packageJsonPath))
-    process.chdir(parentDir)
-    return await findTSDIAPIServerProject()
+    return null;
   } catch (error) {
     console.error('Error while searching for TSDIAPI-Server project:', error.message)
     return null

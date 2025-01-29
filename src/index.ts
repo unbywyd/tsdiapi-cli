@@ -3,6 +3,7 @@ import { program } from 'commander'
 import { initProject } from './commands/initProject'
 import { CurrentVersion } from './config'
 import { addPlugin } from './utils/addPlugin'
+import { buildHandlebarsTemplate } from './utils'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion)
 
@@ -15,3 +16,4 @@ addCommand
   .action(addPlugin)
 
 program.parse(process.argv)
+

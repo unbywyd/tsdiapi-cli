@@ -28,7 +28,6 @@
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "cpy-cli": "^5.0.0",
-    "find-up": "^7.0.0",
     "fs-extra": "^11.3.0",
     "glob": "^11.0.1",
     "handlebars": "^4.7.8",

@@ -30,6 +30,9 @@ export type AppParam = {
     type: 'string' | 'number' | 'boolean';
 };
 export declare function setupJWTAuth(projectDir: string): Promise<void>;
+export declare function setupEmail(projectDir: string): Promise<void>;
+export declare function addEmailAppParams(projectDir: string): Promise<void>;
+export declare function configEmail(projectDir: string): Promise<void>;
 export declare function setupInforu(projectDir: string): Promise<void>;
 export declare function configInforu(projectDir: string): Promise<void>;
 export declare function addInforuAppParams(projectDir: string): Promise<void>;

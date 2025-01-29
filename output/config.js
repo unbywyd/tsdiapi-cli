@@ -11,7 +11,8 @@ exports.RegisteredPlugins = {
     'events': 'tsdiapi-events',
     's3': 'tsdiapi-s3',
     'jwt-auth': 'tsdiapi-jwt-auth',
-    'inforu': 'tsdiapi-inforu'
+    'inforu': 'tsdiapi-inforu',
+    "email": "tsdiapi-email"
 };
 exports.AvailablePlugins = Object.keys(exports.RegisteredPlugins);
 const getPackageName = (plugin) => {

@@ -9,6 +9,7 @@ export declare const RegisteredPlugins: {
     s3: string;
     'jwt-auth': string;
     inforu: string;
+    email: string;
 };
 export declare const AvailablePlugins: Array<PluginName>;
 export declare const getPackageName: (plugin: PluginName) => string;

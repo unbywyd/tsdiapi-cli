@@ -70,7 +70,12 @@ export async function runNpmInstall(projectDir: string) {
 
 export async function setupPrisma(projectDir: string) {
   try {
-    console.log(chalk.blue('Installing Prisma and Prisma Client...'))
+    console.log(chalk.blue('Installing Prisma and Prisma Client...'));
+    const prismaSchemaPath = path.join(projectDir, 'prisma', 'schema.prisma')
+    if (fs.existsSync(prismaSchemaPath)) {
+      console.log(chalk.yellow('Prisma schema already exists. Skipping Prisma setup.'));
+      return;
+    }
 
     // Устанавливаем prisma и @prisma/client
     await execAsync(`npm install prisma @prisma/client prisma-class-dto-generator`, {
@@ -134,7 +139,7 @@ export async function setupPrisma(projectDir: string) {
         await updateEnvVariable(envPath, 'DATABASE_URL', dbUrl)
       }
 
-      const prismaSchemaPath = path.join(projectDir, 'prisma', 'schema.prisma')
+
       const generatorConfigPath = path.join(projectDir, 'prisma', 'generator-config.json')
       if (fs.existsSync(prismaSchemaPath)) {
         const schemaContent = fs.readFileSync(prismaSchemaPath, 'utf8')
@@ -258,6 +263,7 @@ async function configureSQLServer() {
  * @param value - The value to set for the key.
  */
 export function updateEnvVariable(envPath: string, key: string, value: string) {
+  const envFilename = path.basename(envPath);
   try {
     let envContent = ''
 
@@ -265,7 +271,7 @@ export function updateEnvVariable(envPath: string, key: string, value: string) {
     if (fs.existsSync(envPath)) {
       envContent = fs.readFileSync(envPath, 'utf8')
     } else {
-      console.log(chalk.yellow(`.env file not found. Creating a new one at ${envPath}.`))
+      console.log(chalk.yellow(`${envFilename} file not found. Creating a new one at ${envPath}.`))
       fs.writeFileSync(envPath, '')
     }
 
@@ -289,9 +295,9 @@ export function updateEnvVariable(envPath: string, key: string, value: string) {
 
     // Write the updated content back to the .env file
     fs.writeFileSync(envPath, updatedLines.join('\n'), 'utf8')
-    console.log(chalk.green(`${key} updated in .env.`))
+    console.log(chalk.green(`${key} updated in ${envFilename}.`))
   } catch (error) {
-    console.error(chalk.red(`Failed to update ${key} in .env:`), error.message)
+    console.error(chalk.red(`Failed to update ${key} in ${envFilename}:`), error.message)
   }
 }
 
@@ -320,17 +326,21 @@ export async function setupSockets(projectDir: string, options?: CliOptions) {
 
     // Create a sample socket type definition file
     const socketFilePath = path.join(projectDir, 'src', 'sockets.types.ts')
-    const socketFileContent = buildHandlebarsTemplate('sockets/types', {})
-    fs.writeFileSync(socketFilePath, socketFileContent)
+    if (!fs.existsSync(socketFilePath)) {
+      const socketFileContent = buildHandlebarsTemplate('sockets/types', {})
+      fs.writeFileSync(socketFilePath, socketFileContent)
+    }
 
     // Create a sample feature controller
 
     const helloControllerPath = path.join(projectDir, 'src', 'api', 'features', 'hello')
-    fs.ensureDirSync(helloControllerPath)
+    const helloFilePath = path.join(helloControllerPath, 'hello.socket.ts');
+    if (!fs.existsSync(helloFilePath)) {
+      fs.ensureDirSync(helloControllerPath)
 
-    const helloFilePath = path.join(helloControllerPath, 'hello.socket.ts')
-    const helloControllerContent = buildHandlebarsTemplate('sockets/example', {})
-    fs.writeFileSync(helloFilePath, helloControllerContent)
+      const helloControllerContent = buildHandlebarsTemplate('sockets/example', {})
+      fs.writeFileSync(helloFilePath, helloControllerContent)
+    }
 
     // Display configuration information
     console.log(chalk.green('Sockets are ready to use!'))
@@ -357,11 +367,13 @@ export function setupCron(projectDir: string) {
     console.log(chalk.green('node-cron installed successfully.'))
     // Create a sample cron job
     const helloControllerPath = path.join(projectDir, 'src', 'api', 'features', 'hello')
-    fs.ensureDirSync(helloControllerPath)
+    const cronFilePath = path.join(helloControllerPath, 'hello.cron.ts');
 
-    const cronFilePath = path.join(helloControllerPath, 'hello.cron.ts')
-    const cronFileContent = buildHandlebarsTemplate('cron/example', {})
-    fs.writeFileSync(cronFilePath, cronFileContent)
+    if (!fs.existsSync(cronFilePath)) {
+      fs.ensureDirSync(helloControllerPath);
+      const cronFileContent = buildHandlebarsTemplate('cron/example', {})
+      fs.writeFileSync(cronFilePath, cronFileContent)
+    }
 
     // Display configuration information
     console.log(chalk.green('Cron jobs are ready to use!'))
@@ -383,15 +395,18 @@ export function setupEvents(projectDir: string) {
   try {
     // Create a sample event type definition file
     const eventsFilePath = path.join(projectDir, 'src', 'events.types.ts')
-    const eventsFileContent = buildHandlebarsTemplate('events/types', {})
-    fs.writeFileSync(eventsFilePath, eventsFileContent)
+    if (!fs.existsSync(eventsFilePath)) {
+      const eventsFileContent = buildHandlebarsTemplate('events/types', {})
+      fs.writeFileSync(eventsFilePath, eventsFileContent)
+    }
 
     const helloControllerPath = path.join(projectDir, 'src', 'api', 'features', 'hello')
-    fs.ensureDirSync(helloControllerPath)
-
-    const eventsExamplePath = path.join(helloControllerPath, 'hello.event.ts')
-    const eventsExampleContent = buildHandlebarsTemplate('events/example', {})
-    fs.writeFileSync(eventsExamplePath, eventsExampleContent)
+    const eventsExamplePath = path.join(helloControllerPath, 'hello.event.ts');
+    if (!fs.existsSync(eventsExamplePath)) {
+      fs.ensureDirSync(helloControllerPath);
+      const eventsExampleContent = buildHandlebarsTemplate('events/example', {})
+      fs.writeFileSync(eventsExamplePath, eventsExampleContent)
+    }
 
     console.log(chalk.green('Events are ready to use!'))
     console.log(
@@ -449,6 +464,137 @@ export async function setupJWTAuth(projectDir: string) {
     );
   }
 }
+
+export async function setupEmail(projectDir: string) {
+  console.log(chalk.blue('Configuring Email settings...'));
+  const templatePath = path.join(__dirname, '../', 'files/email/email.tpl');
+  const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+  const templateFilePath = path.join(projectDir, 'src', 'templates', 'email.hbs');
+  if (!fs.existsSync(templateFilePath)) {
+    fs.ensureDirSync(path.dirname(templateFilePath));
+    fs.writeFileSync(templateFilePath, templateContent);
+  }
+
+  try {
+    await addEmailAppParams(projectDir);
+  } catch (error) {
+    console.error(
+      chalk.red(
+        'Something went wrong while configuring app.config.ts. Please configure it manually.'
+      )
+    );
+  }
+  await configEmail(projectDir);
+}
+export async function addEmailAppParams(projectDir: string) {
+  const paramsConfig = {
+    SENDGRID_API_KEY: 'string',
+    EMAIL_PROVIDER: 'string',
+    SENDER_EMAIL: 'string',
+    SMTP_USER: 'string',
+    SMTP_PORT: 'number',
+    SMTP_HOST: 'string',
+    SMTP_PASS: 'string',
+  }
+  const params: AppParam[] = []
+  for (const key in paramsConfig) {
+    params.push({ key, type: (paramsConfig as any)[key] as 'string' | 'number' | 'boolean' })
+  }
+  await addAppConfigParams(projectDir, params)
+}
+
+export async function configEmail(projectDir: string) {
+  // provider sendgrid or nodemailer
+
+  try {
+    const { setupEmail } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'setupEmail',
+        message: 'Do you want to configure Email settings?',
+        default: true,
+      },
+    ]);
+    if (!setupEmail) {
+      return;
+    }
+
+    const { EMAIL_PROVIDER } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'EMAIL_PROVIDER',
+        message: 'Select email provider:',
+        choices: ['sendgrid', 'nodemailer'],
+      },
+    ]);
+    updateAllEnvFilesWithVariable(projectDir, 'EMAIL_PROVIDER', EMAIL_PROVIDER);
+
+    if (EMAIL_PROVIDER === 'sendgrid') {
+      const { SENDGRID_API_KEY, SENDER_EMAIL } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'SENDGRID_API_KEY',
+          message: 'Enter your SendGrid API key:',
+          validate: (input) => (input ? true : 'SendGrid API key cannot be empty.'),
+        },
+        {
+          type: 'input',
+          name: 'SENDER_EMAIL',
+          message: 'Enter your sender email:',
+          validate: (input) => (input ? true : 'Sender email cannot be empty.'),
+        },
+      ]);
+
+      updateAllEnvFilesWithVariable(projectDir, 'SENDGRID_API_KEY', SENDGRID_API_KEY);
+      updateAllEnvFilesWithVariable(projectDir, 'SENDER_EMAIL', SENDER_EMAIL);
+    } else {
+      const { SMTP_USER, SMTP_PORT, SMTP_HOST, SENDER_EMAIL, SMTP_PASS } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'SMTP_USER',
+          message: 'Enter your SMTP user:',
+          validate: (input) => (input ? true : 'SMTP user cannot be empty.'),
+        },
+        {
+          type: 'password',
+          name: 'SMTP_PASS',
+          message: 'Enter your SMTP password:',
+          mask: '*',
+          validate: (input) => (input ? true : 'SMTP password cannot be empty.'),
+        },
+        {
+          type: 'number',
+          name: 'SMTP_PORT',
+          message: 'Enter your SMTP port:',
+          validate: (input) => (input ? true : 'SMTP port cannot be empty.'),
+        },
+        {
+          type: 'input',
+          name: 'SMTP_HOST',
+          message: 'Enter your SMTP host:',
+          validate: (input) => (input ? true : 'SMTP host cannot be empty.'),
+        },
+        {
+          type: 'input',
+          name: 'SENDER_EMAIL',
+          message: 'Enter your sender email:',
+          validate: (input) => (input ? true : 'Sender email cannot be empty.'),
+        },
+      ]);
+
+      updateAllEnvFilesWithVariable(projectDir, 'SMTP_PASS', SMTP_PASS.toString());
+      updateAllEnvFilesWithVariable(projectDir, 'SMTP_USER', SMTP_USER.toString());
+      updateAllEnvFilesWithVariable(projectDir, 'SMTP_PORT', SMTP_PORT.toString());
+      updateAllEnvFilesWithVariable(projectDir, 'SMTP_HOST', SMTP_HOST);
+      updateAllEnvFilesWithVariable(projectDir, 'SENDER_EMAIL', SENDER_EMAIL);
+    }
+  } catch (error) {
+    console.error(chalk.red('An error occurred while setting up Email:'), error.message);
+  }
+}
+
+
 
 export async function setupInforu(projectDir: string) {
   console.log(chalk.blue('Configuring Inforu settings...'));

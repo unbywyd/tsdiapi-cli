@@ -9,7 +9,8 @@ export const RegisteredPlugins = {
     'events': 'tsdiapi-events',
     's3': 'tsdiapi-s3',
     'jwt-auth': 'tsdiapi-jwt-auth',
-    'inforu': 'tsdiapi-inforu'
+    'inforu': 'tsdiapi-inforu',
+    "email": "tsdiapi-email"
 }
 
 export const AvailablePlugins: Array<PluginName> = Object.keys(RegisteredPlugins) as Array<PluginName>;
@@ -17,6 +18,7 @@ export const AvailablePlugins: Array<PluginName> = Object.keys(RegisteredPlugins
 export const getPackageName = (plugin: PluginName) => {
     return RegisteredPlugins[plugin];
 }
+
 
 export const getPackageVersion = (name: PluginName) => {
     return IsDev ? "github:unbywyd/" + getPackageName(name) + "#master" : "^" + CurrentVersion;

@@ -3,7 +3,7 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { CurrentVersion, DefaultHost, DefaultPort } from "../config";
 
 
@@ -87,6 +87,12 @@ export async function initProject() {
                 name: "installInforu",
                 message: "You need inforu for sms sending?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "installEmail",
+                message: "You need email sending?",
+                default: false
             }
         ]);
 
@@ -151,6 +157,10 @@ export async function initProject() {
             await setupInforu(projectDir);
         }
 
+        if (answers.installEmail) {
+            await setupEmail(projectDir);
+        }
+
     } catch (error) {
         console.error(chalk.red("An unexpected error occurred during project initialization."), error.message);
         process.exit(1);
@@ -166,6 +176,7 @@ export type CliOptions = {
     installEvents: boolean;
     installS3: boolean;
     installJwt: boolean;
+    installEmail: boolean;
     port?: number;
     host?: string;
 };
@@ -196,6 +207,7 @@ function preparePluginsAndDependencies(options: CliOptions): PreparePluginsAndDe
         "socket.io": options.installSocket,
         "cron": options.installCron,
         "events": options.installEvents,
+        "email": options.installEmail,
         "s3": options.installS3,
         "jwt-auth": options.installJwt,
         "inforu": options.installInforu

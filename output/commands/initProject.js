@@ -88,6 +88,12 @@ async function initProject() {
                 name: "installInforu",
                 message: "You need inforu for sms sending?",
                 default: false
+            },
+            {
+                type: "confirm",
+                name: "installEmail",
+                message: "You need email sending?",
+                default: false
             }
         ]);
         // check npm name is valid
@@ -137,6 +143,9 @@ async function initProject() {
         if (answers.installInforu) {
             await (0, utils_1.setupInforu)(projectDir);
         }
+        if (answers.installEmail) {
+            await (0, utils_1.setupEmail)(projectDir);
+        }
     }
     catch (error) {
         console.error(chalk_1.default.red("An unexpected error occurred during project initialization."), error.message);
@@ -157,6 +166,7 @@ function preparePluginsAndDependencies(options) {
         "socket.io": options.installSocket,
         "cron": options.installCron,
         "events": options.installEvents,
+        "email": options.installEmail,
         "s3": options.installS3,
         "jwt-auth": options.installJwt,
         "inforu": options.installInforu

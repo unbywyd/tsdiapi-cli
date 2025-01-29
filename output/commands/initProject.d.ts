@@ -8,6 +8,7 @@ export type CliOptions = {
     installEvents: boolean;
     installS3: boolean;
     installJwt: boolean;
+    installEmail: boolean;
     port?: number;
     host?: string;
 };
