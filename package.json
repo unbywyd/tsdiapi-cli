@@ -4,6 +4,10 @@
   "version": "0.0.1-alpha.1",
   "main": "output/index.js",
   "types": "output/index.d.ts",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "tsdiapi": "./output/index.js"
   },
