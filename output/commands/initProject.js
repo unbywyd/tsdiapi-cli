@@ -11,7 +11,7 @@ const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
 const config_2 = require("../config");
-const format_1 = require("@src/utils/format");
+const format_1 = require("../utils/format");
 async function initProject(projectname, options) {
     try {
         // Welcome message

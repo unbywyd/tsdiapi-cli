@@ -6,7 +6,7 @@ import fs from "fs-extra";
 import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
-import { nameToImportName } from '@src/utils/format';
+import { nameToImportName } from '../utils/format';
 
 
 export async function initProject(projectname?: string,
