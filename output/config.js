@@ -5,14 +5,14 @@ exports.CurrentVersion = '1.0.0';
 exports.DefaultPort = 3100;
 exports.DefaultHost = 'localhost';
 exports.RegisteredPlugins = {
-    'prisma': 'tsdiapi-prisma',
-    'socket.io': 'tsdiapi-io',
-    'cron': 'tsdiapi-cron',
-    'events': 'tsdiapi-events',
-    's3': 'tsdiapi-s3',
-    'jwt-auth': 'tsdiapi-jwt-auth',
-    'inforu': 'tsdiapi-inforu',
-    "email": "tsdiapi-email"
+    'prisma': '@tsdiapi/prisma',
+    'socket.io': '@tsdiapi/socket.io',
+    'cron': '@tsdiapi/cron',
+    'events': '@tsdiapi/events',
+    's3': '@tsdiapi/s3',
+    'jwt-auth': '@tsdiapi/jwt-auth',
+    'inforu': '@tsdiapi/inforu',
+    "email": "@tsdiapi/email"
 };
 exports.AvailablePlugins = Object.keys(exports.RegisteredPlugins);
 const getPackageName = (plugin) => {
@@ -23,5 +23,5 @@ const getPackageVersion = (name) => {
     return exports.IsDev ? "github:unbywyd/" + (0, exports.getPackageName)(name) + "#master" : "^" + exports.CurrentVersion;
 };
 exports.getPackageVersion = getPackageVersion;
-exports.IsDev = true;
+exports.IsDev = false;
 //# sourceMappingURL=config.js.map

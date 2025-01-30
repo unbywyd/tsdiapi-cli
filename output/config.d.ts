@@ -15,5 +15,5 @@ export declare const AvailablePlugins: Array<PluginName>;
 export declare const getPackageName: (plugin: PluginName) => string;
 export declare const getPackageVersion: (name: PluginName) => string;
 export type PluginName = keyof typeof RegisteredPlugins;
-export declare const IsDev = true;
+export declare const IsDev = false;
 //# sourceMappingURL=config.d.ts.map
