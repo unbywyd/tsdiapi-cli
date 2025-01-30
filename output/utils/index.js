@@ -257,7 +257,7 @@ async function configureSQLServer() {
  * @param key - The key to update or add (e.g., "DATABASE_URL").
  * @param value - The value to set for the key.
  */
-function updateEnvVariable(envPath, key, value) {
+function updateEnvVariable(envPath, key, value, onlyIfEmpty = false) {
     const envFilename = path_1.default.basename(envPath);
     try {
         let envContent = '';
@@ -277,12 +277,17 @@ function updateEnvVariable(envPath, key, value) {
             const [currentKey, ...rest] = line.split('=');
             if (currentKey.trim() === key) {
                 found = true;
-                return `${key}="${value}"`; // Replace the value
+                // If `onlyIfEmpty` is true, do not overwrite existing non-empty values
+                if (onlyIfEmpty && rest.join('=').trim() !== '') {
+                    console.log(chalk_1.default.yellow(`${key} already exists in ${envFilename} and will not be updated.`));
+                    return line;
+                }
+                return `${key}="${value}"`; // Replace or update the value
             }
             return line; // Keep the line as is
         });
         if (!found) {
-            updatedLines.push(`${key}="${value}"`); // Add the new key-value pair
+            updatedLines.push(`${key}="${value}"`); // Add the new key-value pair if not found
         }
         // Write the updated content back to the .env file
         fs_extra_1.default.writeFileSync(envPath, updatedLines.join('\n'), 'utf8');
@@ -292,18 +297,18 @@ function updateEnvVariable(envPath, key, value) {
         console.error(chalk_1.default.red(`Failed to update ${key} in ${envFilename}:`), error.message);
     }
 }
-function updateAllEnvFilesWithVariable(projectDir, key, value) {
+function updateAllEnvFilesWithVariable(projectDir, key, value, onlyIfEmpty = false) {
     const envPath = path_1.default.join(projectDir, '.env');
     if (fs_extra_1.default.existsSync(envPath)) {
-        updateEnvVariable(envPath, key, value);
+        updateEnvVariable(envPath, key, value, onlyIfEmpty);
     }
     const envExamplePath = path_1.default.join(projectDir, '.env.development');
     if (fs_extra_1.default.existsSync(envExamplePath)) {
-        updateEnvVariable(envExamplePath, key, value);
+        updateEnvVariable(envExamplePath, key, value, onlyIfEmpty);
     }
     const envProductionPath = path_1.default.join(projectDir, '.env.production');
     if (fs_extra_1.default.existsSync(envProductionPath)) {
-        updateEnvVariable(envProductionPath, key, value);
+        updateEnvVariable(envProductionPath, key, value, onlyIfEmpty);
     }
 }
 async function setupSockets(projectDir, options) {
@@ -398,6 +403,23 @@ anywhere inside the "api" directory of your project. A sample event handler is a
 async function setupJWTAuth(projectDir) {
     console.log(chalk_1.default.blue('Configuring JWT settings...'));
     try {
+        const randomSecret = crypto_1.default.randomBytes(32).toString('hex');
+        const envName = "JWT_SECRET_KEY";
+        updateAllEnvFilesWithVariable(projectDir, envName, randomSecret, true);
+        const days30 = 30 * 24 * 60 * 60;
+        const envName2 = "JWT_EXPIRATION_TIME";
+        updateAllEnvFilesWithVariable(projectDir, envName2, days30.toString(), true);
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('An error occurred while setting up JWT:'), error.message);
+    }
+    try {
+        await addJWTAppParams(projectDir);
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('Something went wrong while configuring app.config.ts. Please configure it manually.'));
+    }
+    try {
         const { setupJWT } = await inquirer_1.default.prompt([
             {
                 type: 'confirm',
@@ -409,27 +431,36 @@ async function setupJWTAuth(projectDir) {
         if (!setupJWT) {
             return;
         }
-        const randomSecret = crypto_1.default.randomBytes(32).toString('hex');
-        const envName = "JWT_SECRET_KEY";
-        updateAllEnvFilesWithVariable(projectDir, envName, randomSecret);
-        const days30 = 30 * 24 * 60 * 60;
-        const envName2 = "JWT_EXPIRATION_TIME";
-        updateAllEnvFilesWithVariable(projectDir, envName2, days30.toString());
+        const { JWT_SECRET_KEY, JWT_EXPIRATION_TIME_MINUTES } = await inquirer_1.default.prompt([
+            {
+                type: 'input',
+                name: 'JWT_SECRET_KEY',
+                message: 'Enter your JWT secret key:',
+                validate: (input) => (input ? true : 'JWT secret key cannot be empty.'),
+            },
+            {
+                type: 'number',
+                name: 'JWT_EXPIRATION_TIME_MINUTES',
+                message: 'Enter your JWT expiration time in minutes:',
+                validate: (input) => (input ? true : 'JWT expiration time cannot be empty.'),
+            },
+        ]);
+        const JWT_EXPIRATION_TIME = JWT_EXPIRATION_TIME_MINUTES * 60;
+        updateAllEnvFilesWithVariable(projectDir, 'JWT_SECRET_KEY', JWT_SECRET_KEY);
+        updateAllEnvFilesWithVariable(projectDir, 'JWT_EXPIRATION_TIME', JWT_EXPIRATION_TIME.toString());
     }
     catch (error) {
         console.error(chalk_1.default.red('An error occurred while setting up JWT:'), error.message);
-    }
-    try {
-        await addJWTAppParams(projectDir);
-    }
-    catch (error) {
-        console.error(chalk_1.default.red('Something went wrong while configuring app.config.ts. Please configure it manually.'));
     }
 }
 async function setupEmail(projectDir) {
     console.log(chalk_1.default.blue('Configuring Email settings...'));
     const templatePath = path_1.default.join(__dirname, '../', 'files/email/email.tpl');
     const templateContent = fs_extra_1.default.readFileSync(templatePath, 'utf8');
+    const keys = ['SENDGRID_API_KEY', 'EMAIL_PROVIDER', 'SENDER_EMAIL', 'SMTP_USER', 'SMTP_PORT', 'SMTP_HOST', 'SMTP_PASS'];
+    keys.forEach((key) => {
+        updateAllEnvFilesWithVariable(projectDir, key, '', true); // Set default value 
+    });
     const templateFilePath = path_1.default.join(projectDir, 'src', 'templates', 'email.hbs');
     if (!fs_extra_1.default.existsSync(templateFilePath)) {
         fs_extra_1.default.ensureDirSync(path_1.default.dirname(templateFilePath));
@@ -557,6 +588,10 @@ async function setupInforu(projectDir) {
 }
 async function configInforu(projectDir) {
     try {
+        const keys = ['INFORU_USERNAME', 'INFORU_PASSWORD', 'INFORU_SENDER_NAME'];
+        keys.forEach((key) => {
+            updateAllEnvFilesWithVariable(projectDir, key, '', true); // Set default value 
+        });
         const { setupInforu } = await inquirer_1.default.prompt([
             {
                 type: 'confirm',
@@ -625,6 +660,10 @@ async function addJWTAppParams(projectDir) {
 async function setupS3(projectDir) {
     try {
         console.log(chalk_1.default.blue('Configuring AWS settings...'));
+        const keys = ["AWS_PUBLIC_BUCKET_NAME", "AWS_PRIVATE_BUCKET_NAME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"];
+        keys.forEach((key) => {
+            updateAllEnvFilesWithVariable(projectDir, key, '', true); // Set default value 
+        });
         try {
             await addS3AppParams(projectDir);
         }

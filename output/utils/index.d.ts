@@ -20,8 +20,8 @@ export declare function setupPrisma(projectDir: string): Promise<void>;
  * @param key - The key to update or add (e.g., "DATABASE_URL").
  * @param value - The value to set for the key.
  */
-export declare function updateEnvVariable(envPath: string, key: string, value: string): void;
-export declare function updateAllEnvFilesWithVariable(projectDir: string, key: string, value: string): void;
+export declare function updateEnvVariable(envPath: string, key: string, value: string, onlyIfEmpty?: boolean): void;
+export declare function updateAllEnvFilesWithVariable(projectDir: string, key: string, value: string, onlyIfEmpty?: boolean): void;
 export declare function setupSockets(projectDir: string, options?: CliOptions): Promise<void>;
 export declare function setupCron(projectDir: string): void;
 export declare function setupEvents(projectDir: string): void;
