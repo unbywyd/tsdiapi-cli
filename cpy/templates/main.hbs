@@ -1,7 +1,7 @@
 import { AppConfig, createApp } from "@tsdiapi/server";
 {{#if plugins}}
 {{#each plugins}}
-import {{importPackageName}} from "@tsdiapi/{{packageName}}";
+import {{importPackageName}} from "{{packageName}}";
 {{/each}}
 {{/if}}
 
@@ -9,7 +9,7 @@ import {{importPackageName}} from "@tsdiapi/{{packageName}}";
 createApp({ 
     plugins: [
     {{#each plugins}}
-        {{this}}Plugin(),
+        {{importPackageName}}(),
     {{/each}}
     ]
 });
