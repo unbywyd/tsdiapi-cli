@@ -6,6 +6,7 @@ import fs from "fs-extra";
 import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
+import { nameToImportName } from '@src/utils/format';
 
 
 export async function initProject(projectname?: string,
@@ -230,13 +231,20 @@ type Depenpendency = {
 };
 
 type PreparePluginsAndDependencies = {
-    plugins: Array<PluginName>;
+    plugins: Array<{
+        packageName: string;
+        importPackageName: string;
+    }>;
     dependencies: Array<Depenpendency>;
 }
 
 function preparePluginsAndDependencies(options: CliOptions): PreparePluginsAndDependencies {
-    const plugins: Array<PluginName> = [];
+    const plugins: Array<{
+        packageName: string;
+        importPackageName: string;
+    }> = [];
     const dependencies: Array<Depenpendency> = [];
+
 
     const getDependency = (name: PluginName) => {
         return {
@@ -258,13 +266,16 @@ function preparePluginsAndDependencies(options: CliOptions): PreparePluginsAndDe
 
     for (const [plugin, install] of Object.entries(optionsByPlugins) as Array<[PluginName, boolean]>) {
         if (install) {
-            plugins.push(plugin as PluginName);
+            plugins.push({
+                packageName: getPackageName(plugin),
+                importPackageName: nameToImportName(plugin)
+            });
             dependencies.push(getDependency(plugin));
         }
     }
 
     return {
-        plugins,
+        plugins: plugins,
         dependencies
     }
 }

@@ -11,6 +11,7 @@ const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
 const config_2 = require("../config");
+const format_1 = require("@src/utils/format");
 async function initProject(projectname, options) {
     try {
         // Welcome message
@@ -206,12 +207,15 @@ function preparePluginsAndDependencies(options) {
     };
     for (const [plugin, install] of Object.entries(optionsByPlugins)) {
         if (install) {
-            plugins.push(plugin);
+            plugins.push({
+                packageName: (0, config_1.getPackageName)(plugin),
+                importPackageName: (0, format_1.nameToImportName)(plugin)
+            });
             dependencies.push(getDependency(plugin));
         }
     }
     return {
-        plugins,
+        plugins: plugins,
         dependencies
     };
 }
