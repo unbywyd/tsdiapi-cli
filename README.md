@@ -1,44 +1,96 @@
-# TSDIAPI CLI
+# **TSDIAPI CLI**
 
-TSDIAPI CLI is a powerful tool to streamline the creation and management of projects built with TSDIAPI, a modular TypeScript framework for building scalable APIs.
+A powerful and flexible command-line interface (CLI) for managing TSDIAPI projects. Easily initialize projects with built-in support for plugins like Prisma, Socket.IO, Email services, and more.
 
-## Features
+---
 
-- **Project Initialization**: Quickly set up a new project with customizable options.
-- **Prisma Integration**: Install and configure Prisma with ease.
-- **Socket.IO Setup**: Add Socket.IO and controllers for real-time features.
-- **Plugin Management**: Install, update, or remove plugins seamlessly.
-- **Code Generation**: Automate repetitive tasks with built-in generators.
+## **Features**
 
-## Installation
+- Generate new TSDIAPI projects in seconds.
+- Add support for popular plugins like Prisma and Socket.IO.
+- Manage configuration files, environment variables, and project structure.
+- Flexible plugin architecture to customize your API services.
+
+---
+
+## **Installation**
+
+Install globally via npm:
 
 ```bash
-npm install -g tsdiapi
+npm install -g @tsdiapi/cli
 ```
 
-## Usage
+Alternatively, add it to your project:
 
-### Initialize a New Project
+```bash
+npm install --save-dev @tsdiapi/cli
+```
+
+---
+
+## **Usage**
+
+### **Create a New Project**
 
 ```bash
 tsdiapi init
 ```
 
-Follow the prompts to set up your project with desired features.
+This command walks you through project setup, including options to install plugins like Prisma or Socket.IO.
 
+---
 
-## Next Steps
+### **Available Commands**
 
-1. Navigate to your project folder:
-   ```bash
-   cd your-project-name
-   ```
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+tsdiapi <command> [options]
+```
 
-## Contributing
+| Command      | Description                         |
+| ------------ | ----------------------------------- |
+| `init`       | Initialize a new TSDIAPI project    |
+| `plugin:add` | Add a plugin to an existing project |
+| `build`      | Build the project                   |
+| `dev`        | Run the project in development mode |
 
-Contributions are welcome! Feel free to open issues or submit pull requests.
+---
 
+## **Plugin Support**
+
+Easily extend your project with plugins:
+
+- `@tsdiapi/cli` supports plugins for Prisma, Socket.IO, JWT authentication, Email, and more.
+
+Example of registering a plugin in `@tsdiapi/server`:
+
+```typescript
+import createPlugin from "@tsdiapi/plugin-name";
+import { createApp } from "@tsdiapi/server";
+
+createApp({
+  plugins: [
+    createPlugin({
+      /* Plugin configuration */
+    }),
+  ],
+});
+```
+
+---
+
+## **Configuration**
+
+By default, the CLI generates a `.env` file and other necessary configurations. You can modify these files to fit your needs.
+
+---
+
+## **Contributing**
+
+Feel free to contribute! Submit issues and pull requests at [GitHub](https://github.com/unbywyd/tsdiapi-cli).
+
+---
+
+## **License**
+
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
