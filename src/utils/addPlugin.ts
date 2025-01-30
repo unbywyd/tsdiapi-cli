@@ -38,7 +38,7 @@ export const addPlugin = async (pluginName?: string) => {
 
     if (!currentDirectory) {
       return console.log(
-        chalk.red(`Not found package.json or maybe you are not using tsdiapi-server!`)
+        chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`)
       )
     }
 
@@ -182,7 +182,7 @@ async function addPluginToApp(
 }
 
 /**
- * Finds the root directory of the nearest project containing "tsdiapi-server" in its dependencies.
+ * Finds the root directory of the nearest project containing "@tsdiapi/server" in its dependencies.
  *
  * @returns The root directory path of the TSDIAPI-Server project or null if not found.
  */
@@ -199,7 +199,7 @@ export async function findTSDIAPIServerProject(): Promise<string | null> {
       ...packageJson.peerDependencies,
       ...packageJson.optionalDependencies,
     }
-    if (dependencies && dependencies['tsdiapi-server']) {
+    if (dependencies && dependencies['@tsdiapi/server']) {
       return path.dirname(packageJsonPath)
     }
     return null;

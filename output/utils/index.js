@@ -22,6 +22,7 @@ exports.addJWTAppParams = addJWTAppParams;
 exports.setupS3 = setupS3;
 exports.addS3AppParams = addS3AppParams;
 exports.addAppConfigParams = addAppConfigParams;
+exports.runNpmScript = runNpmScript;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const handlebars_1 = __importDefault(require("handlebars"));
@@ -32,6 +33,7 @@ const inquirer_1 = __importDefault(require("inquirer"));
 const config_1 = require("../config");
 const ts_morph_1 = require("ts-morph");
 const crypto_1 = __importDefault(require("crypto"));
+const cwd_1 = require("./cwd");
 const execAsync = util_1.default.promisify(child_process_1.exec);
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
@@ -778,5 +780,30 @@ function ensureImports(sourceFile, imports) {
 // Utility function to capitalize a string
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
+}
+// Функция запуска скрипта npm
+function runNpmScript(scriptName) {
+    const packageJsonPath = (0, cwd_1.findNearestPackageJson)();
+    const projectDir = path_1.default.dirname(packageJsonPath);
+    if (!packageJsonPath) {
+        console.error('No package.json found in the current directory or its parents.');
+        process.exit(1);
+    }
+    const pkg = require(packageJsonPath);
+    if (!pkg.scripts || !pkg.scripts[scriptName]) {
+        console.error(`The "${scriptName}" script is not defined in ${packageJsonPath}.`);
+        process.exit(1);
+    }
+    const npmProcess = (0, child_process_1.spawn)('npm', ['run', scriptName], {
+        cwd: projectDir,
+        stdio: 'inherit',
+        shell: true,
+    });
+    npmProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`"${scriptName}" script failed with code ${code}.`);
+        }
+        process.exit(code);
+    });
 }
 //# sourceMappingURL=index.js.map

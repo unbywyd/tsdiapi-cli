@@ -22,7 +22,7 @@
  */
 export declare const addPlugin: (pluginName?: string) => Promise<void>;
 /**
- * Finds the root directory of the nearest project containing "tsdiapi-server" in its dependencies.
+ * Finds the root directory of the nearest project containing "@tsdiapi/server" in its dependencies.
  *
  * @returns The root directory path of the TSDIAPI-Server project or null if not found.
  */

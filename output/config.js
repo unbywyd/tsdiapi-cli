@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IsDev = exports.getPackageVersion = exports.getPackageName = exports.AvailablePlugins = exports.RegisteredPlugins = exports.DefaultHost = exports.DefaultPort = exports.CurrentVersion = void 0;
-exports.CurrentVersion = '1.0.0';
+exports.CurrentVersion = '0.0.1-alpha';
 exports.DefaultPort = 3100;
 exports.DefaultHost = 'localhost';
 exports.RegisteredPlugins = {

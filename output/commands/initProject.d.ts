@@ -1,15 +1,11 @@
-export declare function initProject(): Promise<void>;
-export type CliOptions = {
-    name: string;
-    installPrisma: boolean;
-    installSocket: boolean;
-    installCron: boolean;
-    installInforu: boolean;
-    installEvents: boolean;
-    installS3: boolean;
-    installJwt: boolean;
-    installEmail: boolean;
-    port?: number;
-    host?: string;
-};
+export declare function initProject(projectname?: string, options?: {
+    installPrisma?: boolean;
+    installSocket?: boolean;
+    installCron?: boolean;
+    installS3?: boolean;
+    installEvents?: boolean;
+    installJwt?: boolean;
+    installInforu?: boolean;
+    installEmail?: boolean;
+}): Promise<void>;
 //# sourceMappingURL=initProject.d.ts.map

@@ -1,4 +1,4 @@
-export const CurrentVersion = '1.0.0'
+export const CurrentVersion = '0.0.1-alpha'
 export const DefaultPort = 3100
 export const DefaultHost = 'localhost'
 
@@ -23,7 +23,6 @@ export const getPackageName = (plugin: PluginName) => {
 export const getPackageVersion = (name: PluginName) => {
     return IsDev ? "github:unbywyd/" + getPackageName(name) + "#master" : "^" + CurrentVersion;
 };
-
 
 
 export type PluginName = keyof typeof RegisteredPlugins;

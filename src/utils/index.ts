@@ -6,9 +6,10 @@ import chalk from 'chalk'
 import util from 'util'
 import inquirer from 'inquirer'
 import { DefaultHost, DefaultPort } from '../config'
-import { CliOptions } from '@src/commands/initProject'
 import { Project, SourceFile, ClassDeclaration } from 'ts-morph'
 import crypto from 'crypto'
+import { findNearestPackageJson } from './cwd'
+import { CliOptions } from '..'
 const execAsync = util.promisify(exec)
 
 /**
@@ -866,3 +867,33 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
+
+// Функция запуска скрипта npm
+export function runNpmScript(scriptName: string) {
+  const packageJsonPath = findNearestPackageJson();
+  const projectDir = path.dirname(packageJsonPath);
+  if (!packageJsonPath) {
+    console.error('No package.json found in the current directory or its parents.');
+    process.exit(1);
+  }
+
+  const pkg = require(packageJsonPath);
+
+  if (!pkg.scripts || !pkg.scripts[scriptName]) {
+    console.error(`The "${scriptName}" script is not defined in ${packageJsonPath}.`);
+    process.exit(1);
+  }
+
+  const npmProcess = spawn('npm', ['run', scriptName], {
+    cwd: projectDir,
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  npmProcess.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`"${scriptName}" script failed with code ${code}.`);
+    }
+    process.exit(code);
+  });
+}

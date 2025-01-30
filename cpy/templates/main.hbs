@@ -1,7 +1,7 @@
-import { AppConfig, createApp } from "tsdiapi-server";
+import { AppConfig, createApp } from "@tsdiapi/server";
 {{#if plugins}}
 {{#each plugins}}
-import {{this}}Plugin from "tsdiapi-{{this}}";
+import {{this}}Plugin from "@tsdiapi/{{this}}";
 {{/each}}
 {{/if}}
 

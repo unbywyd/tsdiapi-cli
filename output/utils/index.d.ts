@@ -1,4 +1,4 @@
-import { CliOptions } from '@src/commands/initProject';
+import { CliOptions } from '..';
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
  *
@@ -40,4 +40,5 @@ export declare function addJWTAppParams(projectDir: string): Promise<void>;
 export declare function setupS3(projectDir: string): Promise<void>;
 export declare function addS3AppParams(projectDir: string): Promise<void>;
 export declare function addAppConfigParams(projectDir: string, params: AppParam[]): Promise<void>;
+export declare function runNpmScript(scriptName: string): void;
 //# sourceMappingURL=index.d.ts.map

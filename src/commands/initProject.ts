@@ -1,39 +1,51 @@
-import { RegisteredPlugins, IsDev, PluginName, getPackageVersion, getPackageName } from './../config';
+import { PluginName, getPackageVersion, getPackageName } from './../config';
 import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
 import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
-import { CurrentVersion, DefaultHost, DefaultPort } from "../config";
+import { DefaultPort } from "../config";
+import { CliOptions } from '..';
 
 
-export async function initProject() {
+export async function initProject(projectname?: string,
+    options?: {
+        installPrisma?: boolean;
+        installSocket?: boolean;
+        installCron?: boolean;
+        installS3?: boolean;
+        installEvents?: boolean;
+        installJwt?: boolean;
+        installInforu?: boolean;
+        installEmail?: boolean;
+    }) {
     try {
         // Welcome message
         console.log(chalk.green("Welcome to the TSDIAPI project initializer!"));
 
-        // Prompt the user for project details
-        const answers = await inquirer.prompt([
-            {
-                type: "input",
-                name: "name",
-                message: "Project name:",
-                default: "my-tsdiapi-project",
-                validate: async (input: string) => {
-                    const projectDir = path.resolve(process.cwd(), input);
-                    const exists = fs.existsSync(projectDir);
-                    if (exists) {
-                        return "A project already exists at this location. Please choose a different name.";
-                    }
-                    const npmNameRegex = /^[a-z0-9-]+$/;
-                    if (!npmNameRegex.test(input)) {
-                        return "The project name can only contain lowercase letters, numbers, and hyphens.";
-                    }
-                    return true;
-                }
-            },
+        const questions: Array<any> = [];
 
-            {
+        if (!projectname) {
+            questions.push(
+                {
+                    type: "input",
+                    name: "name",
+                    message: "Project name:",
+                    default: "my-tsdiapi-project",
+                    validate: async (input: string) => {
+                        const projectDir = path.resolve(process.cwd(), input);
+                        const exists = fs.existsSync(projectDir);
+                        if (exists) {
+                            return "A project already exists at this location. Please choose a different name.";
+                        }
+                        const npmNameRegex = /^[a-z0-9-]+$/;
+                        if (!npmNameRegex.test(input)) {
+                            return "The project name can only contain lowercase letters, numbers, and hyphens.";
+                        }
+                        return true;
+                    }
+                });
+            questions.push({
                 type: "number",
                 name: "port",
                 message: "Port:",
@@ -44,57 +56,101 @@ export async function initProject() {
                     }
                     return true;
                 }
-            },
+            });
+        }
 
-            {
+        if (options?.installPrisma === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installPrisma",
                 message: "Install prisma?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installSocket === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installSocket",
                 message: "Install socket.io?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installCron === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installCron",
                 message: "You need cron?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installEvents === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installEvents",
                 message: "You need events?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installS3 === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installS3",
                 message: "You need s3?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installJwt === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installJwt",
                 message: "You need jwt auth?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installInforu === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installInforu",
                 message: "You need inforu for sms sending?",
                 default: false
-            },
-            {
+            });
+        }
+
+        if (options?.installEmail === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installEmail",
                 message: "You need email sending?",
                 default: false
+            });
+        }
+
+
+        // Prompt the user for project details
+        const answers = questions?.length ? await inquirer.prompt(questions) : {
+            ...options,
+            name: projectname,
+            port: DefaultPort
+        }
+
+        answers.name = answers.name || projectname;
+        if (options) {
+            for (const [key, value] of Object.entries(options)) {
+                if (value !== undefined) {
+                    answers[key] = value;
+                }
             }
-        ]);
+        }
+
+        if (!answers.port) {
+            answers.port = DefaultPort;
+        }
 
         // check npm name is valid
         const npmNameRegex = /^[a-z0-9-]+$/;
@@ -115,7 +171,7 @@ export async function initProject() {
         // Placeholder for project generation logic
         console.log(chalk.blue(`Initializing project at ${projectDir}...`));
 
-        await populateProjectFiles(projectDir, answers);
+        await populateProjectFiles(projectDir, answers as CliOptions);
 
         // Init npm
         await runNpmInstall(projectDir);
@@ -134,7 +190,7 @@ export async function initProject() {
         }
 
         if (answers.installSocket) {
-            await setupSockets(projectDir, answers);
+            await setupSockets(projectDir, answers as CliOptions);
         }
 
         if (answers.installCron) {
@@ -167,19 +223,6 @@ export async function initProject() {
     }
 }
 
-export type CliOptions = {
-    name: string;
-    installPrisma: boolean;
-    installSocket: boolean;
-    installCron: boolean;
-    installInforu: boolean;
-    installEvents: boolean;
-    installS3: boolean;
-    installJwt: boolean;
-    installEmail: boolean;
-    port?: number;
-    host?: string;
-};
 
 type Depenpendency = {
     name: string;
@@ -243,7 +286,6 @@ async function populateProjectFiles(projectDir: string, options: CliOptions) {
             ...options,
             plugins: plugins?.length ? plugins : false,
             dependencies: dependencies?.length ? dependencies : false,
-            host: DefaultHost,
             port: options.port || DefaultPort
         };
 

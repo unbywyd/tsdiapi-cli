@@ -11,13 +11,13 @@ const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
 const config_2 = require("../config");
-async function initProject() {
+async function initProject(projectname, options) {
     try {
         // Welcome message
         console.log(chalk_1.default.green("Welcome to the TSDIAPI project initializer!"));
-        // Prompt the user for project details
-        const answers = await inquirer_1.default.prompt([
-            {
+        const questions = [];
+        if (!projectname) {
+            questions.push({
                 type: "input",
                 name: "name",
                 message: "Project name:",
@@ -34,8 +34,8 @@ async function initProject() {
                     }
                     return true;
                 }
-            },
-            {
+            });
+            questions.push({
                 type: "number",
                 name: "port",
                 message: "Port:",
@@ -46,56 +46,89 @@ async function initProject() {
                     }
                     return true;
                 }
-            },
-            {
+            });
+        }
+        if (options?.installPrisma === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installPrisma",
                 message: "Install prisma?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installSocket === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installSocket",
                 message: "Install socket.io?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installCron === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installCron",
                 message: "You need cron?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installEvents === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installEvents",
                 message: "You need events?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installS3 === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installS3",
                 message: "You need s3?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installJwt === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installJwt",
                 message: "You need jwt auth?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installInforu === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installInforu",
                 message: "You need inforu for sms sending?",
                 default: false
-            },
-            {
+            });
+        }
+        if (options?.installEmail === undefined) {
+            questions.push({
                 type: "confirm",
                 name: "installEmail",
                 message: "You need email sending?",
                 default: false
+            });
+        }
+        // Prompt the user for project details
+        const answers = questions?.length ? await inquirer_1.default.prompt(questions) : {
+            ...options,
+            name: projectname,
+            port: config_2.DefaultPort
+        };
+        answers.name = answers.name || projectname;
+        if (options) {
+            for (const [key, value] of Object.entries(options)) {
+                if (value !== undefined) {
+                    answers[key] = value;
+                }
             }
-        ]);
+        }
+        if (!answers.port) {
+            answers.port = config_2.DefaultPort;
+        }
         // check npm name is valid
         const npmNameRegex = /^[a-z0-9-]+$/;
         if (!npmNameRegex.test(answers.name)) {
@@ -194,7 +227,6 @@ async function populateProjectFiles(projectDir, options) {
             ...options,
             plugins: plugins?.length ? plugins : false,
             dependencies: dependencies?.length ? dependencies : false,
-            host: config_2.DefaultHost,
             port: options.port || config_2.DefaultPort
         };
         const envDevPath = path_1.default.join(projectDir, ".env.development");

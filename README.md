@@ -1,15 +1,16 @@
 # **TSDIAPI CLI**
 
-A powerful and flexible command-line interface (CLI) for managing TSDIAPI projects. Easily initialize projects with built-in support for plugins like Prisma, Socket.IO, Email services, and more.
+A powerful and flexible command-line interface (CLI) for managing **TSDIAPI** projects. Easily initialize projects with built-in support for plugins like **Prisma**, **Socket.IO**, **Email services**, and more.
 
 ---
 
 ## **Features**
 
-- Generate new TSDIAPI projects in seconds.
-- Add support for popular plugins like Prisma and Socket.IO.
+- Quickly generate and manage **TSDIAPI** projects.
+- Add or remove plugins and resources on demand.
+- Generate boilerplate code for services, controllers, events, and more.
 - Manage configuration files, environment variables, and project structure.
-- Flexible plugin architecture to customize your API services.
+- Run project tasks (`build`, `dev`, etc.) directly from the CLI.
 
 ---
 
@@ -33,61 +34,122 @@ npm install --save-dev @tsdiapi/cli
 
 ### **Create a New Project**
 
+Use the `create` command to generate a new project:
+
 ```bash
-tsdiapi init
+tsdiapi create my-api-project
 ```
 
-This command walks you through project setup, including options to install plugins like Prisma or Socket.IO.
+#### **Options**
+
+You can specify additional options to include plugins during project setup:
+
+```bash
+tsdiapi create my-api-project --prisma --socket --cron
+```
+
+| Option     | Description                           |
+| ---------- | ------------------------------------- |
+| `--prisma` | Install and configure Prisma.         |
+| `--socket` | Install and configure Socket.IO.      |
+| `--cron`   | Install and configure Cron jobs.      |
+| `--s3`     | Install and configure AWS S3 plugin.  |
+| `--events` | Install and configure event handling. |
+| `--jwt`    | Install and configure JWT auth.       |
+| `--inforu` | Install and configure SMS (Inforu).   |
+| `--email`  | Install and configure email services. |
 
 ---
 
-### **Available Commands**
+## **Available Commands**
+
+The CLI provides several commands to manage your project:
 
 ```bash
 tsdiapi <command> [options]
 ```
 
-| Command      | Description                         |
-| ------------ | ----------------------------------- |
-| `init`       | Initialize a new TSDIAPI project    |
-| `plugin:add` | Add a plugin to an existing project |
-| `build`      | Build the project                   |
-| `dev`        | Run the project in development mode |
+### **Commands**
+
+| Command      | Description                                          |
+| ------------ | ---------------------------------------------------- |
+| `init`       | Initialize a new TSDIAPI project (interactive mode). |
+| `create`     | Create a new TSDIAPI project with options.           |
+| `plugin:add` | Add a plugin to the project.                         |
+| `generate`   | Generate boilerplate code (features, services, etc). |
+| `build`      | Build the project.                                   |
+| `dev`        | Run the project in development mode.                 |
+
+#### **Generate Resources**
+
+```bash
+tsdiapi generate <resource> <name>
+```
+
+| Resource     | Description                          |
+| ------------ | ------------------------------------ |
+| `feature`    | Generate a new feature.              |
+| `service`    | Generate a new service.              |
+| `controller` | Generate a new controller.           |
+| `event`      | Generate a new event handler.        |
+| `prisma`     | Generate a Prisma model or resource. |
+| `cron`       | Generate a cron job.                 |
+
+Example:
+
+```bash
+tsdiapi generate controller user
+```
+
+---
+
+## **Running the Project**
+
+You can run project scripts directly using the CLI:
+
+### **Build the Project**
+
+```bash
+tsdiapi build
+```
+
+### **Run in Development Mode**
+
+```bash
+tsdiapi dev
+```
+
+This command runs the `npm run dev` script from your project.
 
 ---
 
 ## **Plugin Support**
 
-Easily extend your project with plugins:
+The CLI integrates seamlessly with plugins like **Prisma**, **Socket.IO**, **JWT Auth**, and others. Add plugins dynamically to your project:
 
-- `@tsdiapi/cli` supports plugins for Prisma, Socket.IO, JWT authentication, Email, and more.
-
-Example of registering a plugin in `@tsdiapi/server`:
-
-```typescript
-import createPlugin from "@tsdiapi/plugin-name";
-import { createApp } from "@tsdiapi/server";
-
-createApp({
-  plugins: [
-    createPlugin({
-      /* Plugin configuration */
-    }),
-  ],
-});
+```bash
+tsdiapi plugin:add <plugin-name>
 ```
+
+For example:
+
+```bash
+tsdiapi plugin:add cron
+```
+
+This command installs and configures the **Cron** plugin in your project.
 
 ---
 
 ## **Configuration**
 
-By default, the CLI generates a `.env` file and other necessary configurations. You can modify these files to fit your needs.
+The CLI generates necessary configuration files, including `.env`. Customize these files as needed for your project.
 
 ---
 
 ## **Contributing**
 
-Feel free to contribute! Submit issues and pull requests at [GitHub](https://github.com/unbywyd/tsdiapi-cli).
+Contributions are welcome! Submit issues and pull requests at [GitHub](https://github.com/unbywyd/tsdiapi-cli).
 
 ---
 

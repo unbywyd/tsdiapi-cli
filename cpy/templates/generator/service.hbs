@@ -1,0 +1,11 @@
+
+import { Service } from "typedi";
+
+@Service()
+export default class {{className}} {
+    public async getHello() {
+        return {
+            message: "{{message}}"
+        };
+    }
+}
