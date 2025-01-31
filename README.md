@@ -74,6 +74,7 @@ tsdiapi <command> [options]
 | Command      | Description                                          |
 | ------------ | ---------------------------------------------------- |
 | `init`       | Initialize a new TSDIAPI project (interactive mode). |
+| `start`      | Initialize a new TSDIAPI project (quick mode).       |
 | `create`     | Create a new TSDIAPI project with options.           |
 | `plugin:add` | Add a plugin to the project.                         |
 | `generate`   | Generate boilerplate code (features, services, etc). |
