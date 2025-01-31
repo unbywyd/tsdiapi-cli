@@ -3,24 +3,41 @@ import { program } from 'commander'
 import { initProject } from './commands/initProject'
 import { CurrentVersion } from './config'
 import { addPlugin } from './utils/addPlugin'
-import { buildHandlebarsTemplate, runNpmScript } from './utils'
+import { runNpmScript } from './utils'
 import { generateFeature, runGenerateCommand } from './utils/generate'
 
-program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion)
+program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
-program.command('init').description('Initialize a new TSDIAPI project').action(initProject)
+program.command('init [projectname]').description('Initialize a new TSDIAPI project')
+  .option('-s, --skip', 'Skip all questions and use default settings')
+  .option('-f, --fast', 'Fast mode, skip all questions and use default settings')
+  .action((projectname, options) => {
+    initProject(projectname, {
+      skipAll: options.skip || options.fast || false,
+      isFastMode: options.fast || false
+    });
+  });
+
+program.command('start <projectname>').description('Fast start a new TSDIAPI project')
+  .action((projectname) => {
+    initProject(projectname, {
+      skipAll: true,
+      isFastMode: true
+    });
+  });
 
 export type CliOptions = {
-    name: string;
-    installPrisma: boolean;
-    installSocket: boolean;
-    installCron: boolean;
-    installInforu: boolean;
-    installEvents: boolean;
-    installS3: boolean;
-    installJwt: boolean;
-    installEmail: boolean;
-    port?: number;
+  host?: string;
+  name: string;
+  installPrisma: boolean;
+  installSocket: boolean;
+  installCron: boolean;
+  installInforu: boolean;
+  installEvents: boolean;
+  installS3: boolean;
+  installJwt: boolean;
+  installEmail: boolean;
+  port?: number;
 };
 // init with create command
 program

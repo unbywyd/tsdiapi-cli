@@ -1,16 +1,31 @@
-import { PluginName, getPackageVersion, getPackageName } from './../config';
+import { PluginName, getPackageVersion, getPackageName, DefaultHost } from './../config';
 import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, runNpmInstall, runNpmScript, runUnsafeNpmScript, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
 import { nameToImportName } from '../utils/format';
 
+export async function startFastProject(projectname: string, options: CliOptions) {
+    try {
+        const projectDir = path.resolve(process.cwd(), projectname);
+        if (!fs.existsSync(projectDir)) {
+            console.error(chalk.red('Project directory does not exist:', projectDir));
+            process.exit(1);
+        }
+
+        await runUnsafeNpmScript(projectDir, 'fast-dev');
+    } catch (error) {
+        console.error(chalk.red('An unexpected error occurred during project initialization.'), error.message);
+    }
+}
 
 export async function initProject(projectname?: string,
     options?: {
+        isFastMode?: boolean;
+        skipAll?: boolean;
         installPrisma?: boolean;
         installSocket?: boolean;
         installCron?: boolean;
@@ -23,7 +38,6 @@ export async function initProject(projectname?: string,
     try {
         // Welcome message
         console.log(chalk.green("Welcome to the TSDIAPI project initializer!"));
-
         const questions: Array<any> = [];
 
         if (!projectname) {
@@ -46,90 +60,106 @@ export async function initProject(projectname?: string,
                         return true;
                     }
                 });
-            questions.push({
-                type: "number",
-                name: "port",
-                message: "Port:",
-                default: DefaultPort,
-                validate: (input: number) => {
-                    if (input < 1 || input > 65535) {
-                        return "Port number must be between 1 and 65535.";
+            if (!options?.skipAll) {
+                questions.push({
+                    type: "input",
+                    name: "host",
+                    message: "Host:",
+                    default: DefaultHost,
+                    validate: (input: string) => {
+                        if (!input) {
+                            return "Host is required.";
+                        }
+                        return true;
                     }
-                    return true;
-                }
-            });
+                });
+                questions.push({
+                    type: "number",
+                    name: "port",
+                    message: "Port:",
+                    default: DefaultPort,
+                    validate: (input: number) => {
+                        if (input < 1 || input > 65535) {
+                            return "Port number must be between 1 and 65535.";
+                        }
+                        return true;
+                    }
+                });
+            }
         }
+        if (!options?.skipAll) {
 
-        if (options?.installPrisma === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installPrisma",
-                message: "Install prisma?",
-                default: false
-            });
-        }
+            if (options?.installPrisma === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installPrisma",
+                    message: "Install prisma?",
+                    default: false
+                });
+            }
 
-        if (options?.installSocket === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installSocket",
-                message: "Install socket.io?",
-                default: false
-            });
-        }
+            if (options?.installSocket === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installSocket",
+                    message: "Install socket.io?",
+                    default: false
+                });
+            }
 
-        if (options?.installCron === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installCron",
-                message: "You need cron?",
-                default: false
-            });
-        }
+            if (options?.installCron === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installCron",
+                    message: "You need cron?",
+                    default: false
+                });
+            }
 
-        if (options?.installEvents === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installEvents",
-                message: "You need events?",
-                default: false
-            });
-        }
+            if (options?.installEvents === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installEvents",
+                    message: "You need events?",
+                    default: false
+                });
+            }
 
-        if (options?.installS3 === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installS3",
-                message: "You need s3?",
-                default: false
-            });
-        }
+            if (options?.installS3 === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installS3",
+                    message: "You need s3?",
+                    default: false
+                });
+            }
 
-        if (options?.installJwt === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installJwt",
-                message: "You need jwt auth?",
-                default: false
-            });
-        }
+            if (options?.installJwt === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installJwt",
+                    message: "You need jwt auth?",
+                    default: false
+                });
+            }
 
-        if (options?.installInforu === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installInforu",
-                message: "You need inforu for sms sending?",
-                default: false
-            });
-        }
+            if (options?.installInforu === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installInforu",
+                    message: "You need inforu for sms sending?",
+                    default: false
+                });
+            }
 
-        if (options?.installEmail === undefined) {
-            questions.push({
-                type: "confirm",
-                name: "installEmail",
-                message: "You need email sending?",
-                default: false
-            });
+            if (options?.installEmail === undefined) {
+                questions.push({
+                    type: "confirm",
+                    name: "installEmail",
+                    message: "You need email sending?",
+                    default: false
+                });
+            }
         }
 
 
@@ -137,10 +167,13 @@ export async function initProject(projectname?: string,
         const answers = questions?.length ? await inquirer.prompt(questions) : {
             ...options,
             name: projectname,
-            port: DefaultPort
+            port: DefaultPort,
+            host: DefaultHost
         }
 
         answers.name = answers.name || projectname;
+
+        answers.host = answers.host || DefaultHost;
         if (options) {
             for (const [key, value] of Object.entries(options)) {
                 if (value !== undefined) {
@@ -216,6 +249,10 @@ export async function initProject(projectname?: string,
 
         if (answers.installEmail) {
             await setupEmail(projectDir);
+        }
+
+        if (options?.isFastMode) {
+            await startFastProject(answers.name, answers as CliOptions);
         }
 
     } catch (error) {
@@ -297,7 +334,7 @@ async function populateProjectFiles(projectDir: string, options: CliOptions) {
             ...options,
             plugins: plugins?.length ? plugins : false,
             dependencies: dependencies?.length ? dependencies : false,
-            port: options.port || DefaultPort
+            port: options.port || DefaultPort,
         };
 
         const envDevPath = path.join(projectDir, ".env.development");

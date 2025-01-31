@@ -40,5 +40,6 @@ export declare function addJWTAppParams(projectDir: string): Promise<void>;
 export declare function setupS3(projectDir: string): Promise<void>;
 export declare function addS3AppParams(projectDir: string): Promise<void>;
 export declare function addAppConfigParams(projectDir: string, params: AppParam[]): Promise<void>;
+export declare function runUnsafeNpmScript(projectDir: string, scriptName: string): void;
 export declare function runNpmScript(scriptName: string): void;
 //# sourceMappingURL=index.d.ts.map

@@ -22,6 +22,7 @@ exports.addJWTAppParams = addJWTAppParams;
 exports.setupS3 = setupS3;
 exports.addS3AppParams = addS3AppParams;
 exports.addAppConfigParams = addAppConfigParams;
+exports.runUnsafeNpmScript = runUnsafeNpmScript;
 exports.runNpmScript = runNpmScript;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
@@ -819,6 +820,19 @@ function ensureImports(sourceFile, imports) {
 // Utility function to capitalize a string
 function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
+}
+function runUnsafeNpmScript(projectDir, scriptName) {
+    const npmProcess = (0, child_process_1.spawn)('npm', ['run', scriptName], {
+        cwd: projectDir,
+        stdio: 'inherit',
+        shell: true,
+    });
+    npmProcess.on('close', (code) => {
+        if (code !== 0) {
+            console.error(`"${scriptName}" script failed with code ${code}.`);
+        }
+        process.exit(code);
+    });
 }
 // Функция запуска скрипта npm
 function runNpmScript(scriptName) {

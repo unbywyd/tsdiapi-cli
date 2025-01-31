@@ -920,6 +920,20 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
+export function runUnsafeNpmScript(projectDir: string, scriptName: string) {
+  const npmProcess = spawn('npm', ['run', scriptName], {
+    cwd: projectDir,
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  npmProcess.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`"${scriptName}" script failed with code ${code}.`);
+    }
+    process.exit(code);
+  });
+}
 
 // Функция запуска скрипта npm
 export function runNpmScript(scriptName: string) {

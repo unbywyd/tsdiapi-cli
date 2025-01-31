@@ -8,7 +8,22 @@ const addPlugin_1 = require("./utils/addPlugin");
 const utils_1 = require("./utils");
 const generate_1 = require("./utils/generate");
 commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
-commander_1.program.command('init').description('Initialize a new TSDIAPI project').action(initProject_1.initProject);
+commander_1.program.command('init [projectname]').description('Initialize a new TSDIAPI project')
+    .option('-s, --skip', 'Skip all questions and use default settings')
+    .option('-f, --fast', 'Fast mode, skip all questions and use default settings')
+    .action((projectname, options) => {
+    (0, initProject_1.initProject)(projectname, {
+        skipAll: options.skip || options.fast || false,
+        isFastMode: options.fast || false
+    });
+});
+commander_1.program.command('start <projectname>').description('Fast start a new TSDIAPI project')
+    .action((projectname) => {
+    (0, initProject_1.initProject)(projectname, {
+        skipAll: true,
+        isFastMode: true
+    });
+});
 // init with create command
 commander_1.program
     .command('create <projectname>')
