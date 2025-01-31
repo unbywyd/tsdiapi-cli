@@ -174,9 +174,9 @@ async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir
  *
  * @returns The root directory path of the TSDIAPI-Server project or null if not found.
  */
-async function findTSDIAPIServerProject() {
+async function findTSDIAPIServerProject(cwd) {
     try {
-        const packageJsonPath = (0, cwd_1.findNearestPackageJson)();
+        const packageJsonPath = (0, cwd_1.findNearestPackageJson)(cwd);
         if (!packageJsonPath) {
             return null;
         }

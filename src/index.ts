@@ -18,10 +18,11 @@ program.command('init [projectname]').description('Initialize a new TSDIAPI proj
     });
   });
 
-program.command('start <projectname>').description('Fast start a new TSDIAPI project')
+program.command('start [projectname]').description('Fast start a new TSDIAPI project')
   .action((projectname) => {
     initProject(projectname, {
       skipAll: true,
+      startMode: true,
       isFastMode: true
     });
   });

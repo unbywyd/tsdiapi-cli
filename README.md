@@ -71,15 +71,15 @@ tsdiapi <command> [options]
 
 ### **Commands**
 
-| Command      | Description                                          |
-| ------------ | ---------------------------------------------------- |
-| `init`       | Initialize a new TSDIAPI project (interactive mode). |
-| `start`      | Initialize a new TSDIAPI project (quick mode).       |
-| `create`     | Create a new TSDIAPI project with options.           |
-| `plugin:add` | Add a plugin to the project.                         |
-| `generate`   | Generate boilerplate code (features, services, etc). |
-| `build`      | Build the project.                                   |
-| `dev`        | Run the project in development mode.                 |
+| Command      | Description                                                     |
+| ------------ | --------------------------------------------------------------- |
+| `init`       | Initialize a new TSDIAPI project (interactive mode).            |
+| `start`      | Initialize or run the project in development mode (quick mode). |
+| `create`     | Create a new TSDIAPI project with options.                      |
+| `plugin:add` | Add a plugin to the project.                                    |
+| `generate`   | Generate boilerplate code (features, services, etc).            |
+| `build`      | Build the project.                                              |
+| `dev`        | Run the project in development mode.                            |
 
 #### **Generate Resources**
 

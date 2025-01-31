@@ -1,6 +1,6 @@
-import { CliOptions } from '..';
-export declare function startFastProject(projectname: string, options: CliOptions): Promise<void>;
+export declare function startFastProject(projectname: string): Promise<void>;
 export declare function initProject(projectname?: string, options?: {
+    startMode?: boolean;
     isFastMode?: boolean;
     skipAll?: boolean;
     installPrisma?: boolean;

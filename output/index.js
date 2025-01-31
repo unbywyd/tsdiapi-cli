@@ -17,10 +17,11 @@ commander_1.program.command('init [projectname]').description('Initialize a new 
         isFastMode: options.fast || false
     });
 });
-commander_1.program.command('start <projectname>').description('Fast start a new TSDIAPI project')
+commander_1.program.command('start [projectname]').description('Fast start a new TSDIAPI project')
     .action((projectname) => {
     (0, initProject_1.initProject)(projectname, {
         skipAll: true,
+        startMode: true,
         isFastMode: true
     });
 });

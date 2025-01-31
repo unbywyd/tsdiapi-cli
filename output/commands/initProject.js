@@ -13,7 +13,8 @@ const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
 const config_2 = require("../config");
 const format_1 = require("../utils/format");
-async function startFastProject(projectname, options) {
+const addPlugin_1 = require("../utils/addPlugin");
+async function startFastProject(projectname) {
     try {
         const projectDir = path_1.default.resolve(process.cwd(), projectname);
         if (!fs_extra_1.default.existsSync(projectDir)) {
@@ -28,6 +29,15 @@ async function startFastProject(projectname, options) {
 }
 async function initProject(projectname, options) {
     try {
+        if (options?.startMode) {
+            const cwd = path_1.default.resolve(process.cwd(), projectname);
+            const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)(cwd);
+            if (currentDirectory) {
+                console.log(chalk_1.default.green(`Found TSDIAPI project at ${currentDirectory}`));
+                await startFastProject(currentDirectory);
+                return;
+            }
+        }
         // Welcome message
         console.log(chalk_1.default.green("Welcome to the TSDIAPI project initializer!"));
         const questions = [];
@@ -213,7 +223,7 @@ async function initProject(projectname, options) {
             await (0, utils_1.setupEmail)(projectDir);
         }
         if (options?.isFastMode) {
-            await startFastProject(answers.name, answers);
+            await startFastProject(answers.name);
         }
     }
     catch (error) {

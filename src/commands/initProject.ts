@@ -3,19 +3,19 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, runNpmScript, runUnsafeNpmScript, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, runNpmInstall, runUnsafeNpmScript, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
 import { nameToImportName } from '../utils/format';
+import { findTSDIAPIServerProject } from '../utils/addPlugin';
 
-export async function startFastProject(projectname: string, options: CliOptions) {
+export async function startFastProject(projectname: string) {
     try {
         const projectDir = path.resolve(process.cwd(), projectname);
         if (!fs.existsSync(projectDir)) {
             console.error(chalk.red('Project directory does not exist:', projectDir));
             process.exit(1);
         }
-
         await runUnsafeNpmScript(projectDir, 'fast-dev');
     } catch (error) {
         console.error(chalk.red('An unexpected error occurred during project initialization.'), error.message);
@@ -24,6 +24,7 @@ export async function startFastProject(projectname: string, options: CliOptions)
 
 export async function initProject(projectname?: string,
     options?: {
+        startMode?: boolean;
         isFastMode?: boolean;
         skipAll?: boolean;
         installPrisma?: boolean;
@@ -36,6 +37,17 @@ export async function initProject(projectname?: string,
         installEmail?: boolean;
     }) {
     try {
+      
+        if (options?.startMode) {
+            const cwd = path.resolve(process.cwd(), projectname);
+            const currentDirectory = await findTSDIAPIServerProject(cwd);
+            if (currentDirectory) {
+                console.log(chalk.green(`Found TSDIAPI project at ${currentDirectory}`));
+                await startFastProject(currentDirectory);
+                return;
+            }
+        }
+
         // Welcome message
         console.log(chalk.green("Welcome to the TSDIAPI project initializer!"));
         const questions: Array<any> = [];
@@ -252,7 +264,7 @@ export async function initProject(projectname?: string,
         }
 
         if (options?.isFastMode) {
-            await startFastProject(answers.name, answers as CliOptions);
+            await startFastProject(answers.name);
         }
 
     } catch (error) {
