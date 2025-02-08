@@ -42,4 +42,7 @@ export declare function addS3AppParams(projectDir: string): Promise<void>;
 export declare function addAppConfigParams(projectDir: string, params: AppParam[]): Promise<void>;
 export declare function runUnsafeNpmScript(projectDir: string, scriptName: string): void;
 export declare function runNpmScript(scriptName: string): void;
+export declare function isValidProjectPath(inputPath: string): boolean;
+export declare function getCdCommand(targetPath: string): string | false;
+export declare function isPathSuitableToNewProject(pathName: string): string | false;
 //# sourceMappingURL=index.d.ts.map

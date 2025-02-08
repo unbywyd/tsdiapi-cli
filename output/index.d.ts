@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 export type CliOptions = {
     host?: string;
-    name: string;
     installPrisma: boolean;
     installSocket: boolean;
     installCron: boolean;

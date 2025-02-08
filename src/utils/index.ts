@@ -964,3 +964,58 @@ export function runNpmScript(scriptName: string) {
     process.exit(code);
   });
 }
+
+
+export function isValidProjectPath(inputPath: string): boolean {
+  const pathPartRegex = /^[a-zA-Z0-9.-]+$/;
+
+  try {
+    const parts = inputPath.split('/');
+
+    for (const part of parts) {
+      if (part === '' || part.startsWith('..') || !pathPartRegex.test(part)) {
+        return false;
+      }
+    }
+
+    const resolvedPath = path.resolve(process.cwd(), inputPath);
+    if (!resolvedPath.startsWith(process.cwd())) {
+      console.log(chalk.red('Error: The project path must be within the current working directory.'));
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getCdCommand(targetPath: string): string | false {
+  const cwd = process.cwd();
+  const fullPath = path.resolve(targetPath);
+  if (cwd === fullPath) {
+    return false;
+  }
+  const relativePath = path.relative(cwd, fullPath);
+
+  if (relativePath.startsWith('..')) {
+    return false;
+  }
+  return `cd ${relativePath}`;
+}
+export function isPathSuitableToNewProject(pathName: string): string | false {
+
+  const isValidInputPath = isValidProjectPath(pathName);
+  if (!isValidInputPath) {
+    console.log(chalk.red('Error: The project path is not valid.'));
+    return false;
+  }
+  const projectDir = path.resolve(process.cwd(), pathName);
+
+  if (fs.existsSync(projectDir) && fs.readdirSync(projectDir).length > 0) {
+    console.log(chalk.red(`Error: A project already exists at ${projectDir} and is not empty.`));
+    return false;
+  }
+
+  return projectDir;
+}

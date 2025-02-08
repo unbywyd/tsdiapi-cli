@@ -8,28 +8,24 @@ import { generateFeature, runGenerateCommand } from './utils/generate'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
-program.command('init [projectname]').description('Initialize a new TSDIAPI project')
+program.command('init <name>').description('Initialize a new TSDIAPI project')
   .option('-s, --skip', 'Skip all questions and use default settings')
-  .option('-f, --fast', 'Fast mode, skip all questions and use default settings')
-  .action((projectname, options) => {
-    initProject(projectname, {
-      skipAll: options.skip || options.fast || false,
-      isFastMode: options.fast || false
+  .action((name, options) => {
+    initProject(name, {
+      skipAll: options.skip || false
     });
   });
 
-program.command('start [projectname]').description('Fast start a new TSDIAPI project')
-  .action((projectname) => {
-    initProject(projectname, {
+program.command('start <name>').description('Fast start a new TSDIAPI project')
+  .action((name) => {
+    initProject(name, {
       skipAll: true,
-      startMode: true,
-      isFastMode: true
+      startMode: true
     });
   });
 
 export type CliOptions = {
   host?: string;
-  name: string;
   installPrisma: boolean;
   installSocket: boolean;
   installCron: boolean;
@@ -42,7 +38,7 @@ export type CliOptions = {
 };
 // init with create command
 program
-  .command('create <projectname>')
+  .command('create <name>')
   .alias('c')
   .description('Create a new TSDIAPI project')
   .option('--prisma', 'Install Prisma')
@@ -53,8 +49,8 @@ program
   .option('--jwt', 'Install JWT Auth')
   .option('--inforu', 'Install Inforu for SMS')
   .option('--email', 'Install Email service')
-  .action((projectname, options) => {
-    initProject(projectname, {
+  .action((name, options) => {
+    initProject(name, {
       installPrisma: options.prisma,
       installSocket: options.socket,
       installCron: options.cron,

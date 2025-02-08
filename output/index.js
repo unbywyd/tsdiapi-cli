@@ -8,26 +8,23 @@ const addPlugin_1 = require("./utils/addPlugin");
 const utils_1 = require("./utils");
 const generate_1 = require("./utils/generate");
 commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
-commander_1.program.command('init [projectname]').description('Initialize a new TSDIAPI project')
+commander_1.program.command('init <name>').description('Initialize a new TSDIAPI project')
     .option('-s, --skip', 'Skip all questions and use default settings')
-    .option('-f, --fast', 'Fast mode, skip all questions and use default settings')
-    .action((projectname, options) => {
-    (0, initProject_1.initProject)(projectname, {
-        skipAll: options.skip || options.fast || false,
-        isFastMode: options.fast || false
+    .action((name, options) => {
+    (0, initProject_1.initProject)(name, {
+        skipAll: options.skip || false
     });
 });
-commander_1.program.command('start [projectname]').description('Fast start a new TSDIAPI project')
-    .action((projectname) => {
-    (0, initProject_1.initProject)(projectname, {
+commander_1.program.command('start <name>').description('Fast start a new TSDIAPI project')
+    .action((name) => {
+    (0, initProject_1.initProject)(name, {
         skipAll: true,
-        startMode: true,
-        isFastMode: true
+        startMode: true
     });
 });
 // init with create command
 commander_1.program
-    .command('create <projectname>')
+    .command('create <name>')
     .alias('c')
     .description('Create a new TSDIAPI project')
     .option('--prisma', 'Install Prisma')
@@ -38,8 +35,8 @@ commander_1.program
     .option('--jwt', 'Install JWT Auth')
     .option('--inforu', 'Install Inforu for SMS')
     .option('--email', 'Install Email service')
-    .action((projectname, options) => {
-    (0, initProject_1.initProject)(projectname, {
+    .action((name, options) => {
+    (0, initProject_1.initProject)(name, {
         installPrisma: options.prisma,
         installSocket: options.socket,
         installCron: options.cron,

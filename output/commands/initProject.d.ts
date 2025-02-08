@@ -1,7 +1,6 @@
-export declare function startFastProject(projectname: string): Promise<void>;
+export declare function startFastProject(projectDir: string): Promise<void>;
 export declare function initProject(projectname?: string, options?: {
     startMode?: boolean;
-    isFastMode?: boolean;
     skipAll?: boolean;
     installPrisma?: boolean;
     installSocket?: boolean;
@@ -11,5 +10,5 @@ export declare function initProject(projectname?: string, options?: {
     installJwt?: boolean;
     installInforu?: boolean;
     installEmail?: boolean;
-}): Promise<void>;
+}): Promise<never>;
 //# sourceMappingURL=initProject.d.ts.map

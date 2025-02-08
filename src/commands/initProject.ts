@@ -3,15 +3,14 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { buildHandlebarsTemplate, runNpmInstall, runUnsafeNpmScript, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
+import { buildHandlebarsTemplate, getCdCommand, isPathSuitableToNewProject, runNpmInstall, runUnsafeNpmScript, setupCron, setupEmail, setupEvents, setupInforu, setupJWTAuth, setupPrisma, setupS3, setupSockets } from "../utils";
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
 import { nameToImportName } from '../utils/format';
 import { findTSDIAPIServerProject } from '../utils/addPlugin';
 
-export async function startFastProject(projectname: string) {
+export async function startFastProject(projectDir: string) {
     try {
-        const projectDir = path.resolve(process.cwd(), projectname);
         if (!fs.existsSync(projectDir)) {
             console.error(chalk.red('Project directory does not exist:', projectDir));
             process.exit(1);
@@ -25,7 +24,6 @@ export async function startFastProject(projectname: string) {
 export async function initProject(projectname?: string,
     options?: {
         startMode?: boolean;
-        isFastMode?: boolean;
         skipAll?: boolean;
         installPrisma?: boolean;
         installSocket?: boolean;
@@ -37,7 +35,7 @@ export async function initProject(projectname?: string,
         installEmail?: boolean;
     }) {
     try {
-      
+
         if (options?.startMode) {
             const cwd = path.resolve(process.cwd(), projectname);
             const currentDirectory = await findTSDIAPIServerProject(cwd);
@@ -52,55 +50,51 @@ export async function initProject(projectname?: string,
         console.log(chalk.green("Welcome to the TSDIAPI project initializer!"));
         const questions: Array<any> = [];
 
-        if (!projectname) {
-            questions.push(
-                {
-                    type: "input",
-                    name: "name",
-                    message: "Project name:",
-                    default: "my-tsdiapi-project",
-                    validate: async (input: string) => {
-                        const projectDir = path.resolve(process.cwd(), input);
-                        const exists = fs.existsSync(projectDir);
-                        if (exists) {
-                            return "A project already exists at this location. Please choose a different name.";
-                        }
-                        const npmNameRegex = /^[a-z0-9-]+$/;
-                        if (!npmNameRegex.test(input)) {
-                            return "The project name can only contain lowercase letters, numbers, and hyphens.";
-                        }
-                        return true;
-                    }
-                });
-            if (!options?.skipAll) {
-                questions.push({
-                    type: "input",
-                    name: "host",
-                    message: "Host:",
-                    default: DefaultHost,
-                    validate: (input: string) => {
-                        if (!input) {
-                            return "Host is required.";
-                        }
-                        return true;
-                    }
-                });
-                questions.push({
-                    type: "number",
-                    name: "port",
-                    message: "Port:",
-                    default: DefaultPort,
-                    validate: (input: number) => {
-                        if (input < 1 || input > 65535) {
-                            return "Port number must be between 1 and 65535.";
-                        }
-                        return true;
-                    }
-                });
-            }
-        }
-        if (!options?.skipAll) {
 
+        const projectDir = isPathSuitableToNewProject(projectname);
+        if (!projectDir) {
+            return process.exit(1);
+        }
+
+        let projectName = path.basename(projectDir);
+
+        if (!options?.skipAll) {
+            questions.push({
+                type: "input",
+                name: "name",
+                message: "Project name:",
+                default: projectName,
+                validate: (input: string) => {
+                    if (!input) {
+                        return "Project name is required.";
+                    }
+                    return true;
+                }
+            });
+            questions.push({
+                type: "input",
+                name: "host",
+                message: "Host:",
+                default: DefaultHost,
+                validate: (input: string) => {
+                    if (!input) {
+                        return "Host is required.";
+                    }
+                    return true;
+                }
+            });
+            questions.push({
+                type: "number",
+                name: "port",
+                message: "Port:",
+                default: DefaultPort,
+                validate: (input: number) => {
+                    if (input < 1 || input > 65535) {
+                        return "Port number must be between 1 and 65535.";
+                    }
+                    return true;
+                }
+            });
             if (options?.installPrisma === undefined) {
                 questions.push({
                     type: "confirm",
@@ -174,7 +168,6 @@ export async function initProject(projectname?: string,
             }
         }
 
-
         // Prompt the user for project details
         const answers = questions?.length ? await inquirer.prompt(questions) : {
             ...options,
@@ -198,22 +191,6 @@ export async function initProject(projectname?: string,
             answers.port = DefaultPort;
         }
 
-        // check npm name is valid
-        const npmNameRegex = /^[a-z0-9-]+$/;
-        if (!npmNameRegex.test(answers.name)) {
-            console.log(chalk.red("Error: The project name can only contain lowercase letters, numbers, and hyphens."));
-            process.exit(1);
-        }
-
-        // Resolve the project directory path
-        const projectDir = path.resolve(process.cwd(), answers.name);
-
-        // Check if the project directory exists and is not empty
-        if (fs.existsSync(projectDir) && fs.readdirSync(projectDir).length > 0) {
-            console.log(chalk.red(`Error: A project already exists at ${projectDir} and is not empty.`));
-            process.exit(1); // Exit the process with an error code
-        }
-
         // Placeholder for project generation logic
         console.log(chalk.blue(`Initializing project at ${projectDir}...`));
 
@@ -222,15 +199,22 @@ export async function initProject(projectname?: string,
         // Init npm
         await runNpmInstall(projectDir);
 
+        const cdCommand = getCdCommand(projectname);
         console.log(chalk.green(`Project successfully initialized at ${projectDir}!`));
-        console.log(`
-    ${chalk.yellow("Next steps:")}
-    1. ${chalk.cyan(`cd ${answers.name}`)}
-    2. ${chalk.cyan("npm run dev")}
-    
-    Happy coding with TSDIAPI!
-    `);
 
+        if (cdCommand) {
+            console.log(`
+${chalk.yellow("Next steps:")}
+1. ${chalk.cyan(`cd ${cdCommand}`)}
+2. ${chalk.cyan("npm run dev")}
+`);
+        } else {
+            console.log(`
+${chalk.yellow("Next steps:")}
+${chalk.cyan("npm run dev")}`);
+        }
+
+        console.log(chalk.green("Happy coding with TSDIAPI!"));
         if (answers.installPrisma) {
             await setupPrisma(projectDir);
         }
@@ -263,8 +247,8 @@ export async function initProject(projectname?: string,
             await setupEmail(projectDir);
         }
 
-        if (options?.isFastMode) {
-            await startFastProject(answers.name);
+        if (options?.startMode) {
+            await startFastProject(projectDir);
         }
 
     } catch (error) {

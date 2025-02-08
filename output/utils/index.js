@@ -24,6 +24,9 @@ exports.addS3AppParams = addS3AppParams;
 exports.addAppConfigParams = addAppConfigParams;
 exports.runUnsafeNpmScript = runUnsafeNpmScript;
 exports.runNpmScript = runNpmScript;
+exports.isValidProjectPath = isValidProjectPath;
+exports.getCdCommand = getCdCommand;
+exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const handlebars_1 = __importDefault(require("handlebars"));
@@ -858,5 +861,50 @@ function runNpmScript(scriptName) {
         }
         process.exit(code);
     });
+}
+function isValidProjectPath(inputPath) {
+    const pathPartRegex = /^[a-zA-Z0-9.-]+$/;
+    try {
+        const parts = inputPath.split('/');
+        for (const part of parts) {
+            if (part === '' || part.startsWith('..') || !pathPartRegex.test(part)) {
+                return false;
+            }
+        }
+        const resolvedPath = path_1.default.resolve(process.cwd(), inputPath);
+        if (!resolvedPath.startsWith(process.cwd())) {
+            console.log(chalk_1.default.red('Error: The project path must be within the current working directory.'));
+            return false;
+        }
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+function getCdCommand(targetPath) {
+    const cwd = process.cwd();
+    const fullPath = path_1.default.resolve(targetPath);
+    if (cwd === fullPath) {
+        return false;
+    }
+    const relativePath = path_1.default.relative(cwd, fullPath);
+    if (relativePath.startsWith('..')) {
+        return false;
+    }
+    return `cd ${relativePath}`;
+}
+function isPathSuitableToNewProject(pathName) {
+    const isValidInputPath = isValidProjectPath(pathName);
+    if (!isValidInputPath) {
+        console.log(chalk_1.default.red('Error: The project path is not valid.'));
+        return false;
+    }
+    const projectDir = path_1.default.resolve(process.cwd(), pathName);
+    if (fs_extra_1.default.existsSync(projectDir) && fs_extra_1.default.readdirSync(projectDir).length > 0) {
+        console.log(chalk_1.default.red(`Error: A project already exists at ${projectDir} and is not empty.`));
+        return false;
+    }
+    return projectDir;
 }
 //# sourceMappingURL=index.js.map
