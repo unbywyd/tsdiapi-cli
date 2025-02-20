@@ -7,7 +7,7 @@ import { buildHandlebarsTemplate, getCdCommand, isPathSuitableToNewProject, runN
 import { DefaultPort } from "../config";
 import { CliOptions } from '..';
 import { nameToImportName } from '../utils/format';
-import { findTSDIAPIServerProject } from '../utils/addPlugin';
+import { findTSDIAPIServerProject } from '../utils/plugins';
 
 export async function startFastProject(projectDir: string) {
     try {

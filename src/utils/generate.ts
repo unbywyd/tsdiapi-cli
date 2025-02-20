@@ -1,5 +1,5 @@
 import chalk from "chalk"
-import { findTSDIAPIServerProject, isPackageInstalled } from "./addPlugin"
+import { findTSDIAPIServerProject, isPackageInstalled } from "./plugins"
 import inquirer from "inquirer";
 import fs from "fs-extra";
 import { buildHandlebarsTemplate } from ".";

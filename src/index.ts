@@ -2,7 +2,7 @@
 import { program } from 'commander'
 import { initProject } from './commands/initProject'
 import { CurrentVersion } from './config'
-import { addPlugin } from './utils/addPlugin'
+import { addPlugin, removePlugin, updatePlugin } from './utils/plugins'
 import { runNpmScript } from './utils'
 import { generateFeature, runGenerateCommand } from './utils/generate'
 
@@ -63,12 +63,23 @@ program
   });
 
 
+const pluginCommand = program
+  .command('plugins')
+  .description('Manage plugins in your TSDIAPI project');
 
-const addCommand = program.command('add').description('Add resources to your TSDIAPI project')
-addCommand
-  .command('plugin [pluginName]')
+pluginCommand
+  .command('add <pluginName>')
   .description('Add a plugin to your TSDIAPI project')
-  .action(addPlugin)
+  .action((pluginName) => {
+    addPlugin(pluginName);
+  });
+
+pluginCommand
+  .command('update <pluginName>')
+  .description('Update an existing plugin in your TSDIAPI project')
+  .action((pluginName) => {
+    updatePlugin(pluginName);
+  });
 
 const generateCommand = program
   .command('generate')

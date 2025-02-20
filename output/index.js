@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = require("commander");
 const initProject_1 = require("./commands/initProject");
 const config_1 = require("./config");
-const addPlugin_1 = require("./utils/addPlugin");
+const plugins_1 = require("./utils/plugins");
 const utils_1 = require("./utils");
 const generate_1 = require("./utils/generate");
 commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
@@ -47,11 +47,21 @@ commander_1.program
         installEmail: options.email
     });
 });
-const addCommand = commander_1.program.command('add').description('Add resources to your TSDIAPI project');
-addCommand
-    .command('plugin [pluginName]')
+const pluginCommand = commander_1.program
+    .command('plugins')
+    .description('Manage plugins in your TSDIAPI project');
+pluginCommand
+    .command('add <pluginName>')
     .description('Add a plugin to your TSDIAPI project')
-    .action(addPlugin_1.addPlugin);
+    .action((pluginName) => {
+    (0, plugins_1.addPlugin)(pluginName);
+});
+pluginCommand
+    .command('update <pluginName>')
+    .description('Update an existing plugin in your TSDIAPI project')
+    .action((pluginName) => {
+    (0, plugins_1.updatePlugin)(pluginName);
+});
 const generateCommand = commander_1.program
     .command('generate')
     .alias('g')

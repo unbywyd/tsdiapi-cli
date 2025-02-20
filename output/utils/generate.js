@@ -11,7 +11,7 @@ exports.generateNewEvent = generateNewEvent;
 exports.generateNewService = generateNewService;
 exports.generateNewController = generateNewController;
 const chalk_1 = __importDefault(require("chalk"));
-const addPlugin_1 = require("./addPlugin");
+const plugins_1 = require("./plugins");
 const inquirer_1 = __importDefault(require("inquirer"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const _1 = require(".");
@@ -19,7 +19,7 @@ const format_1 = require("./format");
 const path_1 = __importDefault(require("path"));
 async function generateFeature(emptyOrName) {
     try {
-        const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)();
+        const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
@@ -91,11 +91,11 @@ async function runGenerateCommand(type, name) {
 }
 async function generateNewPrisma(dir, name) {
     try {
-        const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)();
+        const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
-        const prismaPluginInstalled = await (0, addPlugin_1.isPackageInstalled)(currentDirectory, '@tsdiapi/prisma');
+        const prismaPluginInstalled = await (0, plugins_1.isPackageInstalled)(currentDirectory, '@tsdiapi/prisma');
         if (!prismaPluginInstalled) {
             return console.log(chalk_1.default.red(`@tsdiapi/prisma plugin is not installed, please install it first, use 'tsdiapi add plugin prisma'`));
         }
@@ -122,11 +122,11 @@ async function generateNewPrisma(dir, name) {
 }
 async function generateNewCron(dir, name) {
     try {
-        const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)();
+        const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
-        const cronPluginInstalled = await (0, addPlugin_1.isPackageInstalled)(currentDirectory, '@tsdiapi/cron');
+        const cronPluginInstalled = await (0, plugins_1.isPackageInstalled)(currentDirectory, '@tsdiapi/cron');
         if (!cronPluginInstalled) {
             return console.log(chalk_1.default.red(`@tsdiapi/cron plugin is not installed, please install it first, use 'tsdiapi add plugin cron'`));
         }
@@ -149,11 +149,11 @@ async function generateNewCron(dir, name) {
 }
 async function generateNewEvent(dir, name) {
     try {
-        const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)();
+        const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
-        const eventPluginInstalled = await (0, addPlugin_1.isPackageInstalled)(currentDirectory, '@tsdiapi/events');
+        const eventPluginInstalled = await (0, plugins_1.isPackageInstalled)(currentDirectory, '@tsdiapi/events');
         if (!eventPluginInstalled) {
             return console.log(chalk_1.default.red(`@tsdiapi/events plugin is not installed, please install it first, use 'tsdiapi add plugin events'`));
         }

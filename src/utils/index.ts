@@ -10,7 +10,9 @@ import { Project, SourceFile, ClassDeclaration } from 'ts-morph'
 import crypto from 'crypto'
 import { findNearestPackageJson } from './cwd'
 import { CliOptions } from '..'
+
 const execAsync = util.promisify(exec)
+
 
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.

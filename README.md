@@ -71,15 +71,15 @@ tsdiapi <command> [options]
 
 ### **Commands**
 
-| Command         | Description                                                     |
-| --------------- | --------------------------------------------------------------- |
-| `init <path>`   | Initialize a new TSDIAPI project (interactive mode).            |
-| `start <path>`  | Initialize or run the project in development mode (quick mode). |
-| `create <path>` | Create a new TSDIAPI project with options.                      |
-| `plugin:add`    | Add a plugin to the project.                                    |
-| `generate`      | Generate boilerplate code (features, services, etc).            |
-| `build`         | Build the project.                                              |
-| `dev`           | Run the project in development mode.                            |
+| Command                             | Description                                                     |
+| ----------------------------------- | --------------------------------------------------------------- |
+| `init <path>`                       | Initialize a new TSDIAPI project (interactive mode).            |
+| `start <path>`                      | Initialize or run the project in development mode (quick mode). |
+| `create <path>`                     | Create a new TSDIAPI project with options.                      |
+| `plugins <add/update> <pluginName>` | Add a plugin to the project.                                    |
+| `generate`                          | Generate boilerplate code (features, services, etc).            |
+| `build`                             | Build the project.                                              |
+| `dev`                               | Run the project in development mode.                            |
 
 #### **Generate Resources**
 
@@ -129,13 +129,13 @@ This command runs the `npm run dev` script from your project.
 The CLI integrates seamlessly with plugins like **Prisma**, **Socket.IO**, **JWT Auth**, and others. Add plugins dynamically to your project:
 
 ```bash
-tsdiapi plugin:add <plugin-name>
+tsdiapi plugins add <plugin-name>
 ```
 
 For example:
 
 ```bash
-tsdiapi plugin:add cron
+tsdiapi plugins add cron
 ```
 
 This command installs and configures the **Cron** plugin in your project.

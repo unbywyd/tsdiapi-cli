@@ -13,7 +13,7 @@ const fs_extra_1 = __importDefault(require("fs-extra"));
 const utils_1 = require("../utils");
 const config_2 = require("../config");
 const format_1 = require("../utils/format");
-const addPlugin_1 = require("../utils/addPlugin");
+const plugins_1 = require("../utils/plugins");
 async function startFastProject(projectDir) {
     try {
         if (!fs_extra_1.default.existsSync(projectDir)) {
@@ -30,7 +30,7 @@ async function initProject(projectname, options) {
     try {
         if (options?.startMode) {
             const cwd = path_1.default.resolve(process.cwd(), projectname);
-            const currentDirectory = await (0, addPlugin_1.findTSDIAPIServerProject)(cwd);
+            const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)(cwd);
             if (currentDirectory) {
                 console.log(chalk_1.default.green(`Found TSDIAPI project at ${currentDirectory}`));
                 await startFastProject(currentDirectory);
