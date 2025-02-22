@@ -1,29 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nameToImportName = void 0;
-exports.formatName = formatName;
 exports.toCamelCase = toCamelCase;
 exports.toPascalCase = toPascalCase;
+exports.toLowerCase = toLowerCase;
 exports.normalizeName = normalizeName;
 exports.capitalize = capitalize;
 exports.toKebabCase = toKebabCase;
-function formatName(name, lowercaseFirstLetter = false) {
-    const formattedName = name
-        .replace(/[^a-zA-Z0-9]/g, ' ')
-        .split(' ')
-        .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join('');
-    if (lowercaseFirstLetter) {
-        return formattedName.charAt(0).toLowerCase() + formattedName.slice(1);
-    }
-    return formattedName;
-}
 function toCamelCase(input) {
     return normalizeName(input, true);
 }
 function toPascalCase(input) {
     return normalizeName(input, false);
+}
+function toLowerCase(input) {
+    return normalizeName(input, false)?.toLowerCase();
 }
 function normalizeName(input, lowercaseFirst) {
     // 1. Удаляем всё, кроме латинских букв, цифр и разделителей (превращаем их в пробелы)

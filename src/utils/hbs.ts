@@ -33,6 +33,30 @@ export function buildHandlebarsTemplate(templateName: string, data: any): string
     }
 }
 
+export function devBuildHandlebarsTemplate(templateName: string, data: any): string {
+    try {
+        // Define the path to the templates directory
+        const templatePath = path.join(__dirname, '../', 'dev', templateName)
+
+        // Check if the template file exists
+        if (!fs.existsSync(templatePath)) {
+            throw new Error(`Template file not found: ${templatePath}`)
+        }
+
+        // Load the template content
+        const templateContent = fs.readFileSync(templatePath, 'utf8')
+
+        // Compile the template using Handlebars
+        const template = Handlebars.compile(templateContent)
+
+        // Generate the output by passing the data to the compiled template
+        return template(data)
+    } catch (error) {
+        console.error(`Error building template "${templateName}":`, error)
+        throw error
+    }
+}
+
 export function buildHandlebarsTemplateWithPath(templateFilePath: string, data: any): string | null {
     try {
         // Check if the template file exists

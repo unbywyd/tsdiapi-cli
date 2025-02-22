@@ -158,19 +158,6 @@ async function fileModifications(pluginName, projectDir, modifications) {
         for (const { filePath, mode } of pendingChanges) {
             console.log(`- ${filePath} (${mode})`);
         }
-        /*const { confirmChanges } = await inquirer.prompt([
-            {
-                type: "confirm",
-                name: "confirmChanges",
-                message: `⚡ Do you want to apply these changes?`,
-                default: true
-            }
-        ]);
-
-        if (!confirmChanges) {
-            console.log(chalk.yellow("❌ Modifications were cancelled by the user."));
-            return;
-        }*/
         for (const mod of modifications) {
             const filePath = path_1.default.join(projectDir, mod.path);
             if (!fs_extra_1.default.existsSync(filePath))

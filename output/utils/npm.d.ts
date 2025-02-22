@@ -7,5 +7,5 @@ export declare function runNpmScript(scriptName: string): void;
  */
 export declare function runNpmInstall(projectDir: string): Promise<void>;
 export declare function installBaseDependencies(projectDir: string): Promise<void>;
-export declare function packageExistsOnNpm(packageName: string): Promise<boolean>;
+export declare function packageExistsOnNpm(packageName: string, silent?: boolean): Promise<boolean>;
 //# sourceMappingURL=npm.d.ts.map

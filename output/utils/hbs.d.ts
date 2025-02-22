@@ -6,5 +6,6 @@
  * @returns The compiled template as a string.
  */
 export declare function buildHandlebarsTemplate(templateName: string, data: any): string;
+export declare function devBuildHandlebarsTemplate(templateName: string, data: any): string;
 export declare function buildHandlebarsTemplateWithPath(templateFilePath: string, data: any): string | null;
 //# sourceMappingURL=hbs.d.ts.map

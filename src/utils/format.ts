@@ -1,17 +1,3 @@
-export function formatName(name: string, lowercaseFirstLetter = false): string {
-    const formattedName = name
-        .replace(/[^a-zA-Z0-9]/g, ' ')
-        .split(' ')
-        .filter(Boolean)
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join('');
-
-    if (lowercaseFirstLetter) {
-        return formattedName.charAt(0).toLowerCase() + formattedName.slice(1);
-    }
-
-    return formattedName;
-}
 
 export function toCamelCase(input: string): string {
     return normalizeName(input, true);
@@ -19,6 +5,9 @@ export function toCamelCase(input: string): string {
 
 export function toPascalCase(input: string): string {
     return normalizeName(input, false);
+}
+export function toLowerCase(input: string): string {
+    return normalizeName(input, false)?.toLowerCase();
 }
 
 export function normalizeName(input: string, lowercaseFirst: boolean): string {

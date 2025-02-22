@@ -158,24 +158,26 @@ export async function installBaseDependencies(projectDir: string) {
 }
 
 
-export async function packageExistsOnNpm(packageName: string): Promise<boolean> {
-    const spinner = ora({
-        text: chalk.blue(`🔍 Checking package ${chalk.bold(packageName)} on NPM...`),
-        color: "cyan",
-    }).start();
+export async function packageExistsOnNpm(packageName: string, silent?: boolean): Promise<boolean> {
+    const spinner = silent
+        ? null
+        : ora({
+              text: chalk.blue(`🔍 Checking NPM for package: ${chalk.bold(packageName)}...`),
+              color: "cyan",
+          }).start();
 
     try {
         const response = await fetch(`https://registry.npmjs.org/${packageName}`);
 
         if (response.ok) {
-            spinner.succeed(chalk.green(`✅ Package ${chalk.bold(packageName)} exists on NPM.`));
+            spinner?.succeed(chalk.green(`✅ Package ${chalk.bold(packageName)} is available on NPM.`));
             return true;
         } else {
-            spinner.fail(chalk.red(`❌ Package ${chalk.bold(packageName)} does not exist on NPM.`));
+            spinner?.fail(chalk.red(`❌ Package ${chalk.bold(packageName)} does not exist on NPM.`));
             return false;
         }
-    } catch (error) {
-        spinner.fail(chalk.red(`❌ Error checking package: ${error.message}`));
+    } catch (error: any) {
+        spinner?.fail(chalk.red(`❌ Failed to check package: ${error.message}`));
         return false;
     }
 }

@@ -1,0 +1,35 @@
+{
+  "name": "{{name}}",
+  "description": "{{description}}",
+  "version": "1.0.0",
+  "main": "output/index.js",
+  "types": "output/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  {{#if author}}
+  "author": "{{author}}",
+  {{/if}}
+  "engines": {
+    "node": ">=18.19.0"
+  },
+  "keywords": [
+    "tsdiapi"
+  ],
+  "license": "MIT",
+  {{#if giturl}}
+  "repository": {
+    "type": "git",
+    "url": "{{giturl}}"
+  },
+  "homepage": "{{giturl}}",
+  {{/if}}
+  "files": [
+    "output/",
+    "README.md",
+    "LICENSE.md",
+    "tsdiapi.config.json",
+    "files/",
+    "generators/"
+  ]
+}

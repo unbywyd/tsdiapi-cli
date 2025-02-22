@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildHandlebarsTemplate = buildHandlebarsTemplate;
+exports.devBuildHandlebarsTemplate = devBuildHandlebarsTemplate;
 exports.buildHandlebarsTemplateWithPath = buildHandlebarsTemplateWithPath;
 const handlebars_1 = __importDefault(require("handlebars"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
@@ -19,6 +20,26 @@ function buildHandlebarsTemplate(templateName, data) {
     try {
         // Define the path to the templates directory
         const templatePath = path_1.default.join(__dirname, '../', 'templates', templateName + '.hbs');
+        // Check if the template file exists
+        if (!fs_extra_1.default.existsSync(templatePath)) {
+            throw new Error(`Template file not found: ${templatePath}`);
+        }
+        // Load the template content
+        const templateContent = fs_extra_1.default.readFileSync(templatePath, 'utf8');
+        // Compile the template using Handlebars
+        const template = handlebars_1.default.compile(templateContent);
+        // Generate the output by passing the data to the compiled template
+        return template(data);
+    }
+    catch (error) {
+        console.error(`Error building template "${templateName}":`, error);
+        throw error;
+    }
+}
+function devBuildHandlebarsTemplate(templateName, data) {
+    try {
+        // Define the path to the templates directory
+        const templatePath = path_1.default.join(__dirname, '../', 'dev', templateName);
         // Check if the template file exists
         if (!fs_extra_1.default.existsSync(templatePath)) {
             throw new Error(`Template file not found: ${templatePath}`);

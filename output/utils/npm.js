@@ -153,24 +153,26 @@ async function installBaseDependencies(projectDir) {
         process.exit(1);
     }
 }
-async function packageExistsOnNpm(packageName) {
-    const spinner = (0, ora_1.default)({
-        text: chalk_1.default.blue(`🔍 Checking package ${chalk_1.default.bold(packageName)} on NPM...`),
-        color: "cyan",
-    }).start();
+async function packageExistsOnNpm(packageName, silent) {
+    const spinner = silent
+        ? null
+        : (0, ora_1.default)({
+            text: chalk_1.default.blue(`🔍 Checking NPM for package: ${chalk_1.default.bold(packageName)}...`),
+            color: "cyan",
+        }).start();
     try {
         const response = await (0, node_fetch_1.default)(`https://registry.npmjs.org/${packageName}`);
         if (response.ok) {
-            spinner.succeed(chalk_1.default.green(`✅ Package ${chalk_1.default.bold(packageName)} exists on NPM.`));
+            spinner?.succeed(chalk_1.default.green(`✅ Package ${chalk_1.default.bold(packageName)} is available on NPM.`));
             return true;
         }
         else {
-            spinner.fail(chalk_1.default.red(`❌ Package ${chalk_1.default.bold(packageName)} does not exist on NPM.`));
+            spinner?.fail(chalk_1.default.red(`❌ Package ${chalk_1.default.bold(packageName)} does not exist on NPM.`));
             return false;
         }
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red(`❌ Error checking package: ${error.message}`));
+        spinner?.fail(chalk_1.default.red(`❌ Failed to check package: ${error.message}`));
         return false;
     }
 }

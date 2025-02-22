@@ -7,6 +7,7 @@ import { generate } from './utils/generate'
 import qs from 'qs'
 import { toSetupPlugin } from './utils/setup-plugin'
 import { runNpmScript } from './utils/npm'
+import { promptPluginDetails } from './utils/dev-plugin'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
@@ -61,6 +62,20 @@ pluginCommand
   .action((pluginName) => {
     updatePlugin(pluginName);
   });
+
+
+const devCommand = program
+  .command('dev')
+  .description('Development commands');
+
+devCommand
+  .command('plugin <name>')
+  .description('Create a new plugin')
+  .action((name) => {
+    promptPluginDetails(name);
+  }
+  );
+
 
 
 program

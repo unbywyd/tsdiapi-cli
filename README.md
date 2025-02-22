@@ -162,6 +162,55 @@ You can explore all available plugins on npm:
 
 ---
 
+
+## **Developing Plugins**
+
+TSDIAPI CLI allows developers to create their own plugins to extend the framework. Plugins can introduce **new services, middleware, configurations, and generators**.
+
+### **Creating a New Plugin**
+
+To create a plugin template, run:
+
+```bash
+tsdiapi dev plugin <name>
+```
+
+This will generate a **basic plugin structure** including configuration files and a boilerplate setup.
+
+### **Plugin Lifecycle Methods**
+
+Each plugin supports the following lifecycle methods:
+
+| Method         | Description |
+|---------------|-------------|
+| `onInit`      | Executed when the plugin is initialized. Ideal for setting up configurations. |
+| `beforeStart` | Runs before the server starts. Used for preloading data or dependencies. |
+| `afterStart`  | Runs after the server starts. Can be used for logging, event listeners, etc. |
+
+### **Auto-loading Files**
+
+If a plugin supports auto-loading files, it should specify `bootstrapFilesGlobPath` in its configuration.
+
+Example:
+
+```json
+{
+  "bootstrapFilesGlobPath": "*.events.ts"
+}
+```
+
+This ensures that all event files matching the pattern are automatically registered.
+
+### **Publishing a Plugin**
+
+To publish a plugin, contact the **TSDIAPI** team and request publishing rights. You can reach out via email:
+
+📧 Contact: **unbywyd@gmail.com**
+
+🚀 Happy coding and developing with **TSDIAPI CLI**!
+
+---
+
 ## **Contributing & Contact**
 
 TSDIAPI is an open-source project. Contributions are always welcome! If you want to contribute, suggest features, or report issues, feel free to reach out.

@@ -11,6 +11,7 @@ const plugins_1 = require("./utils/plugins");
 const generate_1 = require("./utils/generate");
 const qs_1 = __importDefault(require("qs"));
 const setup_plugin_1 = require("./utils/setup-plugin");
+const dev_plugin_1 = require("./utils/dev-plugin");
 commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
 commander_1.program.command('init <name>').description('Initialize a new TSDIAPI project')
     .option('-s, --skip', 'Skip all questions and use default settings')
@@ -56,6 +57,15 @@ pluginCommand
     .description('Update an existing plugin in your TSDIAPI project')
     .action((pluginName) => {
     (0, plugins_1.updatePlugin)(pluginName);
+});
+const devCommand = commander_1.program
+    .command('dev')
+    .description('Development commands');
+devCommand
+    .command('plugin <name>')
+    .description('Create a new plugin')
+    .action((name) => {
+    (0, dev_plugin_1.promptPluginDetails)(name);
 });
 commander_1.program
     .command('generate <pluginName> [generatorName] [options]')
