@@ -27,6 +27,13 @@ export interface PluginFileMapping {
     overwrite?: boolean;
     isHandlebarsTemplate?: boolean;
 }
+export interface PluginFileModification {
+    path: string;
+    mode: "prepend" | "append";
+    content: string;
+    match: string;
+    expected?: boolean;
+}
 export interface PluginMetadata {
     name: string;
     description?: string;
@@ -35,7 +42,9 @@ export interface PluginMetadata {
     generators?: Array<PluginGenerator>;
     provideScripts?: Record<string, string>;
     postInstall?: string;
+    afterInstall?: string;
     postMessages?: Array<string>;
+    postFileModifications?: Array<PluginFileModification>;
 }
 export declare function validatePluginConfig(config: PluginMetadata): boolean;
 //# sourceMappingURL=plugins-configuration.d.ts.map

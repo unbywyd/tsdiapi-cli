@@ -18,6 +18,14 @@ program.command('init <name>').description('Initialize a new TSDIAPI project')
       skipAll: options.skip || false
     });
   });
+program.command('create <name>').description('Initialize a new TSDIAPI project')
+  .option('-s, --skip', 'Skip all questions and use default settings')
+  .action((name, options) => {
+    initProject(name, {
+      name: name,
+      skipAll: options.skip || false
+    });
+  });
 
 program.command('start <name>').description('Initialize and Fast start a new TSDIAPI project')
   .action((name) => {

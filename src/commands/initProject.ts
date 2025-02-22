@@ -147,15 +147,7 @@ export async function initProject(projectname?: string, options?: CreateProjectO
             console.error(chalk.red("❌ An unexpected error occurred during project initialization."), error.message);
         }
 
-        if (!options?.startMode) {
-            console.log(chalk.yellow("📌 Next steps:"));
-            if (cdCommand) {
-                console.log(`🔹 ${chalk.cyan(`cd ${cdCommand}`)}`);
-            }
-            console.log(`🔹 ${chalk.cyan("npm run dev")}`);
-        }
 
-        console.log(chalk.green("\n🚀 Happy coding with TSDIAPI!\n"));
         const message = `
         ${chalk.yellow.bold('📦 Need more functionality? Extend your server with TSDIAPI plugins!')}
         
@@ -172,7 +164,7 @@ export async function initProject(projectname?: string, options?: CreateProjectO
         ${chalk.gray('💡 Want to contribute or ask something?')}
         ${chalk.cyan('📧 Contact:')} ${chalk.white('unbywyd@gmail.com')}
         `;
-        
+
         const boxen = await loadBoxen();
         console.log(boxen(message, {
             padding: 1,
@@ -180,6 +172,16 @@ export async function initProject(projectname?: string, options?: CreateProjectO
             borderStyle: 'round',
             borderColor: 'blue'
         }));
+
+        if (!options?.startMode) {
+            console.log(chalk.yellow("📌 Next steps:"));
+            if (cdCommand) {
+                console.log(`🔹 ${chalk.cyan(`${cdCommand}`)}`);
+            }
+            console.log(`🔹 ${chalk.cyan("npm run dev")}`);
+        }
+        console.log(chalk.green("\n🚀 Happy coding with TSDIAPI!\n"));
+
         // 🚀 Шаг 8: Запуск в быстром режиме (если выбрано)
         if (options?.startMode) {
             await startFastProject(projectDir);

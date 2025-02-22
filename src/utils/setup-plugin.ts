@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { glob } from "glob";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
-import { PluginConfigVariable, PluginFileMapping, PluginMetadata } from './plugins-configuration';
+import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
 import { findTSDIAPIServerProject, getPluginMetadata, isPackageInstalled } from './plugins';
 import { findNearestPackageJson, isDirectoryPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
@@ -117,6 +117,10 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             }
         }
 
+        if (pluginConfig?.postFileModifications?.length) {
+            await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications);
+        }
+
         console.log(chalk.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
             for (const message of pluginConfig.postMessages) {
@@ -126,6 +130,86 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
 
     } catch (error) {
         console.error(chalk.red(`Error while setting up ${pluginName} settings: ${error.message}`));
+    }
+}
+
+
+export async function fileModifications(pluginName: string, projectDir: string, modifications: Array<PluginFileModification>): Promise<void> {
+    try {
+        const pendingChanges: Array<{ filePath: string; mode: string; plugin: string }> = [];
+
+        for (const mod of modifications) {
+            const filePath = path.join(projectDir, mod.path);
+            if (!fs.existsSync(filePath)) {
+                console.log(chalk.yellow(`⚠️ Skipping ${filePath} (File not found)`));
+                continue;
+            }
+
+            const fileContent = await fs.readFile(filePath, "utf8");
+            const regex = new RegExp(mod.match, "g");
+
+            const matchFound = regex.test(fileContent);
+
+            if (mod.expected !== undefined && matchFound !== mod.expected) {
+                console.log(
+                    chalk.yellow(
+                        `⚠️ Skipping modification for ${filePath} (Expected match condition not met)`
+                    )
+                );
+                continue;
+            }
+
+            pendingChanges.push({
+                filePath,
+                mode: mod.mode,
+                plugin: pluginName
+            });
+        }
+
+        if (pendingChanges.length === 0) {
+            console.log(chalk.blue(`✅ No modifications required for ${pluginName}.`));
+            return;
+        }
+
+        console.log(chalk.blue(`⚡ Plugin "${pluginName}" wants to modify ${pendingChanges.length} files:`));
+        for (const { filePath, mode } of pendingChanges) {
+            console.log(`- ${filePath} (${mode})`);
+        }
+
+        /*const { confirmChanges } = await inquirer.prompt([
+            {
+                type: "confirm",
+                name: "confirmChanges",
+                message: `⚡ Do you want to apply these changes?`,
+                default: true
+            }
+        ]);
+
+        if (!confirmChanges) {
+            console.log(chalk.yellow("❌ Modifications were cancelled by the user."));
+            return;
+        }*/
+
+        for (const mod of modifications) {
+            const filePath = path.join(projectDir, mod.path);
+            if (!fs.existsSync(filePath)) continue;
+
+            let fileContent = await fs.readFile(filePath, "utf8");
+
+            if (mod.mode === "prepend") {
+                fileContent = mod.content + "\n" + fileContent;
+            } else if (mod.mode === "append") {
+                fileContent = fileContent + "\n" + mod.content;
+            }
+
+            await fs.writeFile(filePath, fileContent, "utf8");
+            console.log(chalk.green(`✅ Updated: ${filePath} (${mod.mode})`));
+        }
+
+        console.log(chalk.blue(`🎉 Modifications applied successfully for "${pluginName}"`));
+
+    } catch (error) {
+        console.error(chalk.red(`❌ Error while modifying files: ${error.message}`));
     }
 }
 

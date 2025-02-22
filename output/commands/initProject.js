@@ -134,14 +134,6 @@ async function initProject(projectname, options) {
         catch (error) {
             console.error(chalk_1.default.red("❌ An unexpected error occurred during project initialization."), error.message);
         }
-        if (!options?.startMode) {
-            console.log(chalk_1.default.yellow("📌 Next steps:"));
-            if (cdCommand) {
-                console.log(`🔹 ${chalk_1.default.cyan(`cd ${cdCommand}`)}`);
-            }
-            console.log(`🔹 ${chalk_1.default.cyan("npm run dev")}`);
-        }
-        console.log(chalk_1.default.green("\n🚀 Happy coding with TSDIAPI!\n"));
         const message = `
         ${chalk_1.default.yellow.bold('📦 Need more functionality? Extend your server with TSDIAPI plugins!')}
         
@@ -165,6 +157,14 @@ async function initProject(projectname, options) {
             borderStyle: 'round',
             borderColor: 'blue'
         }));
+        if (!options?.startMode) {
+            console.log(chalk_1.default.yellow("📌 Next steps:"));
+            if (cdCommand) {
+                console.log(`🔹 ${chalk_1.default.cyan(`${cdCommand}`)}`);
+            }
+            console.log(`🔹 ${chalk_1.default.cyan("npm run dev")}`);
+        }
+        console.log(chalk_1.default.green("\n🚀 Happy coding with TSDIAPI!\n"));
         // 🚀 Шаг 8: Запуск в быстром режиме (если выбрано)
         if (options?.startMode) {
             await startFastProject(projectDir);

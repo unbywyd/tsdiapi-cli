@@ -69,6 +69,15 @@ export const addPlugin = async (selectedPluginName: string) => {
 
       spinner.text = chalk.blue(`🔧 Configuring ${packageName}...`);
       await setupCommon(packageName, currentDirectory, config);
+      try {
+        if (config.afterInstall) {
+          spinner.text = chalk.blue(`⚙️ Running after-install script for ${packageName}...`);
+          await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall);
+          spinner.succeed(chalk.green(`✅ After-install script executed.`));
+        }
+      } catch (error) {
+        spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
+      }
       spinner.succeed(chalk.green(`✅ Configuration for ${packageName} completed.`));
     }
 

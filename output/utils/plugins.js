@@ -66,6 +66,16 @@ const addPlugin = async (selectedPluginName) => {
             }
             spinner.text = chalk_1.default.blue(`🔧 Configuring ${packageName}...`);
             await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            try {
+                if (config.afterInstall) {
+                    spinner.text = chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`);
+                    await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.afterInstall);
+                    spinner.succeed(chalk_1.default.green(`✅ After-install script executed.`));
+                }
+            }
+            catch (error) {
+                spinner.fail(chalk_1.default.red(`❌ Error running after-setup script: ${error.message}`));
+            }
             spinner.succeed(chalk_1.default.green(`✅ Configuration for ${packageName} completed.`));
         }
         console.log(chalk_1.default.green(`\n🎉 Plugin ${chalk_1.default.bold(selectedPluginName)} installed successfully! 🚀\n`));

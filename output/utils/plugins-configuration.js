@@ -100,6 +100,7 @@ const pluginConfigSchema = {
             nullable: true
         },
         postInstall: { type: "string", nullable: true },
+        afterInstall: { type: "string", nullable: true },
         provideScripts: {
             type: "object",
             additionalProperties: { type: "string" },
@@ -108,6 +109,25 @@ const pluginConfigSchema = {
         postMessages: {
             type: "array",
             items: { type: "string", minLength: 1 },
+            nullable: true
+        },
+        postFileModifications: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    path: { type: "string", minLength: 1 },
+                    mode: {
+                        type: "string",
+                        enum: ["prepend", "append"]
+                    },
+                    content: { type: "string", minLength: 1 },
+                    match: { type: "string", minLength: 1 },
+                    expected: { type: "boolean", nullable: true }
+                },
+                required: ["path", "mode", "content", "match"],
+                additionalProperties: false
+            },
             nullable: true
         }
     },
