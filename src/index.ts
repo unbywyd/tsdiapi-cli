@@ -76,14 +76,5 @@ program
   });
 
 
-program.command('build').description('Build the project').action(() => {
-  runNpmScript('build');
-});
-
-program.command('dev').description('Run the project in development mode').action(() => {
-  runNpmScript('dev');
-});
-
-
 program.parse(process.argv)
 
