@@ -1,14 +1,3 @@
 #!/usr/bin/env node
-export type CliOptions = {
-    host?: string;
-    installPrisma: boolean;
-    installSocket: boolean;
-    installCron: boolean;
-    installInforu: boolean;
-    installEvents: boolean;
-    installS3: boolean;
-    installJwt: boolean;
-    installEmail: boolean;
-    port?: number;
-};
+export {};
 //# sourceMappingURL=index.d.ts.map

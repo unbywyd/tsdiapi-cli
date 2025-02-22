@@ -35,22 +35,30 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@types/figlet": "^1.7.0",
+    "@types/qs": "^6.9.18",
     "ajv": "^8.17.1",
+    "boxen": "^8.0.1",
     "chalk": "^4.1.2",
     "commander": "^13.1.0",
     "cpy-cli": "^5.0.0",
+    "figlet": "^1.8.0",
     "fs-extra": "^11.3.0",
     "glob": "^11.0.1",
+    "gradient-string": "^3.0.0",
     "handlebars": "^4.7.8",
     "inquirer": "^12.3.2",
     "jexl": "^2.3.0",
-    "ora": "^8.1.1",
+    "node-fetch": "^2.7.0",
+    "ora": "^5.4.1",
+    "qs": "^6.14.0",
     "ts-morph": "^25.0.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/jexl": "^2.3.4",
     "@types/node": "^22.10.10",
+    "@types/node-fetch": "^2.6.12",
     "typescript": "^5.7.2"
   },
   "repository": {

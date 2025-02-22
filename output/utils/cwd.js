@@ -4,8 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findNearestPackageJson = findNearestPackageJson;
+exports.getCdCommand = getCdCommand;
+exports.isValidProjectPath = isValidProjectPath;
+exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
+exports.resolveTargetDirectory = resolveTargetDirectory;
+exports.isDirectoryPath = isDirectoryPath;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const chalk_1 = __importDefault(require("chalk"));
 /**
  * Finds the nearest package.json file from the given directory up to the root.
  * @param startDir The directory to start searching from (defaults to process.cwd()).
@@ -22,5 +28,78 @@ function findNearestPackageJson(startDir = process.cwd()) {
         currentDir = path_1.default.dirname(currentDir);
     } while (currentDir !== root); // Stop at the system root
     return null; // No package.json found
+}
+function getCdCommand(targetPath) {
+    const cwd = process.cwd();
+    const fullPath = path_1.default.resolve(targetPath);
+    if (cwd === fullPath) {
+        return false;
+    }
+    const relativePath = path_1.default.relative(cwd, fullPath);
+    if (relativePath.startsWith('..')) {
+        return false;
+    }
+    return `cd ${relativePath}`;
+}
+/**
+ * Checks if a given input path is a valid project path.
+ * Ensures that:
+ * - The path contains only valid characters.
+ * - The path does not start with "..".
+ * - The path is inside the current working directory.
+ */
+function isValidProjectPath(inputPath) {
+    const pathPartRegex = /^[a-zA-Z0-9._-]+$/; // Allow dots, underscores, and hyphens.
+    try {
+        const normalizedPath = path_1.default.normalize(inputPath); // Normalize slashes
+        const parts = normalizedPath.split(path_1.default.sep); // Use platform-specific separator
+        for (const part of parts) {
+            if (part === "" || part.startsWith("..") || !pathPartRegex.test(part)) {
+                console.log(chalk_1.default.red(`❌ Error: Invalid directory name "${part}".`));
+                return false;
+            }
+        }
+        const resolvedPath = path_1.default.resolve(process.cwd(), normalizedPath);
+        if (!resolvedPath.startsWith(process.cwd())) {
+            console.log(chalk_1.default.red(`🚨 Error: The project path must be inside the current directory.`));
+            return false;
+        }
+        return true;
+    }
+    catch (error) {
+        console.log(chalk_1.default.red(`❌ Error: Invalid path "${inputPath}".`));
+        return false;
+    }
+}
+/**
+ * Checks if the given path is suitable for creating a new project.
+ * - Ensures the path is valid.
+ * - Ensures the directory does not already contain files.
+ */
+function isPathSuitableToNewProject(pathName) {
+    if (!isValidProjectPath(pathName)) {
+        console.log(chalk_1.default.red(`🚫 Error: The project path is not valid.`));
+        return false;
+    }
+    const projectDir = path_1.default.resolve(process.cwd(), pathName);
+    if (fs_1.default.existsSync(projectDir) && fs_1.default.readdirSync(projectDir).length > 0) {
+        console.log(chalk_1.default.red(`❌ Error: Directory "${projectDir}" is not empty.`));
+        return false;
+    }
+    console.log(chalk_1.default.green(`✅ Path is valid and ready for project creation: ${chalk_1.default.bold(projectDir)}`));
+    return projectDir;
+}
+function resolveTargetDirectory(cwd, name) {
+    const normalized = path_1.default.normalize(name).replace(/\\/g, "/");
+    const lastSlashIndex = normalized.lastIndexOf("/");
+    if (lastSlashIndex === -1) {
+        return cwd;
+    }
+    const directory = normalized.substring(0, lastSlashIndex);
+    return path_1.default.resolve(cwd, directory);
+}
+function isDirectoryPath(inputPath) {
+    const normalized = path_1.default.normalize(inputPath).replace(/\\/g, "/");
+    return path_1.default.extname(normalized) === "";
 }
 //# sourceMappingURL=cwd.js.map

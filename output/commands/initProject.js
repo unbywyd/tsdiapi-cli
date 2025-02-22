@@ -5,42 +5,58 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startFastProject = startFastProject;
 exports.initProject = initProject;
+exports.installation = installation;
+const cwd_1 = require("../utils/cwd");
+const npm_1 = require("../utils/npm");
 const config_1 = require("./../config");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const path_1 = __importDefault(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
-const utils_1 = require("../utils");
 const config_2 = require("../config");
-const format_1 = require("../utils/format");
 const plugins_1 = require("../utils/plugins");
+const ora_1 = __importDefault(require("ora"));
+const figlet_1 = __importDefault(require("figlet"));
+const hbs_1 = require("../utils/hbs");
+const generate_1 = require("../utils/generate");
+async function loadGradient() {
+    return (await eval('import("gradient-string")')).default;
+}
+async function loadBoxen() {
+    return (await eval('import("boxen")')).default;
+}
 async function startFastProject(projectDir) {
     try {
         if (!fs_extra_1.default.existsSync(projectDir)) {
-            console.error(chalk_1.default.red('Project directory does not exist:', projectDir));
+            console.error(chalk_1.default.red("❌ Project directory does not exist:", projectDir));
             process.exit(1);
         }
-        await (0, utils_1.runUnsafeNpmScript)(projectDir, 'fast-dev');
+        console.log(chalk_1.default.yellow("⚡ Starting fast development mode..."));
+        await (0, npm_1.runUnsafeNpmScript)(projectDir, "fast-dev");
     }
     catch (error) {
-        console.error(chalk_1.default.red('An unexpected error occurred during project initialization.'), error.message);
+        console.error(chalk_1.default.red("❌ An unexpected error occurred during project initialization."), error.message);
     }
 }
 async function initProject(projectname, options) {
     try {
+        // 🌟 Шаг 1: Проверка на существующий проект (fast mode)
         if (options?.startMode) {
             const cwd = path_1.default.resolve(process.cwd(), projectname);
             const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)(cwd);
             if (currentDirectory) {
-                console.log(chalk_1.default.green(`Found TSDIAPI project at ${currentDirectory}`));
+                console.log(chalk_1.default.green(`🎯 Found existing TSDIAPI project at: ${chalk_1.default.bold(currentDirectory)}`));
                 await startFastProject(currentDirectory);
                 return;
             }
         }
-        // Welcome message
-        console.log(chalk_1.default.green("Welcome to the TSDIAPI project initializer!"));
+        // 🚀 Шаг 2: Красивый ASCII баннер
+        const gradient = await loadGradient();
+        console.log(gradient.pastel.multiline(figlet_1.default.textSync("TSDIAPI", { horizontalLayout: "full" })));
+        console.log(chalk_1.default.yellow("\n✨ Welcome to the TSDIAPI project initializer!\n"));
         const questions = [];
-        const projectDir = (0, utils_1.isPathSuitableToNewProject)(projectname);
+        // 📌 Шаг 3: Проверяем путь
+        const projectDir = (0, cwd_1.isPathSuitableToNewProject)(projectname);
         if (!projectDir) {
             return process.exit(1);
         }
@@ -49,111 +65,33 @@ async function initProject(projectname, options) {
             questions.push({
                 type: "input",
                 name: "name",
-                message: "Project name:",
+                message: "📦 Project name:",
                 default: projectName,
-                validate: (input) => {
-                    if (!input) {
-                        return "Project name is required.";
-                    }
-                    return true;
-                }
+                validate: (input) => input ? true : "❌ Project name is required."
             });
             questions.push({
                 type: "input",
                 name: "host",
-                message: "Host:",
+                message: "🌍 Host:",
                 default: config_1.DefaultHost,
-                validate: (input) => {
-                    if (!input) {
-                        return "Host is required.";
-                    }
-                    return true;
-                }
+                validate: (input) => input ? true : "❌ Host is required."
             });
             questions.push({
                 type: "number",
                 name: "port",
-                message: "Port:",
+                message: "🔌 Port:",
                 default: config_2.DefaultPort,
-                validate: (input) => {
-                    if (input < 1 || input > 65535) {
-                        return "Port number must be between 1 and 65535.";
-                    }
-                    return true;
-                }
+                validate: (input) => (input >= 1 && input <= 65535) ? true : "❌ Port must be between 1 and 65535."
             });
-            if (options?.installPrisma === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installPrisma",
-                    message: "Install prisma?",
-                    default: false
-                });
-            }
-            if (options?.installSocket === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installSocket",
-                    message: "Install socket.io?",
-                    default: false
-                });
-            }
-            if (options?.installCron === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installCron",
-                    message: "You need cron?",
-                    default: false
-                });
-            }
-            if (options?.installEvents === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installEvents",
-                    message: "You need events?",
-                    default: false
-                });
-            }
-            if (options?.installS3 === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installS3",
-                    message: "You need s3?",
-                    default: false
-                });
-            }
-            if (options?.installJwt === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installJwt",
-                    message: "You need jwt auth?",
-                    default: false
-                });
-            }
-            if (options?.installInforu === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installInforu",
-                    message: "You need inforu for sms sending?",
-                    default: false
-                });
-            }
-            if (options?.installEmail === undefined) {
-                questions.push({
-                    type: "confirm",
-                    name: "installEmail",
-                    message: "You need email sending?",
-                    default: false
-                });
-            }
         }
-        // Prompt the user for project details
-        const answers = questions?.length ? await inquirer_1.default.prompt(questions) : {
+        // ⏳ Шаг 4: Запрос данных
+        const answers = questions.length ? await inquirer_1.default.prompt(questions) : {
             ...options,
             name: projectname,
             port: config_2.DefaultPort,
             host: config_1.DefaultHost
         };
+        // Обновление данных
         answers.name = answers.name || projectname;
         answers.host = answers.host || config_1.DefaultHost;
         if (options) {
@@ -166,152 +104,134 @@ async function initProject(projectname, options) {
         if (!answers.port) {
             answers.port = config_2.DefaultPort;
         }
-        // Placeholder for project generation logic
-        console.log(chalk_1.default.blue(`Initializing project at ${projectDir}...`));
-        await populateProjectFiles(projectDir, answers);
-        // Init npm
-        await (0, utils_1.runNpmInstall)(projectDir);
-        const cdCommand = (0, utils_1.getCdCommand)(projectname);
-        console.log(chalk_1.default.green(`Project successfully initialized at ${projectDir}!`));
-        if (cdCommand) {
-            console.log(`
-${chalk_1.default.yellow("Next steps:")}
-1. ${chalk_1.default.cyan(`cd ${cdCommand}`)}
-2. ${chalk_1.default.cyan("npm run dev")}
-`);
+        // 🏗️ Шаг 5: Генерация файлов
+        const spinner = (0, ora_1.default)({
+            text: chalk_1.default.blue(`💾 Setting up project at ${chalk_1.default.bold(projectDir)}...`),
+            spinner: "dots"
+        }).start();
+        await installation(projectDir, answers);
+        spinner.succeed(chalk_1.default.green("✅ Project files generated successfully!"));
+        // 🎯 Шаг 7: Финальный вывод
+        const cdCommand = (0, cwd_1.getCdCommand)(projectname);
+        console.log(chalk_1.default.green("\n🎉 Project successfully initialized!\n"));
+        try {
+            const { newFeatureAccepted } = await inquirer_1.default.prompt([{
+                    type: "confirm",
+                    name: "newFeatureAccepted",
+                    message: "🚀 Do you want to create a new feature?",
+                    default: false
+                }]);
+            if (newFeatureAccepted) {
+                const { featureName } = await inquirer_1.default.prompt([{
+                        type: "input",
+                        name: "featureName",
+                        message: "🚀 Enter the name of the feature:",
+                        validate: (input) => input ? true : "❌ Feature name is required."
+                    }]);
+                await (0, generate_1.generateFeature)(featureName, projectDir);
+            }
         }
-        else {
-            console.log(`
-${chalk_1.default.yellow("Next steps:")}
-${chalk_1.default.cyan("npm run dev")}`);
+        catch (error) {
+            console.error(chalk_1.default.red("❌ An unexpected error occurred during project initialization."), error.message);
         }
-        console.log(chalk_1.default.green("Happy coding with TSDIAPI!"));
-        if (answers.installPrisma) {
-            await (0, utils_1.setupPrisma)(projectDir);
+        if (!options?.startMode) {
+            console.log(chalk_1.default.yellow("📌 Next steps:"));
+            if (cdCommand) {
+                console.log(`🔹 ${chalk_1.default.cyan(`cd ${cdCommand}`)}`);
+            }
+            console.log(`🔹 ${chalk_1.default.cyan("npm run dev")}`);
         }
-        if (answers.installSocket) {
-            await (0, utils_1.setupSockets)(projectDir, answers);
-        }
-        if (answers.installCron) {
-            await (0, utils_1.setupCron)(projectDir);
-        }
-        if (answers.installS3) {
-            await (0, utils_1.setupS3)(projectDir);
-        }
-        if (answers.installEvents) {
-            await (0, utils_1.setupEvents)(projectDir);
-        }
-        if (answers.installJwt) {
-            await (0, utils_1.setupJWTAuth)(projectDir);
-        }
-        if (answers.installInforu) {
-            await (0, utils_1.setupInforu)(projectDir);
-        }
-        if (answers.installEmail) {
-            await (0, utils_1.setupEmail)(projectDir);
-        }
+        console.log(chalk_1.default.green("\n🚀 Happy coding with TSDIAPI!\n"));
+        const message = `
+        ${chalk_1.default.yellow.bold('📦 Need more functionality? Extend your server with TSDIAPI plugins!')}
+        
+        ${chalk_1.default.cyan('◆')} Supports ${chalk_1.default.green('Prisma, Email, Sockets, Cron Jobs, and more.')}.
+        ${chalk_1.default.cyan('◆')} Fully automated setup for easy integration.
+        ${chalk_1.default.cyan('◆')} Just install with: ${chalk_1.default.cyan.bold('tsdiapi plugins add <pluginName>')}
+        ${chalk_1.default.cyan('◆')} Or manually configure: ${chalk_1.default.cyan.bold('tsdiapi plugins config <pluginName>')}
+        
+        ${chalk_1.default.blue.bold('🌐 Explore all available plugins here:')} ${chalk_1.default.blue('https://www.npmjs.com/search?q=@tsdiapi')}
+        
+        ${chalk_1.default.magenta.bold('✨ More plugins coming soon!')}
+        
+        ${chalk_1.default.gray('────────────────────────────────────────────')}
+        ${chalk_1.default.gray('💡 Want to contribute or ask something?')}
+        ${chalk_1.default.cyan('📧 Contact:')} ${chalk_1.default.white('unbywyd@gmail.com')}
+        `;
+        const boxen = await loadBoxen();
+        console.log(boxen(message, {
+            padding: 1,
+            margin: 1,
+            borderStyle: 'round',
+            borderColor: 'blue'
+        }));
+        // 🚀 Шаг 8: Запуск в быстром режиме (если выбрано)
         if (options?.startMode) {
             await startFastProject(projectDir);
         }
     }
     catch (error) {
-        console.error(chalk_1.default.red("An unexpected error occurred during project initialization."), error.message);
+        console.error(chalk_1.default.red("❌ An unexpected error occurred during project initialization."), error.message);
         process.exit(1);
     }
 }
-function preparePluginsAndDependencies(options) {
-    const plugins = [];
-    const dependencies = [];
-    const getDependency = (name) => {
-        return {
-            name: (0, config_1.getPackageName)(name),
-            version: (0, config_1.getPackageVersion)(name)
-        };
-    };
-    const optionsByPlugins = {
-        "prisma": options.installPrisma,
-        "socket.io": options.installSocket,
-        "cron": options.installCron,
-        "events": options.installEvents,
-        "email": options.installEmail,
-        "s3": options.installS3,
-        "jwt-auth": options.installJwt,
-        "inforu": options.installInforu
-    };
-    for (const [plugin, install] of Object.entries(optionsByPlugins)) {
-        if (install) {
-            plugins.push({
-                packageName: (0, config_1.getPackageName)(plugin),
-                importPackageName: (0, format_1.nameToImportName)(plugin)
-            });
-            dependencies.push(getDependency(plugin));
-        }
-    }
-    return {
-        plugins: plugins,
-        dependencies
-    };
-}
-async function populateProjectFiles(projectDir, options) {
-    console.log(chalk_1.default.blue("Copying files to the project directory..."));
-    const sourceDir = path_1.default.resolve(__dirname, "../files/root");
+async function installation(projectDir, options) {
+    console.log(chalk_1.default.blue("\n🛠️ Initializing project structure...\n"));
+    const spinner = (0, ora_1.default)({
+        text: chalk_1.default.yellow("🚀 Copying base project files..."),
+        spinner: "dots"
+    }).start();
     try {
-        // Copy all files from the source directory to the project directory
+        const sourceDir = path_1.default.resolve(__dirname, "../files/root");
         await fs_extra_1.default.copy(sourceDir, projectDir);
-        // cron, prisma, io
-        const { plugins, dependencies } = preparePluginsAndDependencies(options);
+        spinner.succeed(chalk_1.default.green("✅ Project files copied successfully!"));
         const payload = {
             ...options,
-            plugins: plugins?.length ? plugins : false,
-            dependencies: dependencies?.length ? dependencies : false,
             port: options.port || config_2.DefaultPort,
         };
-        const envDevPath = path_1.default.join(projectDir, ".env.development");
-        const envProdPath = path_1.default.join(projectDir, ".env.production");
-        const envDevContent = (0, utils_1.buildHandlebarsTemplate)("env", {
-            ...payload,
-            isProduction: false
-        });
-        if (envDevContent) {
-            await fs_extra_1.default.writeFile(envDevPath, envDevContent);
+        const envFiles = [
+            { path: ".env.development", isProduction: false },
+            { path: ".env.production", isProduction: true },
+        ];
+        for (const env of envFiles) {
+            const envPath = path_1.default.join(projectDir, env.path);
+            const envContent = (0, hbs_1.buildHandlebarsTemplate)("env", { ...payload, isProduction: env.isProduction });
+            if (envContent) {
+                await fs_extra_1.default.writeFile(envPath, envContent);
+            }
         }
-        const envProdContent = (0, utils_1.buildHandlebarsTemplate)("env", {
-            ...payload,
-            isProduction: true
-        });
-        if (envProdContent) {
-            await fs_extra_1.default.writeFile(envProdPath, envProdContent);
-        }
-        const packageContent = (0, utils_1.buildHandlebarsTemplate)("package", payload);
+        // 📦 Генерация package.json
+        const packagePath = path_1.default.join(projectDir, "package.json");
+        const packageContent = (0, hbs_1.buildHandlebarsTemplate)("package", payload);
         if (packageContent) {
-            const packagePath = path_1.default.join(projectDir, "package.json");
             await fs_extra_1.default.writeFile(packagePath, packageContent);
         }
-        // Provide src directory
+        // 📂 Создание нужных директорий
         await fs_extra_1.default.ensureDir(path_1.default.join(projectDir, "src/api/features"));
         await fs_extra_1.default.ensureDir(path_1.default.join(projectDir, "src/public"));
-        const homePageContent = (0, utils_1.buildHandlebarsTemplate)("home", payload);
+        // 🏡 Главная страница
+        const homePagePath = path_1.default.join(projectDir, "src/public/index.html");
+        const homePageContent = (0, hbs_1.buildHandlebarsTemplate)("home", payload);
         if (homePageContent) {
-            const homePagePath = path_1.default.join(projectDir, "src/public/index.html");
             await fs_extra_1.default.writeFile(homePagePath, homePageContent);
         }
-        const appConfigContent = (0, utils_1.buildHandlebarsTemplate)("app_config", payload);
+        // ⚙️ Конфигурация приложения
+        const appConfigPath = path_1.default.join(projectDir, "src/app.config.ts");
+        const appConfigContent = (0, hbs_1.buildHandlebarsTemplate)("app_config", payload);
         if (appConfigContent) {
-            const appConfigPath = path_1.default.join(projectDir, "src/app.config.ts");
             await fs_extra_1.default.writeFile(appConfigPath, appConfigContent);
         }
-        const mainContent = (0, utils_1.buildHandlebarsTemplate)("main", payload);
+        // 🏗 Основной файл
+        const mainPath = path_1.default.join(projectDir, "src/main.ts");
+        const mainContent = (0, hbs_1.buildHandlebarsTemplate)("main", payload);
         if (mainContent) {
-            const mainPath = path_1.default.join(projectDir, "src/main.ts");
             await fs_extra_1.default.writeFile(mainPath, mainContent);
         }
-        // hello feature
-        const sourceHelloDir = path_1.default.resolve(__dirname, "../files/hello-feature");
-        await fs_extra_1.default.copy(sourceHelloDir, path_1.default.join(projectDir, "src/api/features/hello"));
-        console.log(chalk_1.default.green("All files copied successfully!"));
+        await (0, npm_1.installBaseDependencies)(projectDir);
     }
     catch (error) {
-        console.error(chalk_1.default.red(`Error copying files: ${error.message}`));
+        spinner.fail(chalk_1.default.red("❌ Error during project setup!"));
+        console.error(chalk_1.default.red(`Error: ${error.message}`));
         process.exit(1);
     }
 }

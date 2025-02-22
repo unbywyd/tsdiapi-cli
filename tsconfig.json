@@ -12,14 +12,10 @@
         "sourceMap": true,
         "moduleResolution": "node",
         "emitDecoratorMetadata": true,
+        "strictNullChecks": true,
         "skipLibCheck": true,
         "experimentalDecorators": true,
-        "baseUrl": "./",
-        "paths": {
-            "@src/*": [
-                "./src/*"
-            ]
-        }
+        "baseUrl": "./"
     },
     "include": [
         "src/**/*"

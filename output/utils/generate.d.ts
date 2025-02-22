@@ -1,8 +1,7 @@
-export declare function generateFeature(emptyOrName: string): Promise<void>;
-export declare function runGenerateCommand(type: string, name: string): Promise<void>;
-export declare function generateNewPrisma(dir: string, name: string): Promise<void>;
-export declare function generateNewCron(dir: string, name: string): Promise<void>;
-export declare function generateNewEvent(dir: string, name: string): Promise<void>;
-export declare function generateNewService(dir: string, name: string): Promise<boolean>;
-export declare function generateNewController(dir: string, name: string, withService?: boolean): Promise<void>;
+export declare function generate(pluginName: string, generatorName?: string, _args?: Record<string, any>): Promise<void>;
+export declare function replacePlaceholdersInPath(filePath: string, replacements: Record<string, string>, defaultName: string): string;
+export declare function generateFeature(name: string, projectDir?: string): Promise<void>;
+export declare function safeGenerate(pluginName: string, generatorName: string, args?: Record<string, any>): Promise<void>;
+export declare function generateNewService(name: string, dir: string): Promise<string | null>;
+export declare function generateNewController(name: string, dir: string, withService?: boolean): Promise<string | null>;
 //# sourceMappingURL=generate.d.ts.map

@@ -4,11 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removePlugin = exports.updatePlugin = exports.addPlugin = void 0;
+exports.getPluginMetadata = getPluginMetadata;
+exports.addPluginToApp = addPluginToApp;
 exports.findTSDIAPIServerProject = findTSDIAPIServerProject;
 exports.isPackageInstalled = isPackageInstalled;
-const inquirer_1 = __importDefault(require("inquirer"));
 const chalk_1 = __importDefault(require("chalk"));
-const _1 = require(".");
 const config_1 = require("../config");
 const ts_morph_1 = require("ts-morph");
 const fs_1 = __importDefault(require("fs"));
@@ -18,182 +18,154 @@ const child_process_1 = require("child_process");
 const cwd_1 = require("./cwd");
 const setup_plugin_1 = require("./setup-plugin");
 const format_1 = require("./format");
+const plugins_configuration_1 = require("./plugins-configuration");
+const ora_1 = __importDefault(require("ora"));
+const npm_1 = require("./npm");
 const execAsync = util_1.default.promisify(child_process_1.exec);
-/**
- * Adds a plugin to the current TSDIAPI project.
- *
- * This function operates in two modes:
- *
- * 1. **Direct Installation**:
- *    - If the `pluginName` argument is provided, it checks if the plugin exists
- *      in the list of available plugins (`availablePlugins`).
- *    - If the plugin exists, the installation process begins.
- *    - If the plugin does not exist, an error message is displayed.
- *
- * 2. **Interactive Mode**:
- *    - If `pluginName` is not provided, an interactive prompt is displayed
- *      using `inquirer`.
- *    - The user can select a plugin from the list of available plugins.
- *    - After selection, the installation process begins.
- *
- * The function uses `chalk` for colored console output and `inquirer` for user interaction.
- *
- * @param {string} [pluginName] - The name of the plugin to install. If omitted, the user is prompted to select a plugin.
- * @returns {Promise<void>} - A promise that resolves after the plugin is installed or an error message is displayed.
- */
-const addPlugin = async (pluginName) => {
+const addPlugin = async (selectedPluginName) => {
     try {
+        const spinner = (0, ora_1.default)().start();
+        spinner.text = chalk_1.default.blue("🔍 Searching for an existing TSDIAPI project...");
         const currentDirectory = await findTSDIAPIServerProject();
         if (!currentDirectory) {
-            return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
+            spinner.fail(chalk_1.default.red("❌ No package.json found or @tsdiapi/server is not detected."));
+            return;
         }
-        let selectedPluginName = pluginName;
-        const appFilePath = path_1.default.resolve(`${currentDirectory}/src`, 'main.ts');
-        const isPackageName = pluginName && pluginName?.startsWith('@tsdiapi/');
-        if (pluginName && !config_1.AvailablePlugins.includes(pluginName) && !isPackageName) {
-            return console.log(chalk_1.default.red(`Plugin ${pluginName} is not available.`));
+        const appFilePath = path_1.default.resolve(`${currentDirectory}/src`, "main.ts");
+        const packageName = (0, config_1.getPackageName)(selectedPluginName);
+        if (!packageName?.startsWith("@tsdiapi/")) {
+            spinner.fail(chalk_1.default.red(`❌ Invalid plugin: ${packageName}. Must start with @tsdiapi/`));
+            return;
         }
-        if (!pluginName) {
-            const answer = await inquirer_1.default.prompt([
-                {
-                    type: 'list',
-                    name: 'selectedPlugin',
-                    message: 'Select a plugin to install:',
-                    choices: config_1.AvailablePlugins,
-                },
-            ]);
-            selectedPluginName = answer.selectedPlugin;
+        spinner.text = chalk_1.default.blue(`🔎 Checking if ${packageName} exists on npm...`);
+        const packageExists = await (0, npm_1.packageExistsOnNpm)(packageName);
+        if (!packageExists) {
+            spinner.fail(chalk_1.default.red(`❌ Package ${packageName} does not exist on npm.`));
+            return;
         }
-        const packageName = isPackageName ? pluginName : (0, config_1.getPackageName)(selectedPluginName);
+        spinner.text = chalk_1.default.blue(`📦 Checking if ${packageName} is already installed...`);
         const isInstalled = isPackageInstalled(currentDirectory, packageName);
         if (isInstalled) {
-            return console.log(chalk_1.default.red(`Plugin ${packageName} already installed!`));
+            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${packageName} is already installed.`));
+            return;
         }
+        spinner.text = chalk_1.default.blue(`📥 Installing ${packageName}...`);
         await addPluginToApp(appFilePath, (0, format_1.nameToImportName)(selectedPluginName), packageName, currentDirectory);
-        try {
-            switch (selectedPluginName) {
-                case 'prisma':
-                    await (0, _1.setupPrisma)(currentDirectory);
-                    break;
-                case 'socket.io':
-                    await (0, _1.setupSockets)(currentDirectory);
-                    break;
-                case 'cron':
-                    await (0, _1.setupCron)(currentDirectory);
-                    break;
-                case 'events':
-                    await (0, _1.setupEvents)(currentDirectory);
-                    break;
-                /*case 's3':
-                  await setupS3(currentDirectory);
-                  break*/
-                /*case 'jwt-auth':
-                  await setupJWTAuth(currentDirectory);
-                  break*/
-                /*case 'inforu':
-                  await setupInforu(currentDirectory);
-                  break*/
-                /*case 'email':
-                  await setupEmail(currentDirectory);
-                  break*/
-                default:
-                    const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
-                    const configPath = path_1.default.join(packagePath, 'tsdiapi.config.json');
-                    if (!fs_1.default.existsSync(configPath)) {
-                        console.log(chalk_1.default.yellow(`No setup logic defined for plugin: ${pluginName}`));
-                        console.log(chalk_1.default.green(`${pluginName} setup has been successfully completed.`));
-                        return;
-                    }
-                    else {
-                        try {
-                            const pluginConfig = JSON.parse(fs_1.default.readFileSync(configPath, 'utf8'));
-                            console.log(chalk_1.default.blue(`Loaded configuration for ${pluginConfig.name}`));
-                            await (0, setup_plugin_1.setupCommon)(pluginName, currentDirectory, pluginConfig);
-                        }
-                        catch (error) {
-                            console.error(`Error loading plugin configuration: ${error.message}`);
-                        }
-                    }
-                    return;
+        spinner.succeed(chalk_1.default.green(`✅ Successfully added ${packageName} to the application.`));
+        spinner.text = chalk_1.default.blue(`🔍 Checking setup configuration for ${packageName}...`);
+        const config = await getPluginMetadata(currentDirectory, packageName);
+        if (!config) {
+            spinner.warn(chalk_1.default.yellow(`⚠️ No additional setup required for ${packageName}.`));
+            spinner.succeed(chalk_1.default.green(`✅ Plugin ${packageName} installed successfully.`));
+        }
+        else {
+            if (config.postInstall) {
+                spinner.text = chalk_1.default.blue(`⚙️ Running post-install script for ${packageName}...`);
+                await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.postInstall);
+                spinner.succeed(chalk_1.default.green(`✅ Post-install script executed.`));
             }
+            spinner.text = chalk_1.default.blue(`🔧 Configuring ${packageName}...`);
+            await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            spinner.succeed(chalk_1.default.green(`✅ Configuration for ${packageName} completed.`));
         }
-        catch (error) {
-            console.error(`Error adding plugin ${selectedPluginName}: ${error.message}`);
-        }
-        console.log(chalk_1.default.green(`Plugin ${selectedPluginName} successfully installed.`));
+        console.log(chalk_1.default.green(`\n🎉 Plugin ${chalk_1.default.bold(selectedPluginName)} installed successfully! 🚀\n`));
     }
-    catch (e) {
-        console.error(chalk_1.default.red("An unexpected error occurred: ", e.message));
+    catch (error) {
+        console.error(chalk_1.default.red("❌ An unexpected error occurred: "), error.message);
         process.exit(1);
     }
 };
 exports.addPlugin = addPlugin;
-async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
-    const project = new ts_morph_1.Project();
-    const sourceFile = project.addSourceFileAtPath(filePath);
-    if (!config_1.IsDev) {
-        console.log(chalk_1.default.blue(`Installing ${pluginImportPath}...`));
-        await execAsync(`npm install ${pluginImportPath}`, {
-            cwd: projectDir,
-        });
+async function getPluginMetadata(currentDirectory, packageName) {
+    const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
+    const configPath = path_1.default.join(packagePath, 'tsdiapi.config.json');
+    if (!fs_1.default.existsSync(configPath)) {
+        return null;
     }
     else {
-        console.log(chalk_1.default.yellow(`Skipping npm install in dev mode.`));
+        try {
+            const config = JSON.parse(fs_1.default.readFileSync(configPath, 'utf8'));
+            const isValid = await (0, plugins_configuration_1.validatePluginConfig)(config);
+            if (!isValid) {
+                return null;
+            }
+            else {
+                return config;
+            }
+        }
+        catch (error) {
+            console.error(`Error loading plugin configuration: ${error.message}`);
+            return null;
+        }
     }
-    const existingImport = sourceFile.getImportDeclaration((imp) => imp.getModuleSpecifier().getLiteralValue() === pluginImportPath);
-    if (existingImport) {
-        return false;
-    }
-    sourceFile.addImportDeclaration({
-        defaultImport: pluginName,
-        moduleSpecifier: pluginImportPath,
-    });
-    const createAppCall = sourceFile
-        .getFirstDescendantByKind(ts_morph_1.SyntaxKind.CallExpression)
-        ?.getFirstChildByKind(ts_morph_1.SyntaxKind.Identifier);
-    if (createAppCall?.getText() === 'createApp') {
-        const createAppExpression = createAppCall.getParentIfKind(ts_morph_1.SyntaxKind.CallExpression);
-        const argument = createAppExpression?.getArguments()[0];
-        if (argument?.getKind() === ts_morph_1.SyntaxKind.ObjectLiteralExpression) {
-            const argumentObject = argument.asKindOrThrow(ts_morph_1.SyntaxKind.ObjectLiteralExpression);
-            const pluginsProperty = argumentObject.getProperty('plugins');
-            if (pluginsProperty) {
-                const pluginsArray = pluginsProperty.getFirstChildByKind(ts_morph_1.SyntaxKind.ArrayLiteralExpression);
-                if (pluginsArray) {
-                    const pluginAlreadyAdded = pluginsArray.getText().includes(pluginName);
-                    if (pluginAlreadyAdded) {
-                        console.log(chalk_1.default.yellow(`Plugin ${pluginName} already added to the app.`));
+}
+async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
+    const spinner = (0, ora_1.default)().start();
+    try {
+        spinner.text = chalk_1.default.blue(`📦 Installing ${chalk_1.default.bold(pluginImportPath)}...`);
+        await execAsync(`npm install ${pluginImportPath}`, { cwd: projectDir });
+        spinner.succeed(chalk_1.default.green(`✅ Installed ${chalk_1.default.bold(pluginImportPath)} successfully!`));
+        spinner.text = chalk_1.default.blue("🔍 Updating application entry file...");
+        const project = new ts_morph_1.Project();
+        const sourceFile = project.addSourceFileAtPath(filePath);
+        // Check if import already exists
+        const existingImport = sourceFile.getImportDeclaration((imp) => imp.getModuleSpecifier().getLiteralValue() === pluginImportPath);
+        if (existingImport) {
+            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${pluginName} is already imported. Skipping.`));
+            return false;
+        }
+        // Add import statement
+        sourceFile.addImportDeclaration({
+            defaultImport: pluginName,
+            moduleSpecifier: pluginImportPath,
+        });
+        // Locate `createApp` function
+        const createAppCall = sourceFile
+            .getFirstDescendantByKind(ts_morph_1.SyntaxKind.CallExpression)
+            ?.getFirstChildByKind(ts_morph_1.SyntaxKind.Identifier);
+        if (createAppCall?.getText() === "createApp") {
+            const createAppExpression = createAppCall.getParentIfKind(ts_morph_1.SyntaxKind.CallExpression);
+            const argument = createAppExpression?.getArguments()[0];
+            if (argument?.getKind() === ts_morph_1.SyntaxKind.ObjectLiteralExpression) {
+                const argumentObject = argument.asKindOrThrow(ts_morph_1.SyntaxKind.ObjectLiteralExpression);
+                const pluginsProperty = argumentObject.getProperty("plugins");
+                if (pluginsProperty) {
+                    const pluginsArray = pluginsProperty.getFirstChildByKind(ts_morph_1.SyntaxKind.ArrayLiteralExpression);
+                    if (pluginsArray) {
+                        if (pluginsArray.getText().includes(pluginName)) {
+                            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${pluginName} is already registered. Skipping.`));
+                            return false;
+                        }
+                        pluginsArray.addElement(`${pluginName}()`);
+                    }
+                    else {
+                        spinner.fail(chalk_1.default.red("❌ Failed to locate 'plugins' array in createApp."));
                         return false;
                     }
-                    pluginsArray.addElement(`${pluginName}()`);
                 }
                 else {
-                    console.log(chalk_1.default.red('Error adding plugin to app.'));
+                    argumentObject.addPropertyAssignment({
+                        name: "plugins",
+                        initializer: `[${pluginName}()]`,
+                    });
                 }
             }
             else {
-                argumentObject.addPropertyAssignment({
-                    name: 'plugins',
-                    initializer: `[${pluginName}()]`,
-                });
+                createAppExpression?.addArgument(`{ plugins: [${pluginName}()] }`);
             }
         }
         else {
-            createAppExpression?.addArgument(`{ plugins: [${pluginName}()] }`);
+            spinner.fail(chalk_1.default.red("❌ Failed to find 'createApp' function in main file."));
+            return false;
         }
-    }
-    else {
-        console.error('createApp function not found.');
-        return false;
-    }
-    try {
         sourceFile.saveSync();
+        spinner.succeed(chalk_1.default.green(`✅ Plugin ${chalk_1.default.bold(pluginName)} successfully added to createApp!`));
+        return true;
     }
     catch (error) {
-        console.error('Error saving source file:', error.message);
+        spinner.fail(chalk_1.default.red(`❌ Error: ${error.message}`));
         return false;
     }
-    return true;
 }
 /**
  * Finds the root directory of the nearest project containing "@tsdiapi/server" in its dependencies.

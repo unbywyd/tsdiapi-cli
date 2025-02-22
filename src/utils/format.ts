@@ -1,6 +1,4 @@
-import { PluginName } from "@src/config";
-
-export function formatControllerName(name: string, lowercaseFirstLetter = false): string {
+export function formatName(name: string, lowercaseFirstLetter = false): string {
     const formattedName = name
         .replace(/[^a-zA-Z0-9]/g, ' ')
         .split(' ')
@@ -15,16 +13,56 @@ export function formatControllerName(name: string, lowercaseFirstLetter = false)
     return formattedName;
 }
 
-
-export function toKebabCase(name: string): string {
-    return name
-        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')  // Разделяем слова в CamelCase
-        .toLowerCase();
+export function toCamelCase(input: string): string {
+    return normalizeName(input, true);
 }
 
-export const nameToImportName = (name: string): string => {
-    return name
-        .replace(/[^a-zA-Z0-9]+(.)/g, (_, char: string) => char.toUpperCase()) // Capitalize after special characters
-        .replace(/^[a-z]/, (char) => char.toUpperCase()) // Capitalize the first character of the name
-        + 'Plugin'; // Append 'Plugin' to the end
+export function toPascalCase(input: string): string {
+    return normalizeName(input, false);
+}
+
+export function normalizeName(input: string, lowercaseFirst: boolean): string {
+    // 1. Удаляем всё, кроме латинских букв, цифр и разделителей (превращаем их в пробелы)
+    let cleaned = input.replace(/[^a-zA-Z0-9]+/g, ' ');
+
+    // 2. Разбиваем строку на слова (по пробелам или разделителям)
+    let words = cleaned.trim().split(/\s+/);
+
+    // 3. Фильтруем пустые элементы и убираем цифры в начале
+    words = words.filter(word => word.length > 0 && !/^\d+$/.test(word));
+
+    if (words.length === 0) {
+        throw new Error("Invalid input: no valid characters found.");
+    }
+
+    // 4. Делаем каждое слово с заглавной буквы
+    let formatted = words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
+    // 5. Если требуется camelCase, первая буква остаётся в нижнем регистре
+    if (lowercaseFirst && formatted.length) {
+        formatted[0] = formatted[0].charAt(0).toLowerCase() + formatted[0].slice(1);
+    }
+
+    return formatted.join('');
+}
+
+export function capitalize(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+export function toKebabCase(input: string): string {
+    let cleaned = input.replace(/[^a-zA-Z0-9_\-\.]+/g, '');
+
+    let words = cleaned.match(/[A-Za-z0-9]+/g) || [];
+
+    if (words.length === 0) {
+        throw new Error("Invalid input: no valid characters found.");
+    }
+
+    return words.join('-').toLowerCase();
+}
+
+
+export const nameToImportName = (name: string, suffix: string = "Plugin"): string => {
+    return toPascalCase(name) + suffix;
 };

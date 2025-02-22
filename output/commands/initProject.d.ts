@@ -1,14 +1,12 @@
-export declare function startFastProject(projectDir: string): Promise<void>;
-export declare function initProject(projectname?: string, options?: {
+type CreateProjectOptions = {
+    name?: string;
+    host?: string;
+    port?: number;
     startMode?: boolean;
     skipAll?: boolean;
-    installPrisma?: boolean;
-    installSocket?: boolean;
-    installCron?: boolean;
-    installS3?: boolean;
-    installEvents?: boolean;
-    installJwt?: boolean;
-    installInforu?: boolean;
-    installEmail?: boolean;
-}): Promise<never>;
+};
+export declare function startFastProject(projectDir: string): Promise<void>;
+export declare function initProject(projectname?: string, options?: CreateProjectOptions): Promise<undefined>;
+export declare function installation(projectDir: string, options: CreateProjectOptions): Promise<void>;
+export {};
 //# sourceMappingURL=initProject.d.ts.map

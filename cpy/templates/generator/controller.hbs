@@ -1,26 +1,17 @@
 import {
-    JsonController,
-    Get,
+    JsonController
 } from "routing-controllers";
 import { Service } from "typedi";
 import { OpenAPI } from "routing-controllers-openapi";
 import { Summary } from 'routing-controllers-openapi-extra';
-{{#if serviceName}}
-import {{serviceTypeName}} from "./{{kebabCase}}.service";
+{{#if serviceClassName}}
+import {{serviceClassName}} from "./{{kebabCaseName}}.service";
 {{/if}}
 @Service()
 @OpenAPI({
-    tags: ["{{tagName}}"],
+    tags: ["{{kebabCaseName}}"],
 })
-@JsonController("{{routePath}}")
+@JsonController("{{kebabCaseName}}")
 export class {{ className }} {
-    constructor({{#if serviceName}}public {{serviceName}}: {{serviceTypeName}}{{/if}}) { }
-
-    @Get("/")
-    @Summary("{{summary}}")
-    public async hello() {
-        return {
-            message: "{{message}}",
-        }
-    }
+    constructor({{#if serviceClassName}}public {{serviceCamelCaseName}}: {{serviceClassName}}{{/if}}) { }
 }
