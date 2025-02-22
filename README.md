@@ -203,9 +203,9 @@ This ensures that all event files matching the pattern are automatically registe
 
 ### **Publishing a Plugin**
 
-To publish a plugin, contact the **TSDIAPI** team and request publishing rights. You can reach out via email:
+To publish a plugin, contact the **TSDIAPI** team and request publishing rights. You can reach out via:
 
-📧 Contact: **unbywyd@gmail.com**
+📧 Contact: [unbywyd](https://unbywyd.com)
 
 🚀 Happy coding and developing with **TSDIAPI CLI**!
 
@@ -215,7 +215,7 @@ To publish a plugin, contact the **TSDIAPI** team and request publishing rights.
 
 TSDIAPI is an open-source project. Contributions are always welcome! If you want to contribute, suggest features, or report issues, feel free to reach out.
 
-📧 Contact: **unbywyd@gmail.com**
+📧 Contact: [unbywyd](https://unbywyd.com)
 
 🚀 Happy coding with **TSDIAPI CLI**!
 
