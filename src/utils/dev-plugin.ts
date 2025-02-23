@@ -118,6 +118,17 @@ export async function promptPluginDetails(sourcePluginName: string) {
         await fs.ensureDir(path.join(pluginDir, "src"));
         await fs.writeFile(path.join(pluginDir, "src/index.ts"), indexData);
 
+        const configData = {
+            name: pluginName,
+            description: answers.description,
+        }
+        const configName = "tsdiapi.config.ts";
+        const configPath = path.join(pluginDir, configName);
+        if (!fs.existsSync(configPath)) {
+            console.log(chalk.cyan(`Creating ${configName} file...`));
+            await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
+        }
+
 
         const message = `
 ${chalk.yellow.bold('🚀 Congratulations! Your TSDIAPI plugin has been successfully created!')}
