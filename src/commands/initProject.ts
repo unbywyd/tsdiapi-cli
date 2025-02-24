@@ -37,20 +37,18 @@ export async function startFastProject(projectDir: string) {
     }
 }
 
-export async function initProject(projectname?: string, options?: CreateProjectOptions) {
+export async function initProject(installpath: string, options: CreateProjectOptions) {
     try {
-        // 🌟 Шаг 1: Проверка на существующий проект (fast mode)
         if (options?.startMode) {
-            const cwd = path.resolve(process.cwd(), projectname!);
+            const cwd = path.resolve(process.cwd(), installpath!);
             const currentDirectory = await findTSDIAPIServerProject(cwd);
             if (currentDirectory) {
                 console.log(chalk.green(`🎯 Found existing TSDIAPI project at: ${chalk.bold(currentDirectory)}`));
                 await startFastProject(currentDirectory);
                 return;
             }
-        }
+        } 
 
-        // 🚀 Шаг 2: Красивый ASCII баннер
         const gradient = await loadGradient();
         console.log(gradient.pastel.multiline(figlet.textSync("TSDIAPI", { horizontalLayout: "full" })));
         console.log(chalk.yellow("\n✨ Welcome to the TSDIAPI project initializer!\n"));
@@ -58,12 +56,13 @@ export async function initProject(projectname?: string, options?: CreateProjectO
         const questions: Array<any> = [];
 
         // 📌 Шаг 3: Проверяем путь
-        const projectDir = isPathSuitableToNewProject(projectname!);
+        const projectDir = isPathSuitableToNewProject(installpath!);
         if (!projectDir) {
             return process.exit(1);
         }
 
         let projectName = path.basename(projectDir);
+        options.name = projectName;
 
         if (!options?.skipAll) {
             questions.push({
@@ -91,16 +90,14 @@ export async function initProject(projectname?: string, options?: CreateProjectO
             });
         }
 
-        // ⏳ Шаг 4: Запрос данных
         const answers = questions.length ? await inquirer.prompt(questions) : {
             ...options,
-            name: projectname,
+            name: projectName,
             port: DefaultPort,
             host: DefaultHost
         };
 
-        // Обновление данных
-        answers.name = answers.name || projectname;
+        answers.name = answers.name || projectName;
         answers.host = answers.host || DefaultHost;
         if (options) {
             for (const [key, value] of Object.entries(options)) {
@@ -123,9 +120,8 @@ export async function initProject(projectname?: string, options?: CreateProjectO
         spinner.succeed(chalk.green("✅ Project files generated successfully!"));
 
         // 🎯 Шаг 7: Финальный вывод
-        const cdCommand = getCdCommand(projectname!);
+        const cdCommand = getCdCommand(installpath!);
         console.log(chalk.green("\n🎉 Project successfully initialized!\n"));
-
 
         try {
             const { newFeatureAccepted } = await inquirer.prompt([{

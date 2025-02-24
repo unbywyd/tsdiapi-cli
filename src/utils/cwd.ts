@@ -29,6 +29,7 @@ export function getCdCommand(targetPath: string): string | false {
     if (cwd === fullPath) {
         return false;
     }
+    
     const relativePath = path.relative(cwd, fullPath);
 
     if (relativePath.startsWith('..')) {
