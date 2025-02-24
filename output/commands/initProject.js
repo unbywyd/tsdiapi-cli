@@ -38,11 +38,10 @@ async function startFastProject(projectDir) {
         console.error(chalk_1.default.red("❌ An unexpected error occurred during project initialization."), error.message);
     }
 }
-async function initProject(projectname, options) {
+async function initProject(installpath, options) {
     try {
-        // 🌟 Шаг 1: Проверка на существующий проект (fast mode)
         if (options?.startMode) {
-            const cwd = path_1.default.resolve(process.cwd(), projectname);
+            const cwd = path_1.default.resolve(process.cwd(), installpath);
             const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)(cwd);
             if (currentDirectory) {
                 console.log(chalk_1.default.green(`🎯 Found existing TSDIAPI project at: ${chalk_1.default.bold(currentDirectory)}`));
@@ -50,17 +49,17 @@ async function initProject(projectname, options) {
                 return;
             }
         }
-        // 🚀 Шаг 2: Красивый ASCII баннер
         const gradient = await loadGradient();
         console.log(gradient.pastel.multiline(figlet_1.default.textSync("TSDIAPI", { horizontalLayout: "full" })));
         console.log(chalk_1.default.yellow("\n✨ Welcome to the TSDIAPI project initializer!\n"));
         const questions = [];
         // 📌 Шаг 3: Проверяем путь
-        const projectDir = (0, cwd_1.isPathSuitableToNewProject)(projectname);
+        const projectDir = (0, cwd_1.isPathSuitableToNewProject)(installpath);
         if (!projectDir) {
             return process.exit(1);
         }
         let projectName = path_1.default.basename(projectDir);
+        options.name = projectName;
         if (!options?.skipAll) {
             questions.push({
                 type: "input",
@@ -84,15 +83,13 @@ async function initProject(projectname, options) {
                 validate: (input) => (input >= 1 && input <= 65535) ? true : "❌ Port must be between 1 and 65535."
             });
         }
-        // ⏳ Шаг 4: Запрос данных
         const answers = questions.length ? await inquirer_1.default.prompt(questions) : {
             ...options,
-            name: projectname,
+            name: projectName,
             port: config_2.DefaultPort,
             host: config_1.DefaultHost
         };
-        // Обновление данных
-        answers.name = answers.name || projectname;
+        answers.name = answers.name || projectName;
         answers.host = answers.host || config_1.DefaultHost;
         if (options) {
             for (const [key, value] of Object.entries(options)) {
@@ -112,7 +109,7 @@ async function initProject(projectname, options) {
         await installation(projectDir, answers);
         spinner.succeed(chalk_1.default.green("✅ Project files generated successfully!"));
         // 🎯 Шаг 7: Финальный вывод
-        const cdCommand = (0, cwd_1.getCdCommand)(projectname);
+        const cdCommand = (0, cwd_1.getCdCommand)(installpath);
         console.log(chalk_1.default.green("\n🎉 Project successfully initialized!\n"));
         try {
             const { newFeatureAccepted } = await inquirer_1.default.prompt([{

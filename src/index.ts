@@ -11,10 +11,10 @@ import { promptPluginDetails } from './utils/dev-plugin'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
-program.command('init').description('Initialize a new TSDIAPI project')
+program.command('init [name]').description('Initialize a new TSDIAPI project')
   .option('-s, --skip', 'Skip all questions and use default settings')
-  .action((_, options) => {
-    initProject('.', {
+  .action((name, options) => {
+    initProject(name || '.', {
       skipAll: options.skip || false
     });
   });

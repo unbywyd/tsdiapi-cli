@@ -13,11 +13,10 @@ const qs_1 = __importDefault(require("qs"));
 const setup_plugin_1 = require("./utils/setup-plugin");
 const dev_plugin_1 = require("./utils/dev-plugin");
 commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
-commander_1.program.command('init <name>').description('Initialize a new TSDIAPI project')
+commander_1.program.command('init [name]').description('Initialize a new TSDIAPI project')
     .option('-s, --skip', 'Skip all questions and use default settings')
     .action((name, options) => {
-    (0, initProject_1.initProject)(name, {
-        name: name,
+    (0, initProject_1.initProject)(name || '.', {
         skipAll: options.skip || false
     });
 });
