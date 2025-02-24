@@ -34,16 +34,24 @@ function generateInquirerQuestion(variable) {
 async function toSetupPlugin(pluginName) {
     try {
         const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
+        let isLocalPath = false;
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
         const packageName = (0, config_1.getPackageName)(pluginName);
         const isInstalled = (0, plugins_1.isPackageInstalled)(currentDirectory, packageName);
         if (!isInstalled) {
-            console.log(chalk_1.default.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
-            return;
+            const findByPath = path_1.default.join(process.cwd(), pluginName, 'tsdiapi.config.json');
+            const isInstalled = fs_extra_1.default.existsSync(findByPath);
+            if (!isInstalled) {
+                console.log(chalk_1.default.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
+                return;
+            }
+            else {
+                isLocalPath = true;
+            }
         }
-        const config = await (0, plugins_1.getPluginMetadata)(currentDirectory, packageName);
+        const config = isLocalPath ? await (0, plugins_1.getPluginMetaDataFromRoot)(path_1.default.join(process.cwd(), pluginName)) : await (0, plugins_1.getPluginMetadata)(currentDirectory, packageName);
         if (!config) {
             console.log(chalk_1.default.yellow(`No setup logic defined for plugin: ${packageName}`));
             console.log(chalk_1.default.green(`${packageName} setup has been successfully completed.`));

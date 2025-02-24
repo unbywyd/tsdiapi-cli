@@ -122,7 +122,7 @@ export async function promptPluginDetails(sourcePluginName: string) {
             name: pluginName,
             description: answers.description,
         }
-        const configName = "tsdiapi.config.ts";
+        const configName = "tsdiapi.config.json";
         const configPath = path.join(pluginDir, configName);
         if (!fs.existsSync(configPath)) {
             console.log(chalk.cyan(`Creating ${configName} file...`));

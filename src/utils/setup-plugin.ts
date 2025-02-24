@@ -6,7 +6,7 @@ import path from 'path';
 import { glob } from "glob";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
 import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
-import { findTSDIAPIServerProject, getPluginMetadata, isPackageInstalled } from './plugins';
+import { findTSDIAPIServerProject, getPluginMetadata, getPluginMetaDataFromRoot, isPackageInstalled } from './plugins';
 import { findNearestPackageJson, isDirectoryPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
@@ -28,8 +28,8 @@ function generateInquirerQuestion(variable: PluginConfigVariable) {
 
 export async function toSetupPlugin(pluginName: string): Promise<void> {
     try {
-        const currentDirectory = await findTSDIAPIServerProject()
-
+        const currentDirectory = await findTSDIAPIServerProject();
+        let isLocalPath = false;
         if (!currentDirectory) {
             return console.log(
                 chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`)
@@ -38,11 +38,17 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
         const packageName = getPackageName(pluginName);
         const isInstalled = isPackageInstalled(currentDirectory, packageName);
         if (!isInstalled) {
-            console.log(chalk.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
-            return;
+            const findByPath = path.join(process.cwd(), pluginName, 'tsdiapi.config.json');
+            const isInstalled = fs.existsSync(findByPath);
+            if (!isInstalled) {
+                console.log(chalk.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
+                return;
+            } else {
+                isLocalPath = true;
+            }
         }
 
-        const config = await getPluginMetadata(currentDirectory, packageName);
+        const config = isLocalPath ? await getPluginMetaDataFromRoot(path.join(process.cwd(), pluginName)) : await getPluginMetadata(currentDirectory, packageName);
         if (!config) {
             console.log(chalk.yellow(`No setup logic defined for plugin: ${packageName}`));
             console.log(chalk.green(`${packageName} setup has been successfully completed.`));

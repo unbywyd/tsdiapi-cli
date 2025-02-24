@@ -1,5 +1,6 @@
 import { PluginMetadata } from './plugins-configuration';
 export declare const addPlugin: (selectedPluginName: string) => Promise<void>;
+export declare function getPluginMetaDataFromRoot(packagePath: string): Promise<any>;
 export declare function getPluginMetadata(currentDirectory: string, packageName: string): Promise<PluginMetadata | null>;
 export declare function addPluginToApp(filePath: string, pluginName: string, pluginImportPath: string, projectDir: string): Promise<boolean>;
 /**

@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removePlugin = exports.updatePlugin = exports.addPlugin = void 0;
+exports.getPluginMetaDataFromRoot = getPluginMetaDataFromRoot;
 exports.getPluginMetadata = getPluginMetadata;
 exports.addPluginToApp = addPluginToApp;
 exports.findTSDIAPIServerProject = findTSDIAPIServerProject;
@@ -86,6 +87,28 @@ const addPlugin = async (selectedPluginName) => {
     }
 };
 exports.addPlugin = addPlugin;
+async function getPluginMetaDataFromRoot(packagePath) {
+    const configPath = path_1.default.join(packagePath, 'tsdiapi.config.json');
+    if (!fs_1.default.existsSync(configPath)) {
+        return null;
+    }
+    else {
+        try {
+            const config = JSON.parse(fs_1.default.readFileSync(configPath, 'utf8'));
+            const isValid = await (0, plugins_configuration_1.validatePluginConfig)(config);
+            if (!isValid) {
+                return null;
+            }
+            else {
+                return config;
+            }
+        }
+        catch (error) {
+            console.error(`Error loading plugin configuration: ${error.message}`);
+            return null;
+        }
+    }
+}
 async function getPluginMetadata(currentDirectory, packageName) {
     const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
     const configPath = path_1.default.join(packagePath, 'tsdiapi.config.json');
