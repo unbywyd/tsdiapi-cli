@@ -27,15 +27,10 @@ export function runUnsafeNpmScript(projectDir: string, scriptName: string) {
     });
 }
 export async function runPostInstall(pluginName: string, cwd: string, postInstallCommand: string) {
-
-    console.log(chalk.blue(`💡 Command: ${chalk.cyan(postInstallCommand)}`));
     try {
         const { stdout, stderr } = await execAsync(postInstallCommand, { cwd });
-
         if (stdout) console.log(chalk.green(`✅ Output:\n${stdout}`));
         if (stderr) console.log(chalk.red(`⚠️ Errors:\n${stderr}`));
-
-        console.log(chalk.green(`✅ Post-install script completed successfully.`));
     } catch (error: any) {
         console.log(chalk.red(`❌ Failed to execute post-install script:`));
         console.error(chalk.red(`💥 Error: ${error.message}`));
@@ -162,9 +157,9 @@ export async function packageExistsOnNpm(packageName: string, silent?: boolean):
     const spinner = silent
         ? null
         : ora({
-              text: chalk.blue(`🔍 Checking NPM for package: ${chalk.bold(packageName)}...`),
-              color: "cyan",
-          }).start();
+            text: chalk.blue(`🔍 Checking NPM for package: ${chalk.bold(packageName)}...`),
+            color: "cyan",
+        }).start();
 
     try {
         const response = await fetch(`https://registry.npmjs.org/${packageName}`);

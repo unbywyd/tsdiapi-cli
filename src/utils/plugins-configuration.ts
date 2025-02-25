@@ -18,7 +18,10 @@ export interface PluginGenerator {
     name: string;
     description?: string;
     files: Array<PluginFileMapping>;
-    args?: Array<PluginGeneratorArg>
+    args?: Array<PluginGeneratorArg>;
+    fileModifications?: Array<PluginFileModification>;
+    postMessages?: Array<string>;
+    afterGenerate?: string;
 }
 export interface PluginConfigVariable extends PluginInquirerOption {
     type: AppParam['type'];
@@ -140,7 +143,32 @@ const pluginConfigSchema = {
                             additionalProperties: false
                         },
                         nullable: true
-                    }
+                    },
+                    fileModifications: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                path: { type: "string", minLength: 1 },
+                                mode: {
+                                    type: "string",
+                                    enum: ["prepend", "append"]
+                                },
+                                content: { type: "string", minLength: 1 },
+                                match: { type: "string", minLength: 1 },
+                                expected: { type: "boolean", nullable: true }
+                            },
+                            required: ["path", "mode", "content", "match"],
+                            additionalProperties: false
+                        },
+                        nullable: true
+                    },
+                    postMessages: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    },
+                    afterGenerate: { type: "string", nullable: true }
                 },
                 required: ["name", "files"],
                 additionalProperties: false

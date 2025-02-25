@@ -23,7 +23,6 @@ const execAsync = util.promisify(exec)
 export async function promptPluginDetails(sourcePluginName: string) {
     try {
         const pluginName = toLowerCase(sourcePluginName);
-
         const regexp = /^[a-z0-9-]+$/;
         const minLen = 3;
         const maxLen = 50;
@@ -35,8 +34,13 @@ export async function promptPluginDetails(sourcePluginName: string) {
             console.log(chalk.red(`\n❌ Invalid plugin name: ${pluginName}. Plugin name must be between ${minLen} and ${maxLen} characters.\n`));
             return;
         }
-
-        const pluginDir = path.join(process.cwd(), pluginName);
+        const nonAcceptablePluginNames = ["feature", "controller", "service", "middleware", "plugin"];	
+        if(nonAcceptablePluginNames.includes(pluginName)) {
+            console.log(chalk.red(`\n❌ Invalid plugin name: ${pluginName}. Plugin name must not be one of the following: ${nonAcceptablePluginNames.join(", ")}.\n`));
+            return;
+        }
+        const pluginFullName = pluginName.startsWith('tsdiapi') ? pluginName : 'tsdiapi-' + pluginName;
+        const pluginDir = path.join(process.cwd(), pluginFullName);
         if (fs.existsSync(pluginDir)) {
             console.log(chalk.red(`\n❌ Plugin directory already exists: ${pluginDir}. Please choose a different name.\n`));
             return;
@@ -119,7 +123,7 @@ export async function promptPluginDetails(sourcePluginName: string) {
         await fs.writeFile(path.join(pluginDir, "src/index.ts"), indexData);
 
         const configData = {
-            name: pluginName,
+            name: pluginFullName,
             description: answers.description,
         }
         const configName = "tsdiapi.config.json";

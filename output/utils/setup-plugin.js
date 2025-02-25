@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.toSetupPlugin = toSetupPlugin;
 exports.setupCommon = setupCommon;
-exports.fileModifications = fileModifications;
 exports.addScriptsToPackageJson = addScriptsToPackageJson;
 exports.copyPluginFiles = copyPluginFiles;
 const config_1 = require("./../config");
@@ -19,6 +18,7 @@ const plugins_1 = require("./plugins");
 const cwd_1 = require("./cwd");
 const env_1 = require("./env");
 const app_config_1 = require("./app.config");
+const modifications_1 = require("./modifications");
 function generateInquirerQuestion(variable) {
     return {
         ...variable.inquirer,
@@ -123,7 +123,7 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
             }
         }
         if (pluginConfig?.postFileModifications?.length) {
-            await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications);
+            await (0, modifications_1.fileModifications)(pluginName, projectDir, pluginConfig.postFileModifications);
         }
         console.log(chalk_1.default.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
@@ -134,56 +134,6 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
     }
     catch (error) {
         console.error(chalk_1.default.red(`Error while setting up ${pluginName} settings: ${error.message}`));
-    }
-}
-async function fileModifications(pluginName, projectDir, modifications) {
-    try {
-        const pendingChanges = [];
-        for (const mod of modifications) {
-            const filePath = path_1.default.join(projectDir, mod.path);
-            if (!fs_extra_1.default.existsSync(filePath)) {
-                console.log(chalk_1.default.yellow(`⚠️ Skipping ${filePath} (File not found)`));
-                continue;
-            }
-            const fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
-            const regex = new RegExp(mod.match, "g");
-            const matchFound = regex.test(fileContent);
-            if (mod.expected !== undefined && matchFound !== mod.expected) {
-                console.log(chalk_1.default.yellow(`⚠️ Skipping modification for ${filePath} (Expected match condition not met)`));
-                continue;
-            }
-            pendingChanges.push({
-                filePath,
-                mode: mod.mode,
-                plugin: pluginName
-            });
-        }
-        if (pendingChanges.length === 0) {
-            console.log(chalk_1.default.blue(`✅ No modifications required for ${pluginName}.`));
-            return;
-        }
-        console.log(chalk_1.default.blue(`⚡ Plugin "${pluginName}" wants to modify ${pendingChanges.length} files:`));
-        for (const { filePath, mode } of pendingChanges) {
-            console.log(`- ${filePath} (${mode})`);
-        }
-        for (const mod of modifications) {
-            const filePath = path_1.default.join(projectDir, mod.path);
-            if (!fs_extra_1.default.existsSync(filePath))
-                continue;
-            let fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
-            if (mod.mode === "prepend") {
-                fileContent = mod.content + "\n" + fileContent;
-            }
-            else if (mod.mode === "append") {
-                fileContent = fileContent + "\n" + mod.content;
-            }
-            await fs_extra_1.default.writeFile(filePath, fileContent, "utf8");
-            console.log(chalk_1.default.green(`✅ Updated: ${filePath} (${mod.mode})`));
-        }
-        console.log(chalk_1.default.blue(`🎉 Modifications applied successfully for "${pluginName}"`));
-    }
-    catch (error) {
-        console.error(chalk_1.default.red(`❌ Error while modifying files: ${error.message}`));
     }
 }
 async function addScriptsToPackageJson(packageJson, provideScripts) {

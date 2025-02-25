@@ -36,14 +36,12 @@ function runUnsafeNpmScript(projectDir, scriptName) {
     });
 }
 async function runPostInstall(pluginName, cwd, postInstallCommand) {
-    console.log(chalk_1.default.blue(`💡 Command: ${chalk_1.default.cyan(postInstallCommand)}`));
     try {
         const { stdout, stderr } = await execAsync(postInstallCommand, { cwd });
         if (stdout)
             console.log(chalk_1.default.green(`✅ Output:\n${stdout}`));
         if (stderr)
             console.log(chalk_1.default.red(`⚠️ Errors:\n${stderr}`));
-        console.log(chalk_1.default.green(`✅ Post-install script completed successfully.`));
     }
     catch (error) {
         console.log(chalk_1.default.red(`❌ Failed to execute post-install script:`));

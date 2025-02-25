@@ -15,6 +15,9 @@ export interface PluginGenerator {
     description?: string;
     files: Array<PluginFileMapping>;
     args?: Array<PluginGeneratorArg>;
+    fileModifications?: Array<PluginFileModification>;
+    postMessages?: Array<string>;
+    afterGenerate?: string;
 }
 export interface PluginConfigVariable extends PluginInquirerOption {
     type: AppParam['type'];

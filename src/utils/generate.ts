@@ -7,10 +7,12 @@ import { toCamelCase, toKebabCase, toPascalCase } from "./format";
 import path from "path";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
 import { glob } from "glob";
-import { PluginGenerator } from './plugins-configuration';
+import { PluginFileMapping, PluginGenerator } from './plugins-configuration';
 import { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from './hbs';
 import { isDirectoryPath, resolveTargetDirectory } from './cwd';
-
+import { fileModifications } from './modifications';
+import ora from 'ora'
+import { runPostInstall } from './npm';
 
 export async function generate(pluginName: string, generatorName?: string, _args?: Record<string, any>): Promise<void> {
     try {
@@ -119,6 +121,7 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         const plugArgs = currentGenerator?.args || [];
         const plugFiles = currentGenerator?.files || [];
+
         if (!plugFiles.length) {
             return console.log(
                 chalk.red(`Generator ${currentGenerator.name} does not have any files!`)
@@ -188,86 +191,119 @@ export async function generate(pluginName: string, generatorName?: string, _args
             basename: kebabCaseName,
             baseName: kebabCaseName,
             classname: pascalCaseName,
-            className: pascalCaseName
+            className: pascalCaseName,
+            packageName: packageName,
         }
 
-        const filesToGenerate = [];
-
+        const _fileModifications = currentGenerator?.fileModifications || [];
         try {
-            const cwd = resolveTargetDirectory(process.cwd(), name);
-            const packagePath = path.join(currentDirectory, 'node_modules', packageName);
-
-            for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
-                const resolvedDest = path.resolve(cwd, destination);
-                const files = glob.sync(source, { cwd: packagePath });
-                if (files.length === 0) {
-                    continue;
-                }
-
-                for (const file of files) {
-                    const sourceFile = path.resolve(packagePath, file);
-                    const fileName = path.basename(file);
-
-
-                    const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
-                    const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, name);
-
-                    if (fs.existsSync(outputPath)) {
-                        console.log(`⚠️ Skipping: File already exists: ${outputPath}`);
-                        continue;
-                    }
-                    filesToGenerate.push({
-                        sourceFile,
-                        outputPath,
-                        overwrite,
-                        hbsRequired: isHandlebarsTemplate
-                    });
-                }
+            if (fileModifications.length) {
+                await fileModifications(pluginName, currentDirectory, _fileModifications);
             }
-            if (filesToGenerate.length === 0) {
-                console.log(chalk.red(`❌ No files found to generate!`));
-                return;
-            }
-
-            console.log(chalk.blue(`\n🔹 The following files will be generated:\n`));
-
-            for (const { outputPath } of filesToGenerate) {
-                console.log(`${chalk.green('🟡 (new)')} ${chalk.white(outputPath)}`);
-            }
-
-            console.log('\n');
-
-            const { accepted } = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'accepted',
-                    message: `Do you want to generate ${filesToGenerate.length} files?`,
-                    default: true,
-                },
-            ]);
-
-            if (!accepted) {
-                console.log(chalk.yellow(`❌ Operation cancelled by the user.`));
-                return;
-            }
-            console.log(chalk.blue(`\n📂 Generating files...\n`));
-
-            for (const { sourceFile, outputPath, overwrite, hbsRequired } of filesToGenerate) {
-                if (hbsRequired) {
-                    const content = buildHandlebarsTemplateWithPath(sourceFile, defaultObj);
-                    await fs.outputFile(outputPath, content || '');
-                } else {
-                    fs.copySync(sourceFile, outputPath, { overwrite: overwrite });
-                }
-                console.log(chalk.green(`✅ Created: ${outputPath}`));
-            }
-
-            console.log(chalk.green(`\n🎉 ${plugFiles.length} files have been successfully generated!\n`));
         } catch (error) {
             console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
         }
+
+        await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles);
+
+
+        if (currentGenerator.afterGenerate) {
+            const spinner = ora().start();
+            try {
+                spinner.text = chalk.blue(`⚙️ Running after-generate script...`);
+                await runPostInstall(pluginName, currentDirectory, currentGenerator.afterGenerate);
+                spinner.succeed(chalk.green(`✅ Completed after-generate script!`));
+            } catch (error) {
+                spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
+            }
+        }
+
+        if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
+            for (const message of currentGenerator.postMessages) {
+                console.log(chalk.green(`- ${message}`));
+            }
+        }
+
     } catch (e) {
         console.error(chalk.red('Error generating plugin:', e));
+    }
+}
+
+export async function generateFiles(currentGenerator: PluginGenerator, defaultObj: Record<string, any>, currentDirectory: string, plugFiles: PluginFileMapping[]): Promise<void> {
+    try {
+        const filesToGenerate = [];
+        const { name, packageName } = defaultObj;
+        const cwd = resolveTargetDirectory(process.cwd(), name);
+        const packagePath = path.join(currentDirectory, 'node_modules', packageName);
+
+        for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
+            const resolvedDest = path.resolve(cwd, destination);
+            const files = glob.sync(source, { cwd: packagePath });
+            if (files.length === 0) {
+                continue;
+            }
+
+            for (const file of files) {
+                const sourceFile = path.resolve(packagePath, file);
+                const fileName = path.basename(file);
+
+
+                const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
+                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, name);
+
+                if (fs.existsSync(outputPath)) {
+                    console.log(`⚠️ Skipping: File already exists: ${outputPath}`);
+                    continue;
+                }
+                filesToGenerate.push({
+                    sourceFile,
+                    outputPath,
+                    overwrite,
+                    hbsRequired: isHandlebarsTemplate
+                });
+            }
+        }
+        if (filesToGenerate.length === 0) {
+            console.log(chalk.red(`❌ No files found to generate!`));
+            return;
+        }
+
+        console.log(chalk.blue(`\n🔹 The following files will be generated:\n`));
+
+        for (const { outputPath } of filesToGenerate) {
+            console.log(`${chalk.green('🟡 (new)')} ${chalk.white(outputPath)}`);
+        }
+
+        console.log('\n');
+
+        const { accepted } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'accepted',
+                message: `Do you want to generate ${filesToGenerate.length} files?`,
+                default: true,
+            },
+        ]);
+
+        if (!accepted) {
+            console.log(chalk.yellow(`❌ Operation cancelled by the user.`));
+            return;
+        }
+        console.log(chalk.blue(`\n📂 Generating files...\n`));
+
+        for (const { sourceFile, outputPath, overwrite, hbsRequired } of filesToGenerate) {
+            if (hbsRequired) {
+                const content = buildHandlebarsTemplateWithPath(sourceFile, defaultObj);
+                await fs.outputFile(outputPath, content || '');
+            } else {
+                fs.copySync(sourceFile, outputPath, { overwrite: overwrite });
+            }
+            console.log(chalk.green(`✅ Created: ${outputPath}`));
+        }
+
+        console.log(chalk.green(`\n🎉 ${plugFiles.length} files have been successfully generated!\n`));
+    } catch (error) {
+        console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
     }
 }
 
