@@ -13,6 +13,7 @@ import { isDirectoryPath, resolveTargetDirectory } from './cwd';
 import { fileModifications } from './modifications';
 import ora from 'ora'
 import { runPostInstall } from './npm';
+import Handlebars from 'handlebars'
 
 export async function generate(pluginName: string, generatorName?: string, _args?: Record<string, any>): Promise<void> {
     try {
@@ -220,7 +221,8 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
             for (const message of currentGenerator.postMessages) {
-                console.log(chalk.green(`- ${message}`));
+                const msg = Handlebars.compile(message)(defaultObj);
+                console.log(chalk.green(`- ${msg}`));
             }
         }
 

@@ -34,8 +34,8 @@ export async function promptPluginDetails(sourcePluginName: string) {
             console.log(chalk.red(`\n❌ Invalid plugin name: ${pluginName}. Plugin name must be between ${minLen} and ${maxLen} characters.\n`));
             return;
         }
-        const nonAcceptablePluginNames = ["feature", "controller", "service", "middleware", "plugin"];	
-        if(nonAcceptablePluginNames.includes(pluginName)) {
+        const nonAcceptablePluginNames = ["feature", "controller", "service", "middleware", "plugin"];
+        if (nonAcceptablePluginNames.includes(pluginName)) {
             console.log(chalk.red(`\n❌ Invalid plugin name: ${pluginName}. Plugin name must not be one of the following: ${nonAcceptablePluginNames.join(", ")}.\n`));
             return;
         }
@@ -79,7 +79,7 @@ export async function promptPluginDetails(sourcePluginName: string) {
                 type: "confirm",
                 name: "withBootstrapFiles",
                 message: "⚙️ Should this plugin support automatic file loading?",
-                default: true
+                default: false
             }
         ]);
 
