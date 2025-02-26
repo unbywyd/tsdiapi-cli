@@ -24,6 +24,7 @@ const cwd_1 = require("./cwd");
 const modifications_1 = require("./modifications");
 const ora_1 = __importDefault(require("ora"));
 const npm_1 = require("./npm");
+const handlebars_1 = __importDefault(require("handlebars"));
 async function generate(pluginName, generatorName, _args) {
     try {
         const args = _args || {};
@@ -201,7 +202,8 @@ async function generate(pluginName, generatorName, _args) {
         }
         if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
             for (const message of currentGenerator.postMessages) {
-                console.log(chalk_1.default.green(`- ${message}`));
+                const msg = handlebars_1.default.compile(message)(defaultObj);
+                console.log(chalk_1.default.green(`- ${msg}`));
             }
         }
     }

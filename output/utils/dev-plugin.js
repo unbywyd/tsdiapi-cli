@@ -75,7 +75,7 @@ async function promptPluginDetails(sourcePluginName) {
                 type: "confirm",
                 name: "withBootstrapFiles",
                 message: "⚙️ Should this plugin support automatic file loading?",
-                default: true
+                default: false
             }
         ]);
         await fs_extra_1.default.ensureDir(pluginDir);
