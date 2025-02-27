@@ -9,6 +9,7 @@ exports.isValidProjectPath = isValidProjectPath;
 exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
 exports.resolveTargetDirectory = resolveTargetDirectory;
 exports.isDirectoryPath = isDirectoryPath;
+exports.isValidRequiredPath = isValidRequiredPath;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const chalk_1 = __importDefault(require("chalk"));
@@ -101,5 +102,25 @@ function resolveTargetDirectory(cwd, name) {
 function isDirectoryPath(inputPath) {
     const normalized = path_1.default.normalize(inputPath).replace(/\\/g, "/");
     return path_1.default.extname(normalized) === "";
+}
+function isValidRequiredPath(requiredPath) {
+    // Forbidden glob pattern characters
+    const globChars = ["*", "?", "[", "]", "{", "}"];
+    // Check if the path is absolute
+    if (path_1.default.isAbsolute(requiredPath)) {
+        return false;
+    }
+    // Check if the path contains glob patterns
+    if (globChars.some(char => requiredPath.includes(char))) {
+        return false;
+    }
+    // Check if the path goes outside the root (`..`)
+    if (requiredPath.includes("..")) {
+        return false;
+    }
+    // Get the file extension
+    const ext = path_1.default.extname(requiredPath);
+    // The path must contain a file extension
+    return ext.length > 1;
 }
 //# sourceMappingURL=cwd.js.map

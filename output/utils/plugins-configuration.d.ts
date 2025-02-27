@@ -18,6 +18,8 @@ export interface PluginGenerator {
     fileModifications?: Array<PluginFileModification>;
     postMessages?: Array<string>;
     afterGenerate?: string;
+    requiredPackages?: Array<string>;
+    requiredPaths?: Array<string>;
 }
 export interface PluginConfigVariable extends PluginInquirerOption {
     type: AppParam['type'];

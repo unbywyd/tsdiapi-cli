@@ -21,4 +21,5 @@ export declare function isValidProjectPath(inputPath: string): boolean;
 export declare function isPathSuitableToNewProject(pathName: string): string | false;
 export declare function resolveTargetDirectory(cwd: string, name: string): string;
 export declare function isDirectoryPath(inputPath: string): boolean;
+export declare function isValidRequiredPath(requiredPath: string): boolean;
 //# sourceMappingURL=cwd.d.ts.map

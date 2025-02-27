@@ -63,6 +63,7 @@ export const addPlugin = async (selectedPluginName: string) => {
     } else {
       if (config.postInstall) {
         spinner.text = chalk.blue(`⚙️ Running post-install script for ${packageName}...`);
+        console.log(chalk.blue(`⚙️ Running post-install script for ${packageName}...`));
         await runPostInstall(selectedPluginName, currentDirectory, config.postInstall);
         spinner.succeed(chalk.green(`✅ Post-install script executed.`));
       }
@@ -72,6 +73,7 @@ export const addPlugin = async (selectedPluginName: string) => {
       try {
         if (config.afterInstall) {
           spinner.text = chalk.blue(`⚙️ Running after-install script for ${packageName}...`);
+          console.log(chalk.blue(`⚙️ Running after-install script for ${packageName}...`));
           await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall);
           spinner.succeed(chalk.green(`✅ After-install script executed.`));
         }
@@ -269,12 +271,14 @@ export function isPackageInstalled(projectPath: string, packageName: string): bo
  * @param {string} pluginName - The name of the plugin to update.
  * @returns {Promise<void>} - A promise that resolves after the plugin is updated.
  */
-export const updatePlugin = async (pluginName: string) => {
+export const updatePlugin = async (sourceName: string) => {
+  const pluginName = getPackageName(sourceName);
   try {
     const currentDirectory = await findTSDIAPIServerProject();
     if (!currentDirectory) {
       return console.log(chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
     }
+
 
     if (!isPackageInstalled(currentDirectory, pluginName)) {
       return console.log(chalk.red(`Plugin ${pluginName} is not installed.`));
@@ -286,31 +290,5 @@ export const updatePlugin = async (pluginName: string) => {
     console.log(chalk.green(`Plugin ${pluginName} successfully updated.`));
   } catch (error) {
     console.error(chalk.red(`Error updating plugin ${pluginName}: ${error.message}`));
-  }
-};
-
-/**
- * Removes a plugin from the current TSDIAPI project.
- *
- * @param {string} pluginName - The name of the plugin to remove.
- * @returns {Promise<void>} - A promise that resolves after the plugin is removed.
- */
-export const removePlugin = async (pluginName: string) => {
-  try {
-    const currentDirectory = await findTSDIAPIServerProject();
-    if (!currentDirectory) {
-      return console.log(chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
-    }
-
-    if (!isPackageInstalled(currentDirectory, pluginName)) {
-      return console.log(chalk.red(`Plugin ${pluginName} is not installed.`));
-    }
-
-    console.log(chalk.blue(`Removing plugin ${pluginName}...`));
-    await execAsync(`npm uninstall ${pluginName}`, { cwd: currentDirectory });
-
-    console.log(chalk.green(`Plugin ${pluginName} successfully removed.`));
-  } catch (error) {
-    console.error(chalk.red(`Error removing plugin ${pluginName}: ${error.message}`));
   }
 };

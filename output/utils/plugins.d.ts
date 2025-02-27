@@ -16,12 +16,5 @@ export declare function isPackageInstalled(projectPath: string, packageName: str
  * @param {string} pluginName - The name of the plugin to update.
  * @returns {Promise<void>} - A promise that resolves after the plugin is updated.
  */
-export declare const updatePlugin: (pluginName: string) => Promise<void>;
-/**
- * Removes a plugin from the current TSDIAPI project.
- *
- * @param {string} pluginName - The name of the plugin to remove.
- * @returns {Promise<void>} - A promise that resolves after the plugin is removed.
- */
-export declare const removePlugin: (pluginName: string) => Promise<void>;
+export declare const updatePlugin: (sourceName: string) => Promise<void>;
 //# sourceMappingURL=plugins.d.ts.map

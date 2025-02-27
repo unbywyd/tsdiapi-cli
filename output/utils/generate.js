@@ -81,6 +81,34 @@ async function generate(pluginName, generatorName, _args) {
             }
         }
         let currentGenerator = generatorByName || generators[0];
+        if (currentGenerator.requiredPackages?.length) {
+            console.log(chalk_1.default.blue(`Checking required packages for generator ${currentGenerator.name}...`));
+            for (const packageName of currentGenerator.requiredPackages) {
+                const isInstalled = await (0, plugins_1.isPackageInstalled)(currentDirectory, packageName);
+                if (!isInstalled) {
+                    return console.log(chalk_1.default.red(`Plugin ${packageName} is required for generator ${currentGenerator.name}!`));
+                }
+                else {
+                    console.log(chalk_1.default.green(`✅ Plugin ${packageName} is installed!`));
+                }
+            }
+        }
+        if (currentGenerator?.requiredPaths?.length) {
+            console.log(chalk_1.default.blue(`Checking required paths for generator ${currentGenerator.name}...`));
+            for (const requiredPath of currentGenerator.requiredPaths) {
+                if (!(0, cwd_1.isValidRequiredPath)(requiredPath)) {
+                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}!`));
+                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`));
+                    return;
+                }
+                const fullPath = path_1.default.join(currentDirectory, requiredPath);
+                if (!fs_extra_1.default.existsSync(fullPath)) {
+                    console.log(chalk_1.default.bgYellow.white.bold(" ⚠️ DENIED ") +
+                        chalk_1.default.red(` Required path not found: ${requiredPath}! This file is required to start the generation process.`));
+                    return;
+                }
+            }
+        }
         if (!generatorByName && generators?.length > 1) {
             const generatorNames = generators.map(g => g.name);
             try {

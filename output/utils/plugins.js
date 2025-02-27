@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removePlugin = exports.updatePlugin = exports.addPlugin = void 0;
+exports.updatePlugin = exports.addPlugin = void 0;
 exports.getPluginMetaDataFromRoot = getPluginMetaDataFromRoot;
 exports.getPluginMetadata = getPluginMetadata;
 exports.addPluginToApp = addPluginToApp;
@@ -62,6 +62,7 @@ const addPlugin = async (selectedPluginName) => {
         else {
             if (config.postInstall) {
                 spinner.text = chalk_1.default.blue(`⚙️ Running post-install script for ${packageName}...`);
+                console.log(chalk_1.default.blue(`⚙️ Running post-install script for ${packageName}...`));
                 await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.postInstall);
                 spinner.succeed(chalk_1.default.green(`✅ Post-install script executed.`));
             }
@@ -70,6 +71,7 @@ const addPlugin = async (selectedPluginName) => {
             try {
                 if (config.afterInstall) {
                     spinner.text = chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`);
+                    console.log(chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`));
                     await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.afterInstall);
                     spinner.succeed(chalk_1.default.green(`✅ After-install script executed.`));
                 }
@@ -254,7 +256,8 @@ function isPackageInstalled(projectPath, packageName) {
  * @param {string} pluginName - The name of the plugin to update.
  * @returns {Promise<void>} - A promise that resolves after the plugin is updated.
  */
-const updatePlugin = async (pluginName) => {
+const updatePlugin = async (sourceName) => {
+    const pluginName = (0, config_1.getPackageName)(sourceName);
     try {
         const currentDirectory = await findTSDIAPIServerProject();
         if (!currentDirectory) {
@@ -272,28 +275,4 @@ const updatePlugin = async (pluginName) => {
     }
 };
 exports.updatePlugin = updatePlugin;
-/**
- * Removes a plugin from the current TSDIAPI project.
- *
- * @param {string} pluginName - The name of the plugin to remove.
- * @returns {Promise<void>} - A promise that resolves after the plugin is removed.
- */
-const removePlugin = async (pluginName) => {
-    try {
-        const currentDirectory = await findTSDIAPIServerProject();
-        if (!currentDirectory) {
-            return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
-        }
-        if (!isPackageInstalled(currentDirectory, pluginName)) {
-            return console.log(chalk_1.default.red(`Plugin ${pluginName} is not installed.`));
-        }
-        console.log(chalk_1.default.blue(`Removing plugin ${pluginName}...`));
-        await execAsync(`npm uninstall ${pluginName}`, { cwd: currentDirectory });
-        console.log(chalk_1.default.green(`Plugin ${pluginName} successfully removed.`));
-    }
-    catch (error) {
-        console.error(chalk_1.default.red(`Error removing plugin ${pluginName}: ${error.message}`));
-    }
-};
-exports.removePlugin = removePlugin;
 //# sourceMappingURL=plugins.js.map
