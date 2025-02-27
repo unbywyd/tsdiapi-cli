@@ -29,7 +29,7 @@ export function getCdCommand(targetPath: string): string | false {
     if (cwd === fullPath) {
         return false;
     }
-    
+
     const relativePath = path.relative(cwd, fullPath);
 
     if (relativePath.startsWith('..')) {
@@ -113,4 +113,30 @@ export function isDirectoryPath(inputPath: string): boolean {
     const normalized = path.normalize(inputPath).replace(/\\/g, "/");
 
     return path.extname(normalized) === "";
+}
+
+export function isValidRequiredPath(requiredPath: string): boolean {
+    // Forbidden glob pattern characters
+    const globChars = ["*", "?", "[", "]", "{", "}"];
+
+    // Check if the path is absolute
+    if (path.isAbsolute(requiredPath)) {
+        return false;
+    }
+
+    // Check if the path contains glob patterns
+    if (globChars.some(char => requiredPath.includes(char))) {
+        return false;
+    }
+
+    // Check if the path goes outside the root (`..`)
+    if (requiredPath.includes("..")) {
+        return false;
+    }
+
+    // Get the file extension
+    const ext = path.extname(requiredPath);
+
+    // The path must contain a file extension
+    return ext.length > 1;
 }

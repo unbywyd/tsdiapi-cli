@@ -22,6 +22,8 @@ export interface PluginGenerator {
     fileModifications?: Array<PluginFileModification>;
     postMessages?: Array<string>;
     afterGenerate?: string;
+    requiredPackages?: Array<string>;
+    requiredPaths?: Array<string>;
 }
 export interface PluginConfigVariable extends PluginInquirerOption {
     type: AppParam['type'];
@@ -168,7 +170,17 @@ const pluginConfigSchema = {
                         items: { type: "string", minLength: 1 },
                         nullable: true
                     },
-                    afterGenerate: { type: "string", nullable: true }
+                    afterGenerate: { type: "string", nullable: true },
+                    requiredPackages: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    },
+                    requiredPaths: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    }
                 },
                 required: ["name", "files"],
                 additionalProperties: false

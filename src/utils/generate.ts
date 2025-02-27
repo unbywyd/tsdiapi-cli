@@ -9,7 +9,7 @@ import { applyTransform, convertWhenToFunction, validateInput } from './inquirer
 import { glob } from "glob";
 import { PluginFileMapping, PluginGenerator } from './plugins-configuration';
 import { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from './hbs';
-import { isDirectoryPath, resolveTargetDirectory } from './cwd';
+import { isDirectoryPath, isValidRequiredPath, resolveTargetDirectory } from './cwd';
 import { fileModifications } from './modifications';
 import ora from 'ora'
 import { runPostInstall } from './npm';
@@ -89,6 +89,44 @@ export async function generate(pluginName: string, generatorName?: string, _args
         }
 
         let currentGenerator: PluginGenerator = generatorByName || generators[0];
+
+        if (currentGenerator.requiredPackages?.length) {
+            console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
+            for (const packageName of currentGenerator.requiredPackages) {
+                const isInstalled = await isPackageInstalled(currentDirectory, packageName);
+                if (!isInstalled) {
+                    return console.log(
+                        chalk.red(`Plugin ${packageName} is required for generator ${currentGenerator.name}!`)
+                    )
+                } else {
+                    console.log(chalk.green(`✅ Plugin ${packageName} is installed!`));
+                }
+            }
+        }
+
+        if (currentGenerator?.requiredPaths?.length) {
+            console.log(chalk.blue(`Checking required paths for generator ${currentGenerator.name}...`));
+            for (const requiredPath of currentGenerator.requiredPaths) {
+                if (!isValidRequiredPath(requiredPath)) {
+                    console.log(
+                        chalk.red(`Invalid required path: ${requiredPath}!`)
+                    );
+                    console.log(
+                        chalk.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`)
+                    );
+                    return
+                }
+                const fullPath = path.join(currentDirectory, requiredPath);
+                if (!fs.existsSync(fullPath)) {
+                    console.log(
+                        chalk.bgYellow.white.bold(" ⚠️ DENIED ") +
+                        chalk.red(` Required path not found: ${requiredPath}! This file is required to start the generation process.`)
+                    );
+                    return
+                }
+            }
+        }
+
         if (!generatorByName && generators?.length > 1) {
             const generatorNames = generators.map(g => g.name);
             try {
