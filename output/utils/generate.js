@@ -246,7 +246,8 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
         const cwd = (0, cwd_1.resolveTargetDirectory)(process.cwd(), name);
         const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
         for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
-            const resolvedDest = path_1.default.resolve(cwd, destination);
+            const destinationPrepared = handlebars_1.default.compile(destination)(defaultObj);
+            const resolvedDest = path_1.default.resolve(cwd, destinationPrepared);
             const files = glob_1.glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
