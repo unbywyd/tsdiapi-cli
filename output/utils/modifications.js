@@ -17,7 +17,7 @@ async function fileModifications(pluginName, projectDir, modifications) {
                 continue;
             }
             const fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
-            const regex = new RegExp(mod.match, "g");
+            const regex = new RegExp(mod.match);
             const matchFound = regex.test(fileContent);
             if (mod.expected !== undefined && matchFound !== mod.expected) {
                 console.log(chalk_1.default.yellow(`⚠️ Skipping modification for ${filePath} (Expected match condition not met)`));

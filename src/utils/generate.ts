@@ -306,7 +306,7 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
             }
         }
         if (filesToGenerate.length === 0) {
-            console.log(chalk.red(`❌ No files found to generate!`));
+            //console.log(chalk.red(`❌ No files found to generate!`));
             return;
         }
 

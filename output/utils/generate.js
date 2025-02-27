@@ -270,7 +270,7 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
             }
         }
         if (filesToGenerate.length === 0) {
-            console.log(chalk_1.default.red(`❌ No files found to generate!`));
+            //console.log(chalk.red(`❌ No files found to generate!`));
             return;
         }
         console.log(chalk_1.default.blue(`\n🔹 The following files will be generated:\n`));

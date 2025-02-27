@@ -16,10 +16,8 @@ export async function fileModifications(pluginName: string, projectDir: string, 
             }
 
             const fileContent = await fs.readFile(filePath, "utf8");
-            const regex = new RegExp(mod.match, "g");
-
+            const regex = new RegExp(mod.match);
             const matchFound = regex.test(fileContent);
-
             if (mod.expected !== undefined && matchFound !== mod.expected) {
                 console.log(
                     chalk.yellow(
