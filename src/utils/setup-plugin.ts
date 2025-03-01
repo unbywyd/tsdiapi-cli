@@ -7,7 +7,7 @@ import { glob } from "glob";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
 import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
 import { findTSDIAPIServerProject, getPluginMetadata, getPluginMetaDataFromRoot, isPackageInstalled } from './plugins';
-import { findNearestPackageJson, isDirectoryPath } from './cwd';
+import { findNearestPackageJson, isDirectoryPath, isValidRequiredPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
 import { fileModifications } from './modifications';
@@ -65,6 +65,46 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
 
 export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<void> {
     try {
+
+        if (pluginConfig.requiredPackages?.length) {
+            console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
+            for (const packageName of pluginConfig.requiredPackages) {
+                const isInstalled = await isPackageInstalled(projectDir, packageName);
+                if (!isInstalled) {
+                    return console.log(
+                        chalk.red(`Plugin ${packageName} is required for ${pluginName} but not installed!`)
+                    )
+                } else {
+                    console.log(chalk.green(`✅ Required plugin ${packageName} is present in the project!`));
+                }
+            }
+        }
+
+        if (pluginConfig?.requiredPaths?.length) {
+            console.log(chalk.blue(`Checking required paths for plugin ${pluginName}...`));
+            for (const requiredPath of pluginConfig.requiredPaths) {
+                if (!isValidRequiredPath(requiredPath)) {
+                    console.log(
+                        chalk.red(`Invalid required path: ${requiredPath}!`)
+                    );
+                    console.log(
+                        chalk.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`)
+                    );
+                    return
+                }
+                const fullPath = path.join(projectDir, requiredPath);
+                if (!fs.existsSync(fullPath)) {
+                    console.log(
+                        chalk.bgYellow.white.bold(" ⚠️ DENIED ") +
+                        chalk.red(` Required path not found: ${requiredPath}!`)
+                    );
+                    console.log(
+                        chalk.red(`The required file is necessary for the installation of this plugin. Please ensure it is present in the project.`)
+                    );
+                    return
+                }
+            }
+        }
 
         const packagePath = path.resolve(projectDir, 'node_modules', pluginName);
 

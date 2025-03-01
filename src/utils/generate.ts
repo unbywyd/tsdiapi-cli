@@ -99,7 +99,7 @@ export async function generate(pluginName: string, generatorName?: string, _args
                         chalk.red(`Plugin ${packageName} is required for generator ${currentGenerator.name}!`)
                     )
                 } else {
-                    console.log(chalk.green(`✅ Plugin ${packageName} is installed!`));
+                    console.log(chalk.green(`✅ Required plugin ${packageName} is present in the project!`));
                 }
             }
         }

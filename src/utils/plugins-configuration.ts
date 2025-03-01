@@ -58,6 +58,8 @@ export interface PluginMetadata {
     afterInstall?: string;
     postMessages?: Array<string>;
     postFileModifications?: Array<PluginFileModification>;
+    requiredPackages?: Array<string>;
+    requiredPaths?: Array<string>;
 }
 
 const pluginConfigSchema = {
@@ -216,6 +218,16 @@ const pluginConfigSchema = {
                 required: ["path", "mode", "content", "match"],
                 additionalProperties: false
             },
+            nullable: true
+        },
+        requiredPackages: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            nullable: true
+        },
+        requiredPaths: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
             nullable: true
         }
     },
