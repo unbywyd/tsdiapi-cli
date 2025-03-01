@@ -164,6 +164,16 @@ const pluginConfigSchema = {
                 additionalProperties: false
             },
             nullable: true
+        },
+        requiredPackages: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            nullable: true
+        },
+        requiredPaths: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            nullable: true
         }
     },
     required: ["name"],

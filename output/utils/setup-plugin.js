@@ -68,6 +68,35 @@ async function toSetupPlugin(pluginName) {
 }
 async function setupCommon(pluginName, projectDir, pluginConfig) {
     try {
+        if (pluginConfig.requiredPackages?.length) {
+            console.log(chalk_1.default.blue(`Checking required packages for plugin ${pluginName}...`));
+            for (const packageName of pluginConfig.requiredPackages) {
+                const isInstalled = await (0, plugins_1.isPackageInstalled)(projectDir, packageName);
+                if (!isInstalled) {
+                    return console.log(chalk_1.default.red(`Plugin ${packageName} is required for ${pluginName} but not installed!`));
+                }
+                else {
+                    console.log(chalk_1.default.green(`✅ Required plugin ${packageName} is present in the project!`));
+                }
+            }
+        }
+        if (pluginConfig?.requiredPaths?.length) {
+            console.log(chalk_1.default.blue(`Checking required paths for plugin ${pluginName}...`));
+            for (const requiredPath of pluginConfig.requiredPaths) {
+                if (!(0, cwd_1.isValidRequiredPath)(requiredPath)) {
+                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}!`));
+                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`));
+                    return;
+                }
+                const fullPath = path_1.default.join(projectDir, requiredPath);
+                if (!fs_extra_1.default.existsSync(fullPath)) {
+                    console.log(chalk_1.default.bgYellow.white.bold(" ⚠️ DENIED ") +
+                        chalk_1.default.red(` Required path not found: ${requiredPath}!`));
+                    console.log(chalk_1.default.red(`The required file is necessary for the installation of this plugin. Please ensure it is present in the project.`));
+                    return;
+                }
+            }
+        }
         const packagePath = path_1.default.resolve(projectDir, 'node_modules', pluginName);
         if (pluginConfig.files && pluginConfig.files.length) {
             await copyPluginFiles(packagePath, projectDir, pluginConfig.files);

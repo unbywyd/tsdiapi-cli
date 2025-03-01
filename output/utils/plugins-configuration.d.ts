@@ -50,6 +50,8 @@ export interface PluginMetadata {
     afterInstall?: string;
     postMessages?: Array<string>;
     postFileModifications?: Array<PluginFileModification>;
+    requiredPackages?: Array<string>;
+    requiredPaths?: Array<string>;
 }
 export declare function validatePluginConfig(config: PluginMetadata): boolean;
 //# sourceMappingURL=plugins-configuration.d.ts.map

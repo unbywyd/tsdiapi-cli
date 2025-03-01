@@ -89,7 +89,7 @@ async function generate(pluginName, generatorName, _args) {
                     return console.log(chalk_1.default.red(`Plugin ${packageName} is required for generator ${currentGenerator.name}!`));
                 }
                 else {
-                    console.log(chalk_1.default.green(`✅ Plugin ${packageName} is installed!`));
+                    console.log(chalk_1.default.green(`✅ Required plugin ${packageName} is present in the project!`));
                 }
             }
         }
@@ -247,7 +247,7 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
         const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
         for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
             const destinationPrepared = handlebars_1.default.compile(destination)(defaultObj);
-            const resolvedDest = path_1.default.resolve(cwd, destinationPrepared);
+            const resolvedDest = path_1.default.resolve(cwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, name));
             const files = glob_1.glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
