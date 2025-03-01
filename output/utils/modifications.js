@@ -17,7 +17,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
                 continue;
             }
             const fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
-            const regex = new RegExp(mod.match);
+            const regex = new RegExp(replaceSafeVariables(mod.match, payload));
             const matchFound = regex.test(fileContent);
             if (mod.expected !== undefined && matchFound !== mod.expected) {
                 console.log(chalk_1.default.yellow(`⚠️ Skipping modification for ${filePath} (Expected match condition not met)`));
@@ -59,7 +59,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
     }
 }
 function replaceSafeVariables(content, variables) {
-    return content.replace(/%([\w]+)%\|\|([\w]+)/g, (_, varName, defaultValue) => {
+    return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
         return variables[varName] ?? defaultValue;
     });
 }
