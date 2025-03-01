@@ -47,7 +47,7 @@ export async function initProject(installpath: string, options: CreateProjectOpt
                 await startFastProject(currentDirectory);
                 return;
             }
-        } 
+        }
 
         const gradient = await loadGradient();
         console.log(gradient.pastel.multiline(figlet.textSync("TSDIAPI", { horizontalLayout: "full" })));
@@ -224,6 +224,18 @@ export async function installation(projectDir: string, options: CreateProjectOpt
         if (packageContent) {
             await fs.writeFile(packagePath, packageContent);
         }
+
+const gitignore = `
+node_modules
+# Keep environment variables out of version control
+#.env
+#.env.development
+#.env.production
+
+dist
+logs/*  
+`;
+        await fs.writeFile(path.join(projectDir, ".gitignore"), gitignore);
 
         // 📂 Создание нужных директорий
         await fs.ensureDir(path.join(projectDir, "src/api/features"));

@@ -203,6 +203,17 @@ async function installation(projectDir, options) {
         if (packageContent) {
             await fs_extra_1.default.writeFile(packagePath, packageContent);
         }
+        const gitignore = `
+node_modules
+# Keep environment variables out of version control
+#.env
+#.env.development
+#.env.production
+
+dist
+logs/*  
+`;
+        await fs_extra_1.default.writeFile(path_1.default.join(projectDir, ".gitignore"), gitignore);
         // 📂 Создание нужных директорий
         await fs_extra_1.default.ensureDir(path_1.default.join(projectDir, "src/api/features"));
         await fs_extra_1.default.ensureDir(path_1.default.join(projectDir, "src/public"));

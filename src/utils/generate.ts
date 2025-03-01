@@ -225,6 +225,7 @@ export async function generate(pluginName: string, generatorName?: string, _args
             camelCase: camelCaseName,
             pascalcase: pascalCaseName,
             pascalCase: pascalCaseName,
+            PascalCase: pascalCaseName,
             kebabcase: kebabCaseName,
             kebabCase: kebabCaseName,
             basename: kebabCaseName,

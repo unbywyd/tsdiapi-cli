@@ -97,9 +97,12 @@ async function promptPluginDetails(sourcePluginName) {
         const gitignore = `
 node_modules
 # Keep environment variables out of version control
-.env
+#.env
+#.env.development
+#.env.production
+
 dist
-logs/*      
+logs/*  
 `;
         await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, ".gitignore"), gitignore);
         // README.hbs

@@ -179,6 +179,7 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             camelCase: camelCaseName,
             pascalcase: pascalCaseName,
             pascalCase: pascalCaseName,
+            PascalCase: pascalCaseName,
             kebabcase: kebabCaseName,
             kebabCase: kebabCaseName,
             classname: pascalCaseName,

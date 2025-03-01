@@ -107,9 +107,12 @@ export async function promptPluginDetails(sourcePluginName: string) {
         const gitignore = `
 node_modules
 # Keep environment variables out of version control
-.env
+#.env
+#.env.development
+#.env.production
+
 dist
-logs/*      
+logs/*  
 `;
         await fs.writeFile(path.join(pluginDir, ".gitignore"), gitignore);
 

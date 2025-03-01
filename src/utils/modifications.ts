@@ -51,7 +51,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
             let fileContent = await fs.readFile(filePath, "utf8");
 
             const updatedContent = replaceSafeVariables(mod.content, payload);
-
+            console.log(updatedContent);
             if (mod.mode === "prepend") {
                 fileContent = updatedContent + "\n" + fileContent;
             } else if (mod.mode === "append") {
@@ -71,7 +71,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 
 function replaceSafeVariables(content: string, variables: Record<string, string>): string {
     return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? `%${varName}%`;
+        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? ``;
     });
 }
 

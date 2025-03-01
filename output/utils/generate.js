@@ -199,6 +199,7 @@ async function generate(pluginName, generatorName, _args) {
             camelCase: camelCaseName,
             pascalcase: pascalCaseName,
             pascalCase: pascalCaseName,
+            PascalCase: pascalCaseName,
             kebabcase: kebabCaseName,
             kebabCase: kebabCaseName,
             basename: kebabCaseName,

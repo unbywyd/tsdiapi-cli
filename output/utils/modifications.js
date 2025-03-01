@@ -43,6 +43,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
                 continue;
             let fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
             const updatedContent = replaceSafeVariables(mod.content, payload);
+            console.log(updatedContent);
             if (mod.mode === "prepend") {
                 fileContent = updatedContent + "\n" + fileContent;
             }
@@ -60,7 +61,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
 }
 function replaceSafeVariables(content, variables) {
     return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? `%${varName}%`;
+        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? ``;
     });
 }
 //# sourceMappingURL=modifications.js.map
