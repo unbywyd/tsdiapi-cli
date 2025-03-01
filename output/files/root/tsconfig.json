@@ -27,7 +27,6 @@
     "experimentalDecorators": true
   },
   "include": [
-    "src/**/*",
-    "src/install.ts",
+    "src/**/*"
   ]
 }

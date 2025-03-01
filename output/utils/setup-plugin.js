@@ -19,6 +19,7 @@ const cwd_1 = require("./cwd");
 const env_1 = require("./env");
 const app_config_1 = require("./app.config");
 const modifications_1 = require("./modifications");
+const handlebars_1 = __importDefault(require("handlebars"));
 function generateInquirerQuestion(variable) {
     return {
         ...variable.inquirer,
@@ -71,6 +72,11 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
         if (pluginConfig.files && pluginConfig.files.length) {
             await copyPluginFiles(packagePath, projectDir, pluginConfig.files);
         }
+        let handlebarsPayload = {
+            name: pluginConfig.name,
+            description: pluginConfig.description,
+            pluginName,
+        };
         const varNames = pluginConfig.variables?.map((v) => v.name);
         if (!varNames?.length) {
             console.log(chalk_1.default.yellow(`No settings found for ${pluginName}. Skipping setup.`));
@@ -97,6 +103,7 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
                         .filter((v) => v.inquirer && v.configurable)
                         .map(generateInquirerQuestion);
                     const envAnswers = await inquirer_1.default.prompt(questions);
+                    handlebarsPayload = { ...handlebarsPayload, ...envAnswers };
                     vars.forEach((variable) => {
                         const value = envAnswers[variable.name] ?? variable.default;
                         (0, env_1.updateAllEnvFilesWithVariable)(projectDir, variable.name, value);
@@ -128,7 +135,8 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
         console.log(chalk_1.default.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
             for (const message of pluginConfig.postMessages) {
-                console.log(chalk_1.default.green(`- ${message}`));
+                const template = handlebars_1.default.compile(message);
+                console.log(chalk_1.default.green(`- ${template(handlebarsPayload)}`));
             }
         }
     }

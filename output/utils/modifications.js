@@ -7,7 +7,7 @@ exports.fileModifications = fileModifications;
 const chalk_1 = __importDefault(require("chalk"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
-async function fileModifications(pluginName, projectDir, modifications) {
+async function fileModifications(pluginName, projectDir, modifications, payload = {}) {
     try {
         const pendingChanges = [];
         for (const mod of modifications) {
@@ -42,11 +42,12 @@ async function fileModifications(pluginName, projectDir, modifications) {
             if (!fs_extra_1.default.existsSync(filePath))
                 continue;
             let fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
+            const updatedContent = replaceSafeVariables(mod.content, payload);
             if (mod.mode === "prepend") {
-                fileContent = mod.content + "\n" + fileContent;
+                fileContent = updatedContent + "\n" + fileContent;
             }
             else if (mod.mode === "append") {
-                fileContent = fileContent + "\n" + mod.content;
+                fileContent = fileContent + "\n" + updatedContent;
             }
             await fs_extra_1.default.writeFile(filePath, fileContent, "utf8");
             console.log(chalk_1.default.green(`✅ Updated: ${filePath} (${mod.mode})`));
@@ -56,5 +57,10 @@ async function fileModifications(pluginName, projectDir, modifications) {
     catch (error) {
         console.error(chalk_1.default.red(`❌ Error while modifying files: ${error.message}`));
     }
+}
+function replaceSafeVariables(content, variables) {
+    return content.replace(/%([\w]+)%\|\|([\w]+)/g, (_, varName, defaultValue) => {
+        return variables[varName] ?? defaultValue;
+    });
 }
 //# sourceMappingURL=modifications.js.map

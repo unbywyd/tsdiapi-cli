@@ -4,7 +4,7 @@ import path from 'path';
 import { PluginFileModification } from './plugins-configuration';
 
 
-export async function fileModifications(pluginName: string, projectDir: string, modifications: Array<PluginFileModification>): Promise<void> {
+export async function fileModifications(pluginName: string, projectDir: string, modifications: Array<PluginFileModification>, payload: Record<string, any> = {}): Promise<void> {
     try {
         const pendingChanges: Array<{ filePath: string; mode: string; plugin: string }> = [];
 
@@ -50,10 +50,12 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 
             let fileContent = await fs.readFile(filePath, "utf8");
 
+            const updatedContent = replaceSafeVariables(mod.content, payload);
+
             if (mod.mode === "prepend") {
-                fileContent = mod.content + "\n" + fileContent;
+                fileContent = updatedContent + "\n" + fileContent;
             } else if (mod.mode === "append") {
-                fileContent = fileContent + "\n" + mod.content;
+                fileContent = fileContent + "\n" + updatedContent;
             }
 
             await fs.writeFile(filePath, fileContent, "utf8");
@@ -65,4 +67,10 @@ export async function fileModifications(pluginName: string, projectDir: string, 
     } catch (error) {
         console.error(chalk.red(`❌ Error while modifying files: ${error.message}`));
     }
+}
+
+function replaceSafeVariables(content: string, variables: Record<string, string>): string {
+    return content.replace(/%([\w]+)%\|\|([\w]+)/g, (_, varName, defaultValue) => {
+        return variables[varName] ?? defaultValue;
+    });
 }

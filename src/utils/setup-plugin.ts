@@ -11,6 +11,7 @@ import { findNearestPackageJson, isDirectoryPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
 import { fileModifications } from './modifications';
+import Handlebars from 'handlebars'
 
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
@@ -71,6 +72,11 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             await copyPluginFiles(packagePath, projectDir, pluginConfig.files);
         }
 
+        let handlebarsPayload = {
+            name: pluginConfig.name,
+            description: pluginConfig.description,
+            pluginName,
+        }
         const varNames = pluginConfig.variables?.map((v) => v.name);
         if (!varNames?.length) {
             console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
@@ -95,7 +101,7 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                         .map(generateInquirerQuestion);
 
                     const envAnswers = await inquirer.prompt(questions as any);
-
+                    handlebarsPayload = { ...handlebarsPayload, ...envAnswers };
                     vars.forEach((variable: PluginConfigVariable) => {
                         const value = envAnswers[variable.name] ?? variable.default;
                         updateAllEnvFilesWithVariable(projectDir, variable.name, value);
@@ -130,7 +136,8 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
         console.log(chalk.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
             for (const message of pluginConfig.postMessages) {
-                console.log(chalk.green(`- ${message}`));
+                const template = Handlebars.compile(message);
+                console.log(chalk.green(`- ${template(handlebarsPayload)}`));
             }
         }
 
