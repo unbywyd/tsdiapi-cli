@@ -104,6 +104,14 @@ export async function promptPluginDetails(sourcePluginName: string) {
         delete pkg.dependencies;
         fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
 
+        const gitignore = `
+node_modules
+# Keep environment variables out of version control
+.env
+dist
+logs/*      
+`;
+        await fs.writeFile(path.join(pluginDir, ".gitignore"), gitignore);
 
         // README.hbs
         console.log(chalk.cyan("\n📦 Creating README.md file...\n"))

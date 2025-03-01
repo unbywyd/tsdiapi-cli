@@ -94,6 +94,14 @@ async function promptPluginDetails(sourcePluginName) {
         pkg.peerDependencies = pkg.dependencies;
         delete pkg.dependencies;
         fs_extra_1.default.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+        const gitignore = `
+node_modules
+# Keep environment variables out of version control
+.env
+dist
+logs/*      
+`;
+        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, ".gitignore"), gitignore);
         // README.hbs
         console.log(chalk_1.default.cyan("\n📦 Creating README.md file...\n"));
         const readmeData = (0, hbs_1.devBuildHandlebarsTemplate)("project/README.hbs", {
