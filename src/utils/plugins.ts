@@ -241,6 +241,11 @@ export async function findTSDIAPIServerProject(cwd?: string): Promise<string | n
 
 export function isPackageInstalled(projectPath: string, packageName: string): boolean {
   try {
+    const nodeModulesPath = path.resolve(projectPath, 'node_modules');
+    const pathInNodeModules = path.resolve(nodeModulesPath, packageName);
+    if (fs.existsSync(pathInNodeModules)) {
+      return true;
+    }
     const packageJsonPath = path.resolve(projectPath, 'package.json');
 
     if (!fs.existsSync(packageJsonPath)) {

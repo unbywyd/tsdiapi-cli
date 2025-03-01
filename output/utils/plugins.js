@@ -232,6 +232,11 @@ async function findTSDIAPIServerProject(cwd) {
 }
 function isPackageInstalled(projectPath, packageName) {
     try {
+        const nodeModulesPath = path_1.default.resolve(projectPath, 'node_modules');
+        const pathInNodeModules = path_1.default.resolve(nodeModulesPath, packageName);
+        if (fs_1.default.existsSync(pathInNodeModules)) {
+            return true;
+        }
         const packageJsonPath = path_1.default.resolve(projectPath, 'package.json');
         if (!fs_1.default.existsSync(packageJsonPath)) {
             console.error(`package.json not found in the directory: ${projectPath}`);
