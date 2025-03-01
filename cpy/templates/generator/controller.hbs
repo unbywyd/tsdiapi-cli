@@ -3,7 +3,7 @@ import {
 } from "routing-controllers";
 import { Service } from "typedi";
 import { OpenAPI } from "routing-controllers-openapi";
-import { Summary } from 'routing-controllers-openapi-extra';
+import { Summary } from '@tsdiapi/server';
 {{#if serviceClassName}}
 import {{serviceClassName}} from "./{{kebabCaseName}}.service";
 {{/if}}

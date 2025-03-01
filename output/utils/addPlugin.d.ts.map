@@ -1,1 +1,0 @@
-{"version":3,"file":"addPlugin.d.ts","sourceRoot":"","sources":["../../src/utils/addPlugin.ts"],"names":[],"mappings":"AAYA;;;;;;;;;;;;;;;;;;;;;GAqBG;AACH,eAAO,MAAM,SAAS,gBAAuB,MAAM,kBA2ElD,CAAA;AA0ED;;;;GAIG;AACH,wBAAsB,wBAAwB,CAAC,GAAG,CAAC,EAAE,MAAM,GAAG,OAAO,CAAC,MAAM,GAAG,IAAI,CAAC,CAqBnF;AAGD,wBAAgB,kBAAkB,CAAC,WAAW,EAAE,MAAM,EAAE,WAAW,EAAE,MAAM,GAAG,OAAO,CAwBpF"}

@@ -119,7 +119,6 @@ async function installBaseDependencies(projectDir) {
         "class-validator",
         "routing-controllers",
         "routing-controllers-openapi",
-        "routing-controllers-openapi-extra",
         "typedi"
     ];
     const devDependencies = [

@@ -114,7 +114,6 @@ export async function installBaseDependencies(projectDir: string) {
         "class-validator",
         "routing-controllers",
         "routing-controllers-openapi",
-        "routing-controllers-openapi-extra",
         "typedi"
     ];
 
