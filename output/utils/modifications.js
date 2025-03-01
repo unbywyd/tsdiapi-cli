@@ -60,7 +60,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
 }
 function replaceSafeVariables(content, variables) {
     return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] ?? defaultValue;
+        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? `%${varName}%`;
     });
 }
 //# sourceMappingURL=modifications.js.map

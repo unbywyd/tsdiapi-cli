@@ -71,6 +71,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 
 function replaceSafeVariables(content: string, variables: Record<string, string>): string {
     return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] ?? defaultValue;
+        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? `%${varName}%`;
     });
 }
+

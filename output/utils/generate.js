@@ -210,7 +210,7 @@ async function generate(pluginName, generatorName, _args) {
         const _fileModifications = currentGenerator?.fileModifications || [];
         try {
             if (modifications_1.fileModifications.length) {
-                await (0, modifications_1.fileModifications)(pluginName, currentDirectory, _fileModifications);
+                await (0, modifications_1.fileModifications)(pluginName, currentDirectory, _fileModifications, defaultObj);
             }
         }
         catch (error) {

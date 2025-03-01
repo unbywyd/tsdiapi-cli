@@ -20,6 +20,7 @@ const env_1 = require("./env");
 const app_config_1 = require("./app.config");
 const modifications_1 = require("./modifications");
 const handlebars_1 = __importDefault(require("handlebars"));
+const format_1 = require("./format");
 function generateInquirerQuestion(variable) {
     return {
         ...variable.inquirer,
@@ -158,8 +159,24 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
                 console.error(chalk_1.default.red(`Error while adding scripts to package.json: ${e.message}`));
             }
         }
+        const name = pluginConfig.name || pluginName;
+        const camelCaseName = (0, format_1.toCamelCase)(name);
+        const pascalCaseName = (0, format_1.toPascalCase)(name);
+        const kebabCaseName = (0, format_1.toKebabCase)(name);
+        const payload = {
+            ...handlebarsPayload,
+            camelcase: camelCaseName,
+            camelCase: camelCaseName,
+            pascalcase: pascalCaseName,
+            pascalCase: pascalCaseName,
+            kebabcase: kebabCaseName,
+            kebabCase: kebabCaseName,
+            classname: pascalCaseName,
+            className: pascalCaseName,
+            packageName: pluginName,
+        };
         if (pluginConfig?.postFileModifications?.length) {
-            await (0, modifications_1.fileModifications)(pluginName, projectDir, pluginConfig.postFileModifications);
+            await (0, modifications_1.fileModifications)(pluginName, projectDir, pluginConfig.postFileModifications, payload);
         }
         console.log(chalk_1.default.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {

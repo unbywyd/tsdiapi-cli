@@ -237,7 +237,7 @@ export async function generate(pluginName: string, generatorName?: string, _args
         const _fileModifications = currentGenerator?.fileModifications || [];
         try {
             if (fileModifications.length) {
-                await fileModifications(pluginName, currentDirectory, _fileModifications);
+                await fileModifications(pluginName, currentDirectory, _fileModifications, defaultObj);
             }
         } catch (error) {
             console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);

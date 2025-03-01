@@ -12,6 +12,7 @@ import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
 import { fileModifications } from './modifications';
 import Handlebars from 'handlebars'
+import { toCamelCase, toKebabCase, toPascalCase } from './format';
 
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
@@ -168,9 +169,24 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 console.error(chalk.red(`Error while adding scripts to package.json: ${e.message}`));
             }
         }
-
+        const name = pluginConfig.name || pluginName;
+        const camelCaseName = toCamelCase(name);
+        const pascalCaseName = toPascalCase(name);
+        const kebabCaseName = toKebabCase(name);
+        const payload = {
+            ...handlebarsPayload,
+            camelcase: camelCaseName,
+            camelCase: camelCaseName,
+            pascalcase: pascalCaseName,
+            pascalCase: pascalCaseName,
+            kebabcase: kebabCaseName,
+            kebabCase: kebabCaseName,
+            classname: pascalCaseName,
+            className: pascalCaseName,
+            packageName: pluginName,
+        }
         if (pluginConfig?.postFileModifications?.length) {
-            await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications);
+            await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications, payload);
         }
 
         console.log(chalk.green(`${pluginName} setup has been successfully completed.`));
