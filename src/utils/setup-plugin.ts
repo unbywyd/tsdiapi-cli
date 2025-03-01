@@ -136,6 +136,11 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 if (!vars.length) {
                     console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
                 } else {
+                    const payload = { PLUGIN_NAME: pluginConfig.name, pluginName: pluginConfig.name };
+                    for (const key of vars) {
+                        const name = Handlebars.compile(key.default)(payload) as string;
+                        key['name'] = name;
+                    }
                     const questions: Question[] = vars
                         .filter((v) => v.inquirer && v.configurable)
                         .map(generateInquirerQuestion);
