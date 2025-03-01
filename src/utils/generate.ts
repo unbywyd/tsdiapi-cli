@@ -279,7 +279,8 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
         for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
 
             const destinationPrepared = Handlebars.compile(destination)(defaultObj);
-            const resolvedDest = path.resolve(cwd, destinationPrepared);
+            const resolvedDest = path.resolve(cwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, name));
+            
             const files = glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
