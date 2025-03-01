@@ -16,7 +16,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
             }
 
             const fileContent = await fs.readFile(filePath, "utf8");
-            const regex = new RegExp(mod.match);
+            const regex = new RegExp(replaceSafeVariables(mod.match, payload));
             const matchFound = regex.test(fileContent);
             if (mod.expected !== undefined && matchFound !== mod.expected) {
                 console.log(
@@ -70,7 +70,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 }
 
 function replaceSafeVariables(content: string, variables: Record<string, string>): string {
-    return content.replace(/%([\w]+)%\|\|([\w]+)/g, (_, varName, defaultValue) => {
+    return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
         return variables[varName] ?? defaultValue;
     });
 }
