@@ -140,3 +140,20 @@ export function isValidRequiredPath(requiredPath: string): boolean {
     // The path must contain a file extension
     return ext.length > 1;
 }
+export function replacePlaceholdersInPath(
+    filePath: string,
+    replacements: Record<string, string>,
+    defaultName: string
+): string {
+    const dir = path.dirname(filePath);
+    let ext = path.extname(filePath);
+    let fileName = path.basename(filePath, ext);
+
+    fileName = fileName.replace(/\[([^\]]+)\]/g, (_, key) => replacements[key] || "");
+
+    if (!/[a-zA-Z0-9]/.test(fileName)) {
+        fileName = defaultName;
+    }
+
+    return path.join(dir, `${fileName}${ext}`);
+}

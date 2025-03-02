@@ -7,12 +7,12 @@ import { glob } from "glob";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
 import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
 import { findTSDIAPIServerProject, getPluginMetadata, getPluginMetaDataFromRoot, isPackageInstalled } from './plugins';
-import { findNearestPackageJson, isDirectoryPath, isValidRequiredPath } from './cwd';
+import { findNearestPackageJson, isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
 import { fileModifications } from './modifications';
-import Handlebars from 'handlebars'
 import { toCamelCase, toKebabCase, toPascalCase } from './format';
+import Handlebars from './handlebars';
 
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
@@ -64,7 +64,7 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
 }
 
 
-export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<void> {
+export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<Record<string, any> | false> {
     try {
 
         if (pluginConfig.requiredPackages?.length) {
@@ -72,9 +72,20 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             for (const packageName of pluginConfig.requiredPackages) {
                 const isInstalled = await isPackageInstalled(projectDir, packageName);
                 if (!isInstalled) {
-                    return console.log(
+                    console.log(
                         chalk.red(`Plugin ${packageName} is required for ${pluginName} but not installed!`)
-                    )
+                    );
+                    if (packageName?.startsWith('@tsdiapi')) {
+                        console.log(
+                            chalk.red(`Please install the required plugin by running: tsdiapi plugins add ${packageName}`)
+                        );
+                    } else {
+                        console.log(
+                            chalk.red(`Please install the required package by running: npm install ${packageName}`)
+                        );
+                    }
+
+                    return false;
                 } else {
                     console.log(chalk.green(`✅ Required plugin ${packageName} is present in the project!`));
                 }
@@ -91,7 +102,7 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                     console.log(
                         chalk.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`)
                     );
-                    return
+                    return false;
                 }
                 const fullPath = path.join(projectDir, requiredPath);
                 if (!fs.existsSync(fullPath)) {
@@ -102,15 +113,9 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                     console.log(
                         chalk.red(`The required file is necessary for the installation of this plugin. Please ensure it is present in the project.`)
                     );
-                    return
+                    return false;
                 }
             }
-        }
-
-        const packagePath = path.resolve(projectDir, 'node_modules', pluginName);
-
-        if (pluginConfig.files && pluginConfig.files.length) {
-            await copyPluginFiles(packagePath, projectDir, pluginConfig.files);
         }
 
         let handlebarsPayload = {
@@ -126,7 +131,7 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 {
                     type: 'confirm',
                     name: 'setupCommon',
-                    message: `Do you want to configure ${pluginName} settings?`,
+                    message: chalk.cyan(`${chalk.bgBlue('Do you want')} to configure ${pluginName} settings?`),
                     default: true,
                 },
             ]);
@@ -142,6 +147,12 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                         .map(generateInquirerQuestion);
 
                     const envAnswers = await inquirer.prompt(questions as any);
+                    for (const envKey in envAnswers) {
+                        const v = vars.find(v => v.name === envKey);
+                        if (v?.alias) {
+                            envAnswers[v.alias] = envAnswers[envKey];
+                        }
+                    }
                     handlebarsPayload = { ...handlebarsPayload, ...envAnswers };
                     vars.forEach((variable: PluginConfigVariable) => {
                         const value = envAnswers[variable.name] ?? variable.default;
@@ -170,22 +181,21 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             }
         }
         const name = pluginConfig.name || pluginName;
-        const camelCaseName = toCamelCase(name);
         const pascalCaseName = toPascalCase(name);
-        const kebabCaseName = toKebabCase(name);
         const payload = {
             ...handlebarsPayload,
-            camelcase: camelCaseName,
-            camelCase: camelCaseName,
-            pascalcase: pascalCaseName,
-            pascalCase: pascalCaseName,
-            PascalCase: pascalCaseName,
-            kebabcase: kebabCaseName,
-            kebabCase: kebabCaseName,
-            classname: pascalCaseName,
+            pluginName: name,
             className: pascalCaseName,
+            classname: pascalCaseName,
             packageName: pluginName,
         }
+
+        const packagePath = path.resolve(projectDir, 'node_modules', pluginName);
+
+        if (pluginConfig.files && pluginConfig.files.length) {
+            await copyPluginFiles(packagePath, projectDir, pluginConfig.files, payload);
+        }
+
         if (pluginConfig?.postFileModifications?.length) {
             await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications, payload);
         }
@@ -193,13 +203,19 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
         console.log(chalk.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
             for (const message of pluginConfig.postMessages) {
-                const template = Handlebars.compile(message);
-                console.log(chalk.green(`- ${template(handlebarsPayload)}`));
+                try {
+                    const template = Handlebars.compile(message);
+                    console.log(chalk.green(`- ${template(handlebarsPayload)}`));
+                } catch (e) {
+                    console.error(chalk.red(`Error while rendering post message: ${e.message}`));
+                }
             }
         }
 
+        return payload;
     } catch (error) {
         console.error(chalk.red(`Error while setting up ${pluginName} settings: ${error.message}`));
+        return false;
     }
 }
 
@@ -228,7 +244,7 @@ export async function addScriptsToPackageJson(
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: `Do you want to add these scripts to your package.json?`,
+                message: chalk.cyan(`${chalk.blue("Do you want")} to add these scripts to your package.json?`),
                 default: true,
             },
         ]);
@@ -246,15 +262,16 @@ export async function addScriptsToPackageJson(
     return packageJson;
 }
 
-export async function copyPluginFiles(packagePath: string, projectDir: string, mappings: PluginFileMapping[]): Promise<void> {
+export async function copyPluginFiles(packagePath: string, projectDir: string, mappings: PluginFileMapping[], payload: Record<string, any>): Promise<void> {
     try {
         const filesToCopy: Array<{
             sourceFile: string;
             targetPath: string;
             overwrite: boolean;
             isExisting: boolean;
+            isHandlebarsTemplate: boolean;
         }> = [];
-        for (const { source, destination, overwrite = false } of mappings) {
+        for (const { source, destination, overwrite = false, isHandlebarsTemplate } of mappings) {
             const resolvedDest = path.resolve(projectDir, destination);
             const files = glob.sync(source, { cwd: packagePath });
 
@@ -263,17 +280,17 @@ export async function copyPluginFiles(packagePath: string, projectDir: string, m
             }
 
             for (const file of files) {
-                const sourceFile = path.resolve(packagePath, file);
+                let sourceFile = path.resolve(packagePath, file);
                 const fileName = path.basename(file);
 
-                const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
-
+                let targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
+                targetPath = replacePlaceholdersInPath(targetPath, payload, payload.kebabcase);
                 const isExisting: boolean = fs.existsSync(targetPath);
                 if (!overwrite && isExisting) {
-                    console.log(`⚠️ Skipping: File already exists: ${targetPath}`);
+                    console.log(chalk.yellow(`⚠️ Skipping: File already exists: ${targetPath}`));
                     continue;
                 }
-                filesToCopy.push({ sourceFile, targetPath, overwrite, isExisting });
+                filesToCopy.push({ sourceFile, isHandlebarsTemplate: isHandlebarsTemplate ? true : false, targetPath, overwrite, isExisting });
             }
         }
 
@@ -291,7 +308,7 @@ export async function copyPluginFiles(packagePath: string, projectDir: string, m
                 {
                     type: 'confirm',
                     name: 'accepted',
-                    message: `Do you want to add these files to your project?`,
+                    message: chalk.cyan(`${chalk.blue("Do you want")} to add these files to your project?`),
                     default: true,
                 },
             ]);
@@ -301,9 +318,20 @@ export async function copyPluginFiles(packagePath: string, projectDir: string, m
                 return;
             }
 
-            for (const { sourceFile, targetPath, overwrite } of filesToCopy) {
+            for (const { sourceFile, targetPath, isHandlebarsTemplate, overwrite } of filesToCopy) {
                 fs.ensureDirSync(path.dirname(targetPath));
-                fs.copySync(sourceFile, targetPath, { overwrite });
+
+                if (!isHandlebarsTemplate) {
+                    fs.copySync(sourceFile, targetPath, { overwrite });
+                } else {
+                    try {
+                        const template = Handlebars.compile(fs.readFileSync(sourceFile, 'utf-8'));
+                        fs.writeFileSync(targetPath, template(payload));
+                    } catch (e) {
+                        console.error(chalk.red(`Error while rendering handlebars template: ${e.message}`));
+                    }
+                }
+
                 console.log(chalk.green(`✅ File "${targetPath}" has been added to the project.`));
             }
         }

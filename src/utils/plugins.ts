@@ -11,6 +11,7 @@ import { nameToImportName } from './format';
 import { PluginMetadata, validatePluginConfig } from './plugins-configuration'
 import ora from 'ora'
 import { packageExistsOnNpm, runPostInstall } from './npm'
+import { convertWhenToFunction } from './inquirer'
 const execAsync = util.promisify(exec)
 
 export const addPlugin = async (selectedPluginName: string) => {
@@ -42,20 +43,27 @@ export const addPlugin = async (selectedPluginName: string) => {
       return;
     }
 
-    spinner.text = chalk.blue(`📦 Checking if ${packageName} is already installed...`);
     const isInstalled = isPackageInstalled(currentDirectory, packageName);
 
-    if (isInstalled) {
-      spinner.warn(chalk.yellow(`⚠️ Plugin ${packageName} is already installed.`));
-      return;
+
+    if (!isInstalled) {
+      spinner.text = chalk.blue(`📥 Installing ${packageName}...`);
+      await addPluginToApp(appFilePath, nameToImportName(selectedPluginName), packageName, currentDirectory);
+      spinner.succeed(chalk.green(`✅ Successfully added ${packageName} to the application.`));
     }
-
-    spinner.text = chalk.blue(`📥 Installing ${packageName}...`);
-    await addPluginToApp(appFilePath, nameToImportName(selectedPluginName), packageName, currentDirectory);
-    spinner.succeed(chalk.green(`✅ Successfully added ${packageName} to the application.`));
-
     spinner.text = chalk.blue(`🔍 Checking setup configuration for ${packageName}...`);
     const config = await getPluginMetadata(currentDirectory, packageName);
+
+    if (isInstalled) {
+      if (!config) {
+        spinner.warn(chalk.yellow(`⚠️ Plugin ${packageName} is already installed.`));
+      } else {
+        spinner.warn(chalk.cyan(`Plugin ${packageName} is already installed. Configuring...`));
+        await setupCommon(packageName, currentDirectory, config);
+      }
+
+      return;
+    }
 
     if (!config) {
       spinner.warn(chalk.yellow(`⚠️ No additional setup required for ${packageName}.`));
@@ -64,18 +72,28 @@ export const addPlugin = async (selectedPluginName: string) => {
       if (config.postInstall) {
         spinner.text = chalk.blue(`⚙️ Running post-install script for ${packageName}...`);
         console.log(chalk.blue(`⚙️ Running post-install script for ${packageName}...`));
+
         await runPostInstall(selectedPluginName, currentDirectory, config.postInstall);
+
         spinner.succeed(chalk.green(`✅ Post-install script executed.`));
       }
 
       spinner.text = chalk.blue(`🔧 Configuring ${packageName}...`);
-      await setupCommon(packageName, currentDirectory, config);
+      const result = await setupCommon(packageName, currentDirectory, config);
+      if (!result) {
+        spinner.fail(chalk.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
+        return;
+      }
       try {
-        if (config.afterInstall) {
-          spinner.text = chalk.blue(`⚙️ Running after-install script for ${packageName}...`);
-          console.log(chalk.blue(`⚙️ Running after-install script for ${packageName}...`));
-          await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall);
-          spinner.succeed(chalk.green(`✅ After-install script executed.`));
+        if (config.afterInstall && result) {
+
+          const cond = config.afterInstall?.when ? convertWhenToFunction(config.afterInstall.when)(result) : true;
+          if (cond) {
+            spinner.text = chalk.blue(`⚙️ Running after-install script for ${packageName}...`);
+            console.log(chalk.blue(`⚙️ Running after-install script for ${packageName}...`));
+            await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall?.command);
+            spinner.succeed(chalk.green(`✅ After-install script executed.`));
+          }
         }
       } catch (error) {
         spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));

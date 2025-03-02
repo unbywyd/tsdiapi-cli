@@ -22,6 +22,7 @@ const format_1 = require("./format");
 const plugins_configuration_1 = require("./plugins-configuration");
 const ora_1 = __importDefault(require("ora"));
 const npm_1 = require("./npm");
+const inquirer_1 = require("./inquirer");
 const execAsync = util_1.default.promisify(child_process_1.exec);
 const addPlugin = async (selectedPluginName) => {
     try {
@@ -44,17 +45,24 @@ const addPlugin = async (selectedPluginName) => {
             spinner.fail(chalk_1.default.red(`❌ Package ${packageName} does not exist on npm.`));
             return;
         }
-        spinner.text = chalk_1.default.blue(`📦 Checking if ${packageName} is already installed...`);
         const isInstalled = isPackageInstalled(currentDirectory, packageName);
-        if (isInstalled) {
-            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${packageName} is already installed.`));
-            return;
+        if (!isInstalled) {
+            spinner.text = chalk_1.default.blue(`📥 Installing ${packageName}...`);
+            await addPluginToApp(appFilePath, (0, format_1.nameToImportName)(selectedPluginName), packageName, currentDirectory);
+            spinner.succeed(chalk_1.default.green(`✅ Successfully added ${packageName} to the application.`));
         }
-        spinner.text = chalk_1.default.blue(`📥 Installing ${packageName}...`);
-        await addPluginToApp(appFilePath, (0, format_1.nameToImportName)(selectedPluginName), packageName, currentDirectory);
-        spinner.succeed(chalk_1.default.green(`✅ Successfully added ${packageName} to the application.`));
         spinner.text = chalk_1.default.blue(`🔍 Checking setup configuration for ${packageName}...`);
         const config = await getPluginMetadata(currentDirectory, packageName);
+        if (isInstalled) {
+            if (!config) {
+                spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${packageName} is already installed.`));
+            }
+            else {
+                spinner.warn(chalk_1.default.cyan(`Plugin ${packageName} is already installed. Configuring...`));
+                await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            }
+            return;
+        }
         if (!config) {
             spinner.warn(chalk_1.default.yellow(`⚠️ No additional setup required for ${packageName}.`));
             spinner.succeed(chalk_1.default.green(`✅ Plugin ${packageName} installed successfully.`));
@@ -67,13 +75,20 @@ const addPlugin = async (selectedPluginName) => {
                 spinner.succeed(chalk_1.default.green(`✅ Post-install script executed.`));
             }
             spinner.text = chalk_1.default.blue(`🔧 Configuring ${packageName}...`);
-            await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            const result = await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            if (!result) {
+                spinner.fail(chalk_1.default.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
+                return;
+            }
             try {
-                if (config.afterInstall) {
-                    spinner.text = chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`);
-                    console.log(chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`));
-                    await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.afterInstall);
-                    spinner.succeed(chalk_1.default.green(`✅ After-install script executed.`));
+                if (config.afterInstall && result) {
+                    const cond = config.afterInstall?.when ? (0, inquirer_1.convertWhenToFunction)(config.afterInstall.when)(result) : true;
+                    if (cond) {
+                        spinner.text = chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`);
+                        console.log(chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`));
+                        await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.afterInstall?.command);
+                        spinner.succeed(chalk_1.default.green(`✅ After-install script executed.`));
+                    }
                 }
             }
             catch (error) {

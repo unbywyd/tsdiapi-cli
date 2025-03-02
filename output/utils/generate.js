@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generate = generate;
 exports.generateFiles = generateFiles;
-exports.replacePlaceholdersInPath = replacePlaceholdersInPath;
 exports.generateFeature = generateFeature;
 exports.safeGenerate = safeGenerate;
 exports.generateNewService = generateNewService;
@@ -24,7 +23,7 @@ const cwd_1 = require("./cwd");
 const modifications_1 = require("./modifications");
 const ora_1 = __importDefault(require("ora"));
 const npm_1 = require("./npm");
-const handlebars_1 = __importDefault(require("handlebars"));
+const handlebars_1 = __importDefault(require("./handlebars"));
 async function generate(pluginName, generatorName, _args) {
     try {
         const args = _args || {};
@@ -189,25 +188,26 @@ async function generate(pluginName, generatorName, _args) {
         }
         const name = defaultObj.name;
         const baseName = path_1.default.basename(name);
-        const camelCaseName = (0, format_1.toCamelCase)(baseName);
         const pascalCaseName = (0, format_1.toPascalCase)(baseName);
         const kebabCaseName = (0, format_1.toKebabCase)(baseName);
         defaultObj = {
             ...defaultObj,
             name,
-            camelcase: camelCaseName,
-            camelCase: camelCaseName,
-            pascalcase: pascalCaseName,
-            pascalCase: pascalCaseName,
-            PascalCase: pascalCaseName,
-            kebabcase: kebabCaseName,
-            kebabCase: kebabCaseName,
+            pluginName: config?.name,
             basename: kebabCaseName,
             baseName: kebabCaseName,
             classname: pascalCaseName,
             className: pascalCaseName,
             packageName: packageName,
+            packagename: packageName,
         };
+        // Add alias values to the default object
+        for (const key in defaultObj) {
+            const sourceArg = plugArgs.find(a => a.name === key);
+            if (sourceArg?.alias && !(sourceArg.alias in defaultObj)) {
+                defaultObj[sourceArg.alias] = defaultObj[key];
+            }
+        }
         const _fileModifications = currentGenerator?.fileModifications || [];
         try {
             if (modifications_1.fileModifications.length) {
@@ -221,9 +221,17 @@ async function generate(pluginName, generatorName, _args) {
         if (currentGenerator.afterGenerate) {
             const spinner = (0, ora_1.default)().start();
             try {
-                spinner.text = chalk_1.default.blue(`⚙️ Running after-generate script...`);
-                await (0, npm_1.runPostInstall)(pluginName, currentDirectory, currentGenerator.afterGenerate);
-                spinner.succeed(chalk_1.default.green(`✅ Completed after-generate script!`));
+                try {
+                    const cond = currentGenerator.afterGenerate?.when ? (0, inquirer_2.convertWhenToFunction)(currentGenerator.afterGenerate?.when)(defaultObj) : true;
+                    if (cond) {
+                        spinner.text = chalk_1.default.blue(`⚙️ Running after-generate script...`);
+                        await (0, npm_1.runPostInstall)(pluginName, currentDirectory, currentGenerator.afterGenerate?.command);
+                        spinner.succeed(chalk_1.default.green(`✅ Completed after-generate script!`));
+                    }
+                }
+                catch (e) {
+                    spinner.fail(chalk_1.default.red(`❌ Error running after-generate script: ${e.message}`));
+                }
             }
             catch (error) {
                 spinner.fail(chalk_1.default.red(`❌ Error running after-setup script: ${error.message}`));
@@ -231,8 +239,13 @@ async function generate(pluginName, generatorName, _args) {
         }
         if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
             for (const message of currentGenerator.postMessages) {
-                const msg = handlebars_1.default.compile(message)(defaultObj);
-                console.log(chalk_1.default.green(`- ${msg}`));
+                try {
+                    const msg = handlebars_1.default.compile(message)(defaultObj);
+                    console.log(chalk_1.default.green(`- ${msg}`));
+                }
+                catch (error) {
+                    console.error(chalk_1.default.red(`❌ Handlebars error: ${error.message}`));
+                }
             }
         }
     }
@@ -246,9 +259,10 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
         const { name, packageName } = defaultObj;
         const cwd = (0, cwd_1.resolveTargetDirectory)(process.cwd(), name);
         const packagePath = path_1.default.join(currentDirectory, 'node_modules', packageName);
-        for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
+        for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
+            const toCwd = isRoot ? currentDirectory : cwd;
             const destinationPrepared = destination.replace(/{{name}}/g, defaultObj.name);
-            const resolvedDest = path_1.default.resolve(cwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, name));
+            const resolvedDest = path_1.default.resolve(toCwd, (0, cwd_1.replacePlaceholdersInPath)(destinationPrepared, defaultObj, defaultObj.kebabcase));
             const files = glob_1.glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
@@ -257,9 +271,9 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
                 const sourceFile = path_1.default.resolve(packagePath, file);
                 const fileName = path_1.default.basename(file);
                 const targetPath = (0, cwd_1.isDirectoryPath)(resolvedDest) ? path_1.default.join(resolvedDest, fileName) : resolvedDest;
-                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, name);
+                const outputPath = (0, cwd_1.replacePlaceholdersInPath)(targetPath, defaultObj, defaultObj.kebabcase);
                 if (fs_extra_1.default.existsSync(outputPath)) {
-                    console.log(`⚠️ Skipping: File already exists: ${outputPath}`);
+                    console.log(chalk_1.default.yellow(`⚠️ Skipping: File already exists: ${outputPath}`));
                     continue;
                 }
                 filesToGenerate.push({
@@ -276,14 +290,14 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
         }
         console.log(chalk_1.default.blue(`\n🔹 The following files will be generated:\n`));
         for (const { outputPath } of filesToGenerate) {
-            console.log(`${chalk_1.default.green('🟡 (new)')} ${chalk_1.default.white(outputPath)}`);
+            console.log(`${chalk_1.default.green('🟡 (new)')} ${chalk_1.default.gray(outputPath)}`);
         }
         console.log('\n');
         const { accepted } = await inquirer_1.default.prompt([
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: `Do you want to generate ${filesToGenerate.length} files?`,
+                message: chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to generate ${filesToGenerate.length} files?`),
                 default: true,
             },
         ]);
@@ -308,16 +322,6 @@ async function generateFiles(currentGenerator, defaultObj, currentDirectory, plu
         console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
     }
 }
-function replacePlaceholdersInPath(filePath, replacements, defaultName) {
-    const dir = path_1.default.dirname(filePath);
-    let ext = path_1.default.extname(filePath);
-    let fileName = path_1.default.basename(filePath, ext);
-    fileName = fileName.replace(/\[([^\]]+)\]/g, (_, key) => replacements[key] || "");
-    if (!/[a-zA-Z0-9]/.test(fileName)) {
-        fileName = defaultName;
-    }
-    return path_1.default.join(dir, `${fileName}${ext}`);
-}
 async function generateFeature(name, projectDir) {
     try {
         console.log(chalk_1.default.cyan.bold("\n🚀 Generating New Feature\n"));
@@ -338,7 +342,7 @@ async function generateFeature(name, projectDir) {
                 {
                     type: "confirm",
                     name: "accepted",
-                    message: `🛠️ Do you want to generate a new feature named ${chalk_1.default.bold(name)}?`,
+                    message: chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to generate a new feature named ${chalk_1.default.bold(name)}?`),
                     default: true,
                 },
             ]);
@@ -378,7 +382,7 @@ async function safeGenerate(pluginName, generatorName, args) {
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: `Do you want to generate ${chalk_1.default.blue.bold(`${name} ${pluginName}`)} in ${cwd}?`,
+                message: chalk_1.default.cyan(`Do you want to generate ${chalk_1.default.blue.bold(`${name} ${pluginName}`)} in ${cwd}?`),
                 default: true,
             },
         ]);

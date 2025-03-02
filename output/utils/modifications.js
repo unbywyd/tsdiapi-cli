@@ -7,11 +7,25 @@ exports.fileModifications = fileModifications;
 const chalk_1 = __importDefault(require("chalk"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const handlebars_1 = __importDefault(require("./handlebars"));
+const inquirer_1 = require("./inquirer");
 async function fileModifications(pluginName, projectDir, modifications, payload = {}) {
     try {
         const pendingChanges = [];
         for (const mod of modifications) {
             const filePath = path_1.default.join(projectDir, mod.path);
+            if (mod?.when) {
+                try {
+                    if (!(0, inquirer_1.convertWhenToFunction)(mod.when)(payload)) {
+                        console.log(chalk_1.default.yellow(`⚠️ Skipping ${filePath} (When condition not met)`));
+                        continue;
+                    }
+                }
+                catch (e) {
+                    console.error(chalk_1.default.red(`❌ Error while evaluating when condition: ${e.message}`));
+                    continue;
+                }
+            }
             if (!fs_extra_1.default.existsSync(filePath)) {
                 console.log(chalk_1.default.yellow(`⚠️ Skipping ${filePath} (File not found)`));
                 continue;
@@ -42,8 +56,7 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
             if (!fs_extra_1.default.existsSync(filePath))
                 continue;
             let fileContent = await fs_extra_1.default.readFile(filePath, "utf8");
-            const updatedContent = replaceSafeVariables(mod.content, payload);
-            console.log(updatedContent);
+            const updatedContent = mod?.isHandlebarsTemplate ? replaceSafeVariables(mod.content, payload) : mod.content;
             if (mod.mode === "prepend") {
                 fileContent = updatedContent + "\n" + fileContent;
             }
@@ -60,8 +73,12 @@ async function fileModifications(pluginName, projectDir, modifications, payload 
     }
 }
 function replaceSafeVariables(content, variables) {
-    return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? ``;
-    });
+    try {
+        return handlebars_1.default.compile(content)(variables);
+    }
+    catch (error) {
+        console.error(chalk_1.default.red(`❌ Error while replacing variables: ${error.message}`));
+        return content;
+    }
 }
 //# sourceMappingURL=modifications.js.map

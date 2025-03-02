@@ -1,7 +1,12 @@
 import { Question } from "inquirer";
 import { AppParam } from "./app.config";
+export interface CommandWithCondition {
+    when?: string;
+    command: string;
+}
 export interface PluginInquirerOption {
     name: string;
+    alias?: string;
     description?: string;
     validate?: Record<string, any> | string;
     transform?: string;
@@ -17,7 +22,7 @@ export interface PluginGenerator {
     args?: Array<PluginGeneratorArg>;
     fileModifications?: Array<PluginFileModification>;
     postMessages?: Array<string>;
-    afterGenerate?: string;
+    afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
 }
@@ -31,6 +36,7 @@ export interface PluginFileMapping {
     destination: string;
     overwrite?: boolean;
     isHandlebarsTemplate?: boolean;
+    isRoot?: boolean;
 }
 export interface PluginFileModification {
     path: string;
@@ -38,6 +44,8 @@ export interface PluginFileModification {
     content: string;
     match: string;
     expected?: boolean;
+    isHandlebarsTemplate?: boolean;
+    when?: string;
 }
 export interface PluginMetadata {
     name: string;
@@ -47,7 +55,7 @@ export interface PluginMetadata {
     generators?: Array<PluginGenerator>;
     provideScripts?: Record<string, string>;
     postInstall?: string;
-    afterInstall?: string;
+    afterInstall?: CommandWithCondition;
     postMessages?: Array<string>;
     postFileModifications?: Array<PluginFileModification>;
     requiredPackages?: Array<string>;

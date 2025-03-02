@@ -6,9 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildHandlebarsTemplate = buildHandlebarsTemplate;
 exports.devBuildHandlebarsTemplate = devBuildHandlebarsTemplate;
 exports.buildHandlebarsTemplateWithPath = buildHandlebarsTemplateWithPath;
-const handlebars_1 = __importDefault(require("handlebars"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const handlebars_1 = __importDefault(require("./handlebars"));
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
  *

@@ -10,6 +10,7 @@ exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
 exports.resolveTargetDirectory = resolveTargetDirectory;
 exports.isDirectoryPath = isDirectoryPath;
 exports.isValidRequiredPath = isValidRequiredPath;
+exports.replacePlaceholdersInPath = replacePlaceholdersInPath;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const chalk_1 = __importDefault(require("chalk"));
@@ -122,5 +123,15 @@ function isValidRequiredPath(requiredPath) {
     const ext = path_1.default.extname(requiredPath);
     // The path must contain a file extension
     return ext.length > 1;
+}
+function replacePlaceholdersInPath(filePath, replacements, defaultName) {
+    const dir = path_1.default.dirname(filePath);
+    let ext = path_1.default.extname(filePath);
+    let fileName = path_1.default.basename(filePath, ext);
+    fileName = fileName.replace(/\[([^\]]+)\]/g, (_, key) => replacements[key] || "");
+    if (!/[a-zA-Z0-9]/.test(fileName)) {
+        fileName = defaultName;
+    }
+    return path_1.default.join(dir, `${fileName}${ext}`);
 }
 //# sourceMappingURL=cwd.js.map

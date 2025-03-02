@@ -9,11 +9,11 @@ import { applyTransform, convertWhenToFunction, validateInput } from './inquirer
 import { glob } from "glob";
 import { PluginFileMapping, PluginGenerator } from './plugins-configuration';
 import { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from './hbs';
-import { isDirectoryPath, isValidRequiredPath, resolveTargetDirectory } from './cwd';
+import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from './cwd';
 import { fileModifications } from './modifications';
 import ora from 'ora'
 import { runPostInstall } from './npm';
-import Handlebars from 'handlebars'
+import Handlebars from './handlebars';
 
 export async function generate(pluginName: string, generatorName?: string, _args?: Record<string, any>): Promise<void> {
     try {
@@ -214,26 +214,28 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         const name = defaultObj.name;
         const baseName = path.basename(name);
-        const camelCaseName = toCamelCase(baseName);
         const pascalCaseName = toPascalCase(baseName);
         const kebabCaseName = toKebabCase(baseName);
-
         defaultObj = {
             ...defaultObj,
             name,
-            camelcase: camelCaseName,
-            camelCase: camelCaseName,
-            pascalcase: pascalCaseName,
-            pascalCase: pascalCaseName,
-            PascalCase: pascalCaseName,
-            kebabcase: kebabCaseName,
-            kebabCase: kebabCaseName,
+            pluginName: config?.name,
             basename: kebabCaseName,
             baseName: kebabCaseName,
             classname: pascalCaseName,
             className: pascalCaseName,
             packageName: packageName,
+            packagename: packageName,
         }
+
+        // Add alias values to the default object
+        for (const key in defaultObj) {
+            const sourceArg = plugArgs.find(a => a.name === key);
+            if (sourceArg?.alias && !(sourceArg.alias in defaultObj)) {
+                defaultObj[sourceArg.alias] = defaultObj[key];
+            }
+        }
+
 
         const _fileModifications = currentGenerator?.fileModifications || [];
         try {
@@ -250,9 +252,17 @@ export async function generate(pluginName: string, generatorName?: string, _args
         if (currentGenerator.afterGenerate) {
             const spinner = ora().start();
             try {
-                spinner.text = chalk.blue(`⚙️ Running after-generate script...`);
-                await runPostInstall(pluginName, currentDirectory, currentGenerator.afterGenerate);
-                spinner.succeed(chalk.green(`✅ Completed after-generate script!`));
+                try {
+                    const cond = currentGenerator.afterGenerate?.when ? convertWhenToFunction(currentGenerator.afterGenerate?.when)(defaultObj) : true;
+                    if (cond) {
+                        spinner.text = chalk.blue(`⚙️ Running after-generate script...`);
+                        await runPostInstall(pluginName, currentDirectory, currentGenerator.afterGenerate?.command);
+                        spinner.succeed(chalk.green(`✅ Completed after-generate script!`));
+                    }
+                } catch (e) {
+                    spinner.fail(chalk.red(`❌ Error running after-generate script: ${e.message}`));
+                }
+
             } catch (error) {
                 spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
             }
@@ -260,8 +270,12 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
             for (const message of currentGenerator.postMessages) {
-                const msg = Handlebars.compile(message)(defaultObj);
-                console.log(chalk.green(`- ${msg}`));
+                try {
+                    const msg = Handlebars.compile(message)(defaultObj);
+                    console.log(chalk.green(`- ${msg}`));
+                } catch (error) {
+                    console.error(chalk.red(`❌ Handlebars error: ${error.message}`));
+                }
             }
         }
 
@@ -277,10 +291,11 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
         const cwd = resolveTargetDirectory(process.cwd(), name);
         const packagePath = path.join(currentDirectory, 'node_modules', packageName);
 
-        for (const { source, destination, overwrite = false, isHandlebarsTemplate } of plugFiles) {
+        for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
+            const toCwd = isRoot ? currentDirectory : cwd;
             const destinationPrepared = destination.replace(/{{name}}/g, defaultObj.name);
-            const resolvedDest = path.resolve(cwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, name));
-            
+            const resolvedDest = path.resolve(toCwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, defaultObj.kebabcase));
+
             const files = glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
@@ -292,10 +307,10 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
 
 
                 const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
-                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, name);
+                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, defaultObj.kebabcase);
 
                 if (fs.existsSync(outputPath)) {
-                    console.log(`⚠️ Skipping: File already exists: ${outputPath}`);
+                    console.log(chalk.yellow(`⚠️ Skipping: File already exists: ${outputPath}`));
                     continue;
                 }
                 filesToGenerate.push({
@@ -314,7 +329,7 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
         console.log(chalk.blue(`\n🔹 The following files will be generated:\n`));
 
         for (const { outputPath } of filesToGenerate) {
-            console.log(`${chalk.green('🟡 (new)')} ${chalk.white(outputPath)}`);
+            console.log(`${chalk.green('🟡 (new)')} ${chalk.gray(outputPath)}`);
         }
 
         console.log('\n');
@@ -323,7 +338,7 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: `Do you want to generate ${filesToGenerate.length} files?`,
+                message: chalk.cyan(`${chalk.bgBlue('Do you want')} to generate ${filesToGenerate.length} files?`),
                 default: true,
             },
         ]);
@@ -350,23 +365,6 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
     }
 }
 
-export function replacePlaceholdersInPath(
-    filePath: string,
-    replacements: Record<string, string>,
-    defaultName: string
-): string {
-    const dir = path.dirname(filePath);
-    let ext = path.extname(filePath);
-    let fileName = path.basename(filePath, ext);
-
-    fileName = fileName.replace(/\[([^\]]+)\]/g, (_, key) => replacements[key] || "");
-
-    if (!/[a-zA-Z0-9]/.test(fileName)) {
-        fileName = defaultName;
-    }
-
-    return path.join(dir, `${fileName}${ext}`);
-}
 
 export async function generateFeature(name: string, projectDir?: string) {
     try {
@@ -393,7 +391,7 @@ export async function generateFeature(name: string, projectDir?: string) {
                 {
                     type: "confirm",
                     name: "accepted",
-                    message: `🛠️ Do you want to generate a new feature named ${chalk.bold(name)}?`,
+                    message: chalk.cyan(`${chalk.bgBlue('Do you want')} to generate a new feature named ${chalk.bold(name)}?`),
                     default: true,
                 },
             ]);
@@ -441,7 +439,7 @@ export async function safeGenerate(pluginName: string, generatorName: string, ar
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: `Do you want to generate ${chalk.blue.bold(`${name} ${pluginName}`)} in ${cwd}?`,
+                message: chalk.cyan(`Do you want to generate ${chalk.blue.bold(`${name} ${pluginName}`)} in ${cwd}?`),
                 default: true,
             },
         ]);

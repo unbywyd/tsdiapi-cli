@@ -1,7 +1,7 @@
 
-import Handlebars from 'handlebars'
 import fs from 'fs-extra'
 import path from 'path'
+import Handlebars from './handlebars'
 /**
  * Builds a Handlebars template by loading the template file and compiling it with the provided data.
  *

@@ -2,19 +2,31 @@ import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import { PluginFileModification } from './plugins-configuration';
-
+import Handlebars from "./handlebars";
+import { convertWhenToFunction } from './inquirer';
 
 export async function fileModifications(pluginName: string, projectDir: string, modifications: Array<PluginFileModification>, payload: Record<string, any> = {}): Promise<void> {
     try {
+
         const pendingChanges: Array<{ filePath: string; mode: string; plugin: string }> = [];
 
         for (const mod of modifications) {
             const filePath = path.join(projectDir, mod.path);
+            if (mod?.when) {
+                try {
+                    if (!convertWhenToFunction(mod.when)(payload)) {
+                        console.log(chalk.yellow(`⚠️ Skipping ${filePath} (When condition not met)`));
+                        continue;
+                    }
+                } catch (e) {
+                    console.error(chalk.red(`❌ Error while evaluating when condition: ${e.message}`));
+                    continue;
+                }
+            }
             if (!fs.existsSync(filePath)) {
                 console.log(chalk.yellow(`⚠️ Skipping ${filePath} (File not found)`));
                 continue;
             }
-
             const fileContent = await fs.readFile(filePath, "utf8");
             const regex = new RegExp(replaceSafeVariables(mod.match, payload));
             const matchFound = regex.test(fileContent);
@@ -50,8 +62,7 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 
             let fileContent = await fs.readFile(filePath, "utf8");
 
-            const updatedContent = replaceSafeVariables(mod.content, payload);
-            console.log(updatedContent);
+            const updatedContent = mod?.isHandlebarsTemplate ? replaceSafeVariables(mod.content, payload) : mod.content;
             if (mod.mode === "prepend") {
                 fileContent = updatedContent + "\n" + fileContent;
             } else if (mod.mode === "append") {
@@ -70,8 +81,11 @@ export async function fileModifications(pluginName: string, projectDir: string, 
 }
 
 function replaceSafeVariables(content: string, variables: Record<string, string>): string {
-    return content.replace(/%([\w]+)(?:\|\|([\w]+))?%/g, (_, varName, defaultValue) => {
-        return variables[varName] !== undefined ? variables[varName] : defaultValue ?? ``;
-    });
+    try {
+        return Handlebars.compile(content)(variables);
+    } catch (error) {
+        console.error(chalk.red(`❌ Error while replacing variables: ${error.message}`));
+        return content;
+    }
 }
 

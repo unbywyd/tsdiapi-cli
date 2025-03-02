@@ -4,8 +4,13 @@ import chalk from 'chalk'
 import { Question } from "inquirer";
 import { AppParam } from "./app.config";
 
+export interface CommandWithCondition {
+    when?: string;
+    command: string;
+}
 export interface PluginInquirerOption {
     name: string;
+    alias?: string;
     description?: string;
     validate?: Record<string, any> | string;
     transform?: string;
@@ -21,7 +26,7 @@ export interface PluginGenerator {
     args?: Array<PluginGeneratorArg>;
     fileModifications?: Array<PluginFileModification>;
     postMessages?: Array<string>;
-    afterGenerate?: string;
+    afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
 }
@@ -36,6 +41,7 @@ export interface PluginFileMapping {
     destination: string;
     overwrite?: boolean;
     isHandlebarsTemplate?: boolean;
+    isRoot?: boolean;
 }
 
 export interface PluginFileModification {
@@ -44,6 +50,8 @@ export interface PluginFileModification {
     content: string;
     match: string;
     expected?: boolean;
+    isHandlebarsTemplate?: boolean;
+    when?: string;
 }
 
 
@@ -55,7 +63,7 @@ export interface PluginMetadata {
     generators?: Array<PluginGenerator>;
     provideScripts?: Record<string, string>;
     postInstall?: string;
-    afterInstall?: string;
+    afterInstall?: CommandWithCondition;
     postMessages?: Array<string>;
     postFileModifications?: Array<PluginFileModification>;
     requiredPackages?: Array<string>;
@@ -84,6 +92,7 @@ const pluginConfigSchema = {
                         type: ["object", "string", "null"],
                         additionalProperties: true
                     },
+                    alias: { type: "string", nullable: true },
                     transform: { type: "string", nullable: true },
                     when: { type: "string", nullable: true },
                     inquirer: { type: "object", nullable: true }
@@ -100,7 +109,9 @@ const pluginConfigSchema = {
                 properties: {
                     source: { type: "string", minLength: 1 },
                     destination: { type: "string", minLength: 1 },
-                    overwrite: { type: "boolean", nullable: true }
+                    overwrite: { type: "boolean", nullable: true },
+                    isHandlebarsTemplate: { type: "boolean", nullable: true },
+                    isRoot: { type: "boolean", nullable: true },
                 },
                 required: ["source", "destination"],
                 additionalProperties: false
@@ -122,7 +133,8 @@ const pluginConfigSchema = {
                                 source: { type: "string", minLength: 1 },
                                 destination: { type: "string", minLength: 1 },
                                 overwrite: { type: "boolean", nullable: true },
-                                isHandlebarsTemplate: { type: "boolean", nullable: true }
+                                isHandlebarsTemplate: { type: "boolean", nullable: true },
+                                isRoot: { type: "boolean", nullable: true }
                             },
                             required: ["source", "destination"],
                             additionalProperties: false
@@ -133,6 +145,7 @@ const pluginConfigSchema = {
                         items: {
                             type: "object",
                             properties: {
+                                alias: { type: "string", nullable: true },
                                 name: { type: "string", minLength: 1 },
                                 description: { type: "string", nullable: true },
                                 validate: {
@@ -160,7 +173,9 @@ const pluginConfigSchema = {
                                 },
                                 content: { type: "string", minLength: 1 },
                                 match: { type: "string", minLength: 1 },
-                                expected: { type: "boolean", nullable: true }
+                                expected: { type: "boolean", nullable: true },
+                                isHandlebarsTemplate: { type: "boolean", nullable: true },
+                                when: { type: "string", nullable: true }
                             },
                             required: ["path", "mode", "content", "match"],
                             additionalProperties: false
@@ -172,7 +187,15 @@ const pluginConfigSchema = {
                         items: { type: "string", minLength: 1 },
                         nullable: true
                     },
-                    afterGenerate: { type: "string", nullable: true },
+                    afterGenerate: {
+                        type: "object",
+                        properties: {
+                            when: { type: "string", nullable: true },
+                            command: { type: "string", minLength: 1 }
+                        },
+                        required: ["command"],
+                        nullable: true
+                    },
                     requiredPackages: {
                         type: "array",
                         items: { type: "string", minLength: 1 },
@@ -189,8 +212,20 @@ const pluginConfigSchema = {
             },
             nullable: true
         },
-        postInstall: { type: "string", nullable: true },
-        afterInstall: { type: "string", nullable: true },
+        postInstall: {
+            type: "string",
+            minLength: 1,
+            nullable: true
+        },
+        afterInstall: {
+            type: "object",
+            properties: {
+                when: { type: "string", nullable: true },
+                command: { type: "string", minLength: 1 }
+            },
+            required: ["command"],
+            nullable: true
+        },
         provideScripts: {
             type: "object",
             additionalProperties: { type: "string" },
@@ -213,7 +248,9 @@ const pluginConfigSchema = {
                     },
                     content: { type: "string", minLength: 1 },
                     match: { type: "string", minLength: 1 },
-                    expected: { type: "boolean", nullable: true }
+                    expected: { type: "boolean", nullable: true },
+                    isHandlebarsTemplate: { type: "boolean", nullable: true },
+                    when: { type: "string", nullable: true }
                 },
                 required: ["path", "mode", "content", "match"],
                 additionalProperties: false

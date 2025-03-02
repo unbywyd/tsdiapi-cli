@@ -8,6 +8,7 @@ import qs from 'qs'
 import { toSetupPlugin } from './utils/setup-plugin'
 import { runNpmScript } from './utils/npm'
 import { promptPluginDetails } from './utils/dev-plugin'
+import Handlebars from './utils/handlebars'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
@@ -74,7 +75,6 @@ devCommand
     promptPluginDetails(name);
   }
   );
-
 
 
 program
