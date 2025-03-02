@@ -167,6 +167,10 @@ You can explore all available plugins on npm:
 
 TSDIAPI CLI allows developers to create their own plugins to extend the framework. Plugins can introduce **new services, middleware, configurations, and generators**.
 
+
+For detailed development instructions, see [DEV.README.md](https://github.com/unbywyd/tsdiapi-cli/blob/master/DEV.README.md).
+
+
 ### **Creating a New Plugin**
 
 To create a plugin template, run:
