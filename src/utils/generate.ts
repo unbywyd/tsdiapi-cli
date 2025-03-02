@@ -90,6 +90,17 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         let currentGenerator: PluginGenerator = generatorByName || generators[0];
 
+        if(currentGenerator?.preMessages && currentGenerator.preMessages.length) {
+            for (const message of currentGenerator.preMessages) {
+                try {
+                    const msg = Handlebars.compile(message)(args);
+                    console.log(chalk.green(`- ${msg}`));
+                } catch (error) {
+                    console.error(chalk.red(`❌ Handlebars error: ${error.message}`));
+                }
+            }
+        }
+
         if (currentGenerator.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
             for (const packageName of currentGenerator.requiredPackages) {

@@ -124,6 +124,11 @@ const pluginConfigSchema = {
                         items: { type: "string", minLength: 1 },
                         nullable: true
                     },
+                    preMessages: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    },
                     afterGenerate: {
                         type: "object",
                         properties: {
@@ -169,6 +174,11 @@ const pluginConfigSchema = {
             nullable: true
         },
         postMessages: {
+            type: "array",
+            items: { type: "string", minLength: 1 },
+            nullable: true
+        },
+        preMessages: {
             type: "array",
             items: { type: "string", minLength: 1 },
             nullable: true

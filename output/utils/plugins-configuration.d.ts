@@ -22,6 +22,7 @@ export interface PluginGenerator {
     args?: Array<PluginGeneratorArg>;
     fileModifications?: Array<PluginFileModification>;
     postMessages?: Array<string>;
+    preMessages?: Array<string>;
     afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
@@ -57,6 +58,7 @@ export interface PluginMetadata {
     postInstall?: string;
     afterInstall?: CommandWithCondition;
     postMessages?: Array<string>;
+    preMessages?: Array<string>;
     postFileModifications?: Array<PluginFileModification>;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;

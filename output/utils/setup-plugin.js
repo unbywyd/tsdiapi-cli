@@ -69,6 +69,17 @@ async function toSetupPlugin(pluginName) {
 }
 async function setupCommon(pluginName, projectDir, pluginConfig) {
     try {
+        if (pluginConfig?.preMessages?.length) {
+            for (const message of pluginConfig.preMessages) {
+                try {
+                    const template = handlebars_1.default.compile(message);
+                    console.log(chalk_1.default.green(`- ${template({ pluginName, name: pluginName })}`));
+                }
+                catch (e) {
+                    console.error(chalk_1.default.red(`Error while rendering pre message: ${e.message}`));
+                }
+            }
+        }
         if (pluginConfig.requiredPackages?.length) {
             console.log(chalk_1.default.blue(`Checking required packages for plugin ${pluginName}...`));
             for (const packageName of pluginConfig.requiredPackages) {

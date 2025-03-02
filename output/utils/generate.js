@@ -80,6 +80,17 @@ async function generate(pluginName, generatorName, _args) {
             }
         }
         let currentGenerator = generatorByName || generators[0];
+        if (currentGenerator?.preMessages && currentGenerator.preMessages.length) {
+            for (const message of currentGenerator.preMessages) {
+                try {
+                    const msg = handlebars_1.default.compile(message)(args);
+                    console.log(chalk_1.default.green(`- ${msg}`));
+                }
+                catch (error) {
+                    console.error(chalk_1.default.red(`❌ Handlebars error: ${error.message}`));
+                }
+            }
+        }
         if (currentGenerator.requiredPackages?.length) {
             console.log(chalk_1.default.blue(`Checking required packages for generator ${currentGenerator.name}...`));
             for (const packageName of currentGenerator.requiredPackages) {

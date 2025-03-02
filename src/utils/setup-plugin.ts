@@ -66,7 +66,16 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
 
 export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<Record<string, any> | false> {
     try {
-
+        if (pluginConfig?.preMessages?.length) {
+            for (const message of pluginConfig.preMessages) {
+                try {
+                    const template = Handlebars.compile(message);
+                    console.log(chalk.green(`- ${template({ pluginName, name: pluginName })}`));
+                } catch (e) {
+                    console.error(chalk.red(`Error while rendering pre message: ${e.message}`));
+                }
+            }
+        }
         if (pluginConfig.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
             for (const packageName of pluginConfig.requiredPackages) {
