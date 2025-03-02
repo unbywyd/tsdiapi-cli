@@ -1,16 +1,16 @@
-import { getCdCommand, isPathSuitableToNewProject } from '../utils/cwd';
+import { getCdCommand, isDirSuitableToNewProject, isPathSuitableToNewProject } from '../utils/cwd';
 import { installBaseDependencies, runUnsafeNpmScript } from '../utils/npm';
-import { DefaultHost } from './../config';
+import { DefaultHost } from '../config';
 import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
 import { DefaultPort } from "../config";
-import { findTSDIAPIServerProject } from '../utils/plugins';
 import ora from 'ora';
 import figlet from "figlet";
-import { buildHandlebarsTemplate } from '../utils/hbs';
-import { generateFeature } from '../utils/generate';
+import { generateFeature } from './generate';
+import { buildHandlebarsTemplate } from '../utils/handlebars';
+import { findTSDIAPIServerProject } from '../utils/app-finder';
 async function loadGradient() {
     return (await eval('import("gradient-string")')).default;
 }
@@ -37,8 +37,9 @@ export async function startFastProject(projectDir: string) {
     }
 }
 
-export async function initProject(installpath: string, options: CreateProjectOptions) {
+export async function initProject(_installpath: string, options: CreateProjectOptions) {
     try {
+        let installpath = _installpath;
         if (options?.startMode) {
             const cwd = path.resolve(process.cwd(), installpath!);
             const currentDirectory = await findTSDIAPIServerProject(cwd);
@@ -56,9 +57,30 @@ export async function initProject(installpath: string, options: CreateProjectOpt
         const questions: Array<any> = [];
 
         // 📌 Шаг 3: Проверяем путь
-        const projectDir = isPathSuitableToNewProject(installpath!);
+        let projectDir = isPathSuitableToNewProject(installpath!);
         if (!projectDir) {
             return process.exit(1);
+        }
+
+        const dirAvailable = isDirSuitableToNewProject(installpath);
+        if (!dirAvailable) {
+            console.log(chalk.red(`❌ Error: Directory "${projectDir}" is not empty.`));
+            try {
+                const { newDir } = await inquirer.prompt([{
+                    type: "input",
+                    name: "newDir",
+                    message: "📁 Enter a new directory name:",
+                    validate: async (input: string) => {
+                        return isDirSuitableToNewProject(input) ? true : "❌ Directory is not empty or invalid.";
+                    }
+                }]);
+                installpath = newDir as string;
+                console.log(chalk.yellow(`📁 Using new directory: ${installpath}`));
+                projectDir = path.resolve(process.cwd(), newDir) as string;
+            } catch (error) {
+                console.error(chalk.red("❌ An unexpected error occurred during project initialization."), error.message);
+                process.exit(1);
+            }
         }
 
         let projectName = path.basename(projectDir);
@@ -225,7 +247,7 @@ export async function installation(projectDir: string, options: CreateProjectOpt
             await fs.writeFile(packagePath, packageContent);
         }
 
-const gitignore = `
+        const gitignore = `
 node_modules
 # Keep environment variables out of version control
 #.env

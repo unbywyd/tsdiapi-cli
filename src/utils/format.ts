@@ -1,14 +1,111 @@
-
-export function toCamelCase(input: string): string {
-    return normalizeName(input, true);
+export function camelCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, options).reduce((result, word, index) =>
+        index === 0 || !(word[0] || '').match(magicSplit) ? result + word.toLowerCase() : result + capitaliseWord(word),
+        '');
 }
 
-export function toPascalCase(input: string): string {
-    return normalizeName(input, false);
+export function pascalCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, options).reduce((result, word) => result + capitaliseWord(word), '');
 }
-export function toLowerCase(input: string): string {
-    return normalizeName(input, false)?.toLowerCase();
+
+export function kebabCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '-' }).join('').toLowerCase();
 }
+
+export function snakeCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '_' }).join('').toLowerCase();
+}
+
+export function constantCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '_' }).join('').toUpperCase();
+}
+
+export function trainCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '-' }).map(capitaliseWord).join('');
+}
+
+export function adaCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '_' }).map(capitaliseWord).join('');
+}
+
+export function cobolCase(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '-' }).join('').toUpperCase();
+}
+
+export function dotNotation(string: string, options?: { keepSpecialCharacters?: boolean; keep?: string[] }): string {
+    return splitAndPrefix(string, { ...options, prefix: '.' }).join('');
+}
+
+export function pathCase(string: string, options: { keepSpecialCharacters?: boolean; keep?: string[] } = { keepSpecialCharacters: true }): string {
+    return splitAndPrefix(string, options).reduce((result, word, i) =>
+        result + (i === 0 || word[0] === '/' ? '' : '/') + word,
+        '');
+}
+
+export function spaceCase(string: string, options: { keepSpecialCharacters?: boolean; keep?: string[] } = { keepSpecialCharacters: true }): string {
+    return splitAndPrefix(string, { ...options, prefix: ' ' }).join('');
+}
+
+export function capitalCase(string: string, options: { keepSpecialCharacters?: boolean; keep?: string[] } = { keepSpecialCharacters: true }): string {
+    return splitAndPrefix(string, { ...options, prefix: ' ' }).reduce((result, word) => result + capitaliseWord(word), '');
+}
+
+export function lowerCase(string: string, options: { keepSpecialCharacters?: boolean; keep?: string[] } = { keepSpecialCharacters: true }): string {
+    return splitAndPrefix(string, { ...options, prefix: ' ' }).join('').toLowerCase();
+}
+
+export function upperCase(string: string, options: { keepSpecialCharacters?: boolean; keep?: string[] } = { keepSpecialCharacters: true }): string {
+    return splitAndPrefix(string, { ...options, prefix: ' ' }).join('').toUpperCase();
+}
+
+export const magicSplit: RegExp = /^[a-zà-öø-ÿа-я]+|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+|[a-zà-öø-ÿа-я]+|[0-9]+|[A-ZÀ-ÖØ-ßА-Я]+(?![a-zà-öø-ÿа-я])/g;
+export const spaceSplit: RegExp = /\S+/g;
+
+type SplitOptions = { keepSpecialCharacters?: boolean; keep?: string[]; prefix?: string };
+
+type PartsIndexes = { parts: string[]; prefixes: string[] };
+
+export function splitAndPrefix(string: string, options?: SplitOptions): string[] {
+    const { keepSpecialCharacters = false, keep, prefix = '' } = options || {};
+    const normalString = string.trim().normalize('NFC');
+    const split = normalString.includes(' ') ? spaceSplit : magicSplit;
+    const { parts, prefixes } = getPartsAndIndexes(normalString, split);
+
+    return parts.map((_part, i) => {
+        let foundPrefix = prefixes[i] || '';
+        let part = _part;
+
+        if (!keepSpecialCharacters) {
+            part = keep ? part.replace(new RegExp(`[^a-zA-ZØßø0-9${keep.join('')}]`, 'g'), '') : part.replace(/[^a-zA-ZØßø0-9]/g, '');
+            foundPrefix = '';
+        }
+
+        return i === 0 ? foundPrefix + part : (foundPrefix || prefix) + part;
+    }).filter(Boolean);
+}
+
+export function getPartsAndIndexes(string: string, splitRegex: RegExp): PartsIndexes {
+    const result: PartsIndexes = { parts: [], prefixes: [] };
+    let lastWordEndIndex = 0;
+
+    for (const match of string.matchAll(splitRegex)) {
+        if (typeof match.index !== 'number') continue;
+        result.parts.push(match[0]);
+        result.prefixes.push(string.slice(lastWordEndIndex, match.index).trim());
+        lastWordEndIndex = match.index + match[0].length;
+    }
+
+    const tail = string.slice(lastWordEndIndex).trim();
+    if (tail) result.parts.push(''), result.prefixes.push(tail);
+    return result;
+}
+
+export function capitaliseWord(string: string): string {
+    const match = string.matchAll(magicSplit).next().value;
+    const firstLetterIndex = match ? match.index : 0;
+    return string.slice(0, firstLetterIndex + 1).toUpperCase() + string.slice(firstLetterIndex + 1).toLowerCase();
+}
+
 
 export function normalizeName(input: string, lowercaseFirst: boolean): string {
     // 1. Удаляем всё, кроме латинских букв, цифр и разделителей (превращаем их в пробелы)
@@ -35,34 +132,25 @@ export function normalizeName(input: string, lowercaseFirst: boolean): string {
     return formatted.join('');
 }
 
+
+export const toCamelCase = camelCase;
+export const toPascalCase = pascalCase;
+export const toKebabCase = kebabCase;
+export const toSnakeCase = snakeCase;
+export const toConstantCase = constantCase;
+export const toTrainCase = trainCase;
+export const toAdaCase = adaCase;
+export const toCobolCase = cobolCase;
+export const toDotNotation = dotNotation;
+export const toPathCase = pathCase;
+export const toSpaceCase = spaceCase;
+export const toCapitalCase = capitalCase;
+export const toLowerCase = lowerCase;
+export const toUpperCase = upperCase;
+
 export function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1)
 }
-
-export function toKebabCase(input: string): string {
-    let cleaned = input.replace(/[^a-zA-Z0-9_\-\.]+/g, '');
-
-    let words = cleaned.match(/[A-Za-z0-9]+/g) || [];
-
-    if (words.length === 0) {
-        throw new Error("Invalid input: no valid characters found.");
-    }
-
-    return words.join('-').toLowerCase();
-}
-
-
 export const nameToImportName = (name: string, suffix: string = "Plugin"): string => {
     return toPascalCase(name) + suffix;
 };
-
-export function toConstantCase(input: string): string {
-    return input
-        .normalize("NFD") // Normalize accents
-        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-        .replace(/\s+/g, "_") // Replace spaces with underscores
-        .replace(/[^a-zA-Z0-9_]/g, "_") // Replace special characters with underscores (keep existing underscores)
-        .trim() // Trim spaces
-        .replace(/_+/g, "_") // Collapse multiple underscores
-        .toUpperCase(); // Convert to uppercase
-}

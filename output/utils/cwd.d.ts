@@ -13,11 +13,7 @@ export declare function getCdCommand(targetPath: string): string | false;
  * - The path is inside the current working directory.
  */
 export declare function isValidProjectPath(inputPath: string): boolean;
-/**
- * Checks if the given path is suitable for creating a new project.
- * - Ensures the path is valid.
- * - Ensures the directory does not already contain files.
- */
+export declare function isDirSuitableToNewProject(pathName: string): string | false;
 export declare function isPathSuitableToNewProject(pathName: string): string | false;
 export declare function resolveTargetDirectory(cwd: string, name: string): string;
 export declare function isDirectoryPath(inputPath: string): boolean;

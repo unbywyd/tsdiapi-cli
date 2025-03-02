@@ -6,14 +6,18 @@ import path from 'path';
 import { glob } from "glob";
 import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
 import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
-import { findTSDIAPIServerProject, getPluginMetadata, getPluginMetaDataFromRoot, isPackageInstalled } from './plugins';
 import { findNearestPackageJson, isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath } from './cwd';
 import { updateAllEnvFilesWithVariable } from './env';
 import { addAppConfigParams } from './app.config';
 import { fileModifications } from './modifications';
-import { toCamelCase, toKebabCase, toPascalCase } from './format';
+import { toPascalCase } from './format';
 import Handlebars from './handlebars';
-
+import { findTSDIAPIServerProject } from './app-finder';
+import { isPackageInstalled } from './is-plg-installed';
+import { getPluginMetadata, getPluginMetaDataFromRoot } from './plg-metadata';
+async function loadBoxen() {
+    return (await eval('import("boxen")')).default;
+}
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
     return {
@@ -66,17 +70,89 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
 
 export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<Record<string, any> | false> {
     try {
+
+        const packagesFailHints = [];
+        const packagesSuccessHints = [];
+
+        const pathFailHints = [];
+        const pathSuccessHints = [];
+        const beforeMessages = [];
+
         if (pluginConfig?.preMessages?.length) {
             for (const message of pluginConfig.preMessages) {
                 try {
                     const template = Handlebars.compile(message);
-                    console.log(chalk.green(`- ${template({ pluginName, name: pluginName })}`));
+                    beforeMessages.push(chalk.cyan(`- ${template({ pluginName, name: pluginName })}`));
                 } catch (e) {
                     console.error(chalk.red(`Error while rendering pre message: ${e.message}`));
                 }
             }
         }
-        const {nextAccept} = await inquirer.prompt([
+
+        if (pluginConfig.requiredPackages?.length) {
+            console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
+            for (const packageName of pluginConfig.requiredPackages) {
+                const isInstalled = await isPackageInstalled(projectDir, packageName);
+                if (!isInstalled) {
+                    if (packageName.startsWith('@tsdiapi')) {
+                        packagesFailHints.push(`${chalk.red('✘')} ${packageName} - Install with: ${chalk.cyan(`tsdiapi plugins add ${packageName}`)}`);
+                    } else {
+                        packagesFailHints.push(`${chalk.red('✘')} ${packageName} - Install with: ${chalk.cyan(`npm install ${packageName}`)}`);
+                    }
+                } else {
+                    packagesSuccessHints.push(`${chalk.green('✔')} ${packageName} - Already installed`);
+                }
+            }
+        }
+        if (pluginConfig?.requiredPaths?.length) {
+            console.log(chalk.blue(`Checking required paths for plugin ${pluginName}...`));
+            for (const requiredPath of pluginConfig.requiredPaths) {
+                const fullPath = path.join(projectDir, requiredPath);
+                if (!fs.existsSync(fullPath)) {
+                    pathFailHints.push(`${chalk.red('✘')} ${requiredPath} - File or directory not found`);
+                } else {
+                    pathSuccessHints.push(`${chalk.green('✔')} ${requiredPath} - Found`);
+                }
+            }
+        }
+
+        const boxen = await loadBoxen();
+
+        if (packagesFailHints.length || pathFailHints.length || packagesSuccessHints.length || pathSuccessHints.length || beforeMessages.length) {
+            let sections = [];
+
+            if (beforeMessages.length) {
+                sections.push(`${chalk.bold.cyan('Pre-Setup Messages:')}
+${beforeMessages.join('\n')}`);
+            }
+
+            if (packagesSuccessHints.length || pathSuccessHints.length) {
+                sections.push(`${chalk.bold.green('✅ Already Installed:')}
+${[...packagesSuccessHints, ...pathSuccessHints].join('\n')}`);
+            }
+
+            if (packagesFailHints.length || pathFailHints.length) {
+                sections.push(`${chalk.bold.red('❌ Missing Dependencies:')}
+${[...packagesFailHints, ...pathFailHints].join('\n')}`);
+            }
+
+            const message = sections.join('\n\n') + '\n' + chalk.yellow('Ensure all required dependencies are met before installation.');
+
+            console.log(boxen(message, {
+                padding: 1,
+                margin: 1,
+                borderStyle: 'round',
+                borderColor: 'yellow'
+            }));
+        }
+
+        if(packagesFailHints.length || pathFailHints.length) {
+            console.log(chalk.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
+            return false;
+        }
+
+
+        const { nextAccept } = await inquirer.prompt([
             {
                 type: 'confirm',
                 name: 'nextAccept',
@@ -88,56 +164,9 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             console.log(chalk.yellow(`Setup of ${pluginName} has been skipped.`));
             return false;
         }
-        if (pluginConfig.requiredPackages?.length) {
-            console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
-            for (const packageName of pluginConfig.requiredPackages) {
-                const isInstalled = await isPackageInstalled(projectDir, packageName);
-                if (!isInstalled) {
-                    console.log(
-                        chalk.red(`Plugin ${packageName} is required for ${pluginName} but not installed!`)
-                    );
-                    if (packageName?.startsWith('@tsdiapi')) {
-                        console.log(
-                            chalk.red(`Please install the required plugin by running: tsdiapi plugins add ${packageName}`)
-                        );
-                    } else {
-                        console.log(
-                            chalk.red(`Please install the required package by running: npm install ${packageName}`)
-                        );
-                    }
 
-                    return false;
-                } else {
-                    console.log(chalk.green(`✅ Required plugin ${packageName} is present in the project!`));
-                }
-            }
-        }
 
-        if (pluginConfig?.requiredPaths?.length) {
-            console.log(chalk.blue(`Checking required paths for plugin ${pluginName}...`));
-            for (const requiredPath of pluginConfig.requiredPaths) {
-                if (!isValidRequiredPath(requiredPath)) {
-                    console.log(
-                        chalk.red(`Invalid required path: ${requiredPath}!`)
-                    );
-                    console.log(
-                        chalk.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`)
-                    );
-                    return false;
-                }
-                const fullPath = path.join(projectDir, requiredPath);
-                if (!fs.existsSync(fullPath)) {
-                    console.log(
-                        chalk.bgYellow.white.bold(" ⚠️ DENIED ") +
-                        chalk.red(` Required path not found: ${requiredPath}!`)
-                    );
-                    console.log(
-                        chalk.red(`The required file is necessary for the installation of this plugin. Please ensure it is present in the project.`)
-                    );
-                    return false;
-                }
-            }
-        }
+
 
         let handlebarsPayload = {
             name: pluginConfig.name,

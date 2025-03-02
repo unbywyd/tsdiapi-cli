@@ -1,0 +1,1 @@
+{"version":3,"file":"plg-metadata.d.ts","sourceRoot":"","sources":["../../src/utils/plg-metadata.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,cAAc,EAAwB,MAAM,yBAAyB,CAAC;AAE/E,wBAAsB,yBAAyB,CAAC,WAAW,EAAE,MAAM,gBAkBlE;AAED,wBAAsB,iBAAiB,CAAC,gBAAgB,EAAE,MAAM,EAAE,WAAW,EAAE,MAAM,GAAG,OAAO,CAAC,cAAc,GAAG,IAAI,CAAC,CAmBrH"}

@@ -72,26 +72,21 @@ export function isValidProjectPath(inputPath: string): boolean {
     }
 }
 
-/**
- * Checks if the given path is suitable for creating a new project.
- * - Ensures the path is valid.
- * - Ensures the directory does not already contain files.
- */
+
+export function isDirSuitableToNewProject(pathName: string): string | false {
+    const projectDir = path.resolve(process.cwd(), pathName);
+    if (fs.existsSync(projectDir) && fs.readdirSync(projectDir).length > 0) {
+        return false;
+    }
+    return projectDir;
+}
+
 export function isPathSuitableToNewProject(pathName: string): string | false {
     if (!isValidProjectPath(pathName)) {
         console.log(chalk.red(`🚫 Error: The project path is not valid.`));
         return false;
     }
-
-    const projectDir = path.resolve(process.cwd(), pathName);
-
-    if (fs.existsSync(projectDir) && fs.readdirSync(projectDir).length > 0) {
-        console.log(chalk.red(`❌ Error: Directory "${projectDir}" is not empty.`));
-        return false;
-    }
-
-    console.log(chalk.green(`✅ Path is valid and ready for project creation: ${chalk.bold(projectDir)}`));
-    return projectDir;
+    return pathName;
 }
 
 export function resolveTargetDirectory(cwd: string, name: string): string {

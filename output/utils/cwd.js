@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.findNearestPackageJson = findNearestPackageJson;
 exports.getCdCommand = getCdCommand;
 exports.isValidProjectPath = isValidProjectPath;
+exports.isDirSuitableToNewProject = isDirSuitableToNewProject;
 exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
 exports.resolveTargetDirectory = resolveTargetDirectory;
 exports.isDirectoryPath = isDirectoryPath;
@@ -73,23 +74,19 @@ function isValidProjectPath(inputPath) {
         return false;
     }
 }
-/**
- * Checks if the given path is suitable for creating a new project.
- * - Ensures the path is valid.
- * - Ensures the directory does not already contain files.
- */
+function isDirSuitableToNewProject(pathName) {
+    const projectDir = path_1.default.resolve(process.cwd(), pathName);
+    if (fs_1.default.existsSync(projectDir) && fs_1.default.readdirSync(projectDir).length > 0) {
+        return false;
+    }
+    return projectDir;
+}
 function isPathSuitableToNewProject(pathName) {
     if (!isValidProjectPath(pathName)) {
         console.log(chalk_1.default.red(`🚫 Error: The project path is not valid.`));
         return false;
     }
-    const projectDir = path_1.default.resolve(process.cwd(), pathName);
-    if (fs_1.default.existsSync(projectDir) && fs_1.default.readdirSync(projectDir).length > 0) {
-        console.log(chalk_1.default.red(`❌ Error: Directory "${projectDir}" is not empty.`));
-        return false;
-    }
-    console.log(chalk_1.default.green(`✅ Path is valid and ready for project creation: ${chalk_1.default.bold(projectDir)}`));
-    return projectDir;
+    return pathName;
 }
 function resolveTargetDirectory(cwd, name) {
     const normalized = path_1.default.normalize(name).replace(/\\/g, "/");

@@ -14,13 +14,18 @@ const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const glob_1 = require("glob");
 const inquirer_2 = require("./inquirer");
-const plugins_1 = require("./plugins");
 const cwd_1 = require("./cwd");
 const env_1 = require("./env");
 const app_config_1 = require("./app.config");
 const modifications_1 = require("./modifications");
 const format_1 = require("./format");
 const handlebars_1 = __importDefault(require("./handlebars"));
+const app_finder_1 = require("./app-finder");
+const is_plg_installed_1 = require("./is-plg-installed");
+const plg_metadata_1 = require("./plg-metadata");
+async function loadBoxen() {
+    return (await eval('import("boxen")')).default;
+}
 function generateInquirerQuestion(variable) {
     return {
         ...variable.inquirer,
@@ -35,13 +40,13 @@ function generateInquirerQuestion(variable) {
 }
 async function toSetupPlugin(pluginName) {
     try {
-        const currentDirectory = await (0, plugins_1.findTSDIAPIServerProject)();
+        const currentDirectory = await (0, app_finder_1.findTSDIAPIServerProject)();
         let isLocalPath = false;
         if (!currentDirectory) {
             return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
         const packageName = (0, config_1.getPackageName)(pluginName);
-        const isInstalled = (0, plugins_1.isPackageInstalled)(currentDirectory, packageName);
+        const isInstalled = (0, is_plg_installed_1.isPackageInstalled)(currentDirectory, packageName);
         if (!isInstalled) {
             const findByPath = path_1.default.join(process.cwd(), pluginName, 'tsdiapi.config.json');
             const isInstalled = fs_extra_1.default.existsSync(findByPath);
@@ -53,7 +58,7 @@ async function toSetupPlugin(pluginName) {
                 isLocalPath = true;
             }
         }
-        const config = isLocalPath ? await (0, plugins_1.getPluginMetaDataFromRoot)(path_1.default.join(process.cwd(), pluginName)) : await (0, plugins_1.getPluginMetadata)(currentDirectory, packageName);
+        const config = isLocalPath ? await (0, plg_metadata_1.getPluginMetaDataFromRoot)(path_1.default.join(process.cwd(), pluginName)) : await (0, plg_metadata_1.getPluginMetadata)(currentDirectory, packageName);
         if (!config) {
             console.log(chalk_1.default.yellow(`No setup logic defined for plugin: ${packageName}`));
             console.log(chalk_1.default.green(`${packageName} setup has been successfully completed.`));
@@ -69,16 +74,77 @@ async function toSetupPlugin(pluginName) {
 }
 async function setupCommon(pluginName, projectDir, pluginConfig) {
     try {
+        const packagesFailHints = [];
+        const packagesSuccessHints = [];
+        const pathFailHints = [];
+        const pathSuccessHints = [];
+        const beforeMessages = [];
         if (pluginConfig?.preMessages?.length) {
             for (const message of pluginConfig.preMessages) {
                 try {
                     const template = handlebars_1.default.compile(message);
-                    console.log(chalk_1.default.green(`- ${template({ pluginName, name: pluginName })}`));
+                    beforeMessages.push(chalk_1.default.cyan(`- ${template({ pluginName, name: pluginName })}`));
                 }
                 catch (e) {
                     console.error(chalk_1.default.red(`Error while rendering pre message: ${e.message}`));
                 }
             }
+        }
+        if (pluginConfig.requiredPackages?.length) {
+            console.log(chalk_1.default.blue(`Checking required packages for plugin ${pluginName}...`));
+            for (const packageName of pluginConfig.requiredPackages) {
+                const isInstalled = await (0, is_plg_installed_1.isPackageInstalled)(projectDir, packageName);
+                if (!isInstalled) {
+                    if (packageName.startsWith('@tsdiapi')) {
+                        packagesFailHints.push(`${chalk_1.default.red('✘')} ${packageName} - Install with: ${chalk_1.default.cyan(`tsdiapi plugins add ${packageName}`)}`);
+                    }
+                    else {
+                        packagesFailHints.push(`${chalk_1.default.red('✘')} ${packageName} - Install with: ${chalk_1.default.cyan(`npm install ${packageName}`)}`);
+                    }
+                }
+                else {
+                    packagesSuccessHints.push(`${chalk_1.default.green('✔')} ${packageName} - Already installed`);
+                }
+            }
+        }
+        if (pluginConfig?.requiredPaths?.length) {
+            console.log(chalk_1.default.blue(`Checking required paths for plugin ${pluginName}...`));
+            for (const requiredPath of pluginConfig.requiredPaths) {
+                const fullPath = path_1.default.join(projectDir, requiredPath);
+                if (!fs_extra_1.default.existsSync(fullPath)) {
+                    pathFailHints.push(`${chalk_1.default.red('✘')} ${requiredPath} - File or directory not found`);
+                }
+                else {
+                    pathSuccessHints.push(`${chalk_1.default.green('✔')} ${requiredPath} - Found`);
+                }
+            }
+        }
+        const boxen = await loadBoxen();
+        if (packagesFailHints.length || pathFailHints.length || packagesSuccessHints.length || pathSuccessHints.length || beforeMessages.length) {
+            let sections = [];
+            if (beforeMessages.length) {
+                sections.push(`${chalk_1.default.bold.cyan('Pre-Setup Messages:')}
+${beforeMessages.join('\n')}`);
+            }
+            if (packagesSuccessHints.length || pathSuccessHints.length) {
+                sections.push(`${chalk_1.default.bold.green('✅ Already Installed:')}
+${[...packagesSuccessHints, ...pathSuccessHints].join('\n')}`);
+            }
+            if (packagesFailHints.length || pathFailHints.length) {
+                sections.push(`${chalk_1.default.bold.red('❌ Missing Dependencies:')}
+${[...packagesFailHints, ...pathFailHints].join('\n')}`);
+            }
+            const message = sections.join('\n\n') + '\n' + chalk_1.default.yellow('Ensure all required dependencies are met before installation.');
+            console.log(boxen(message, {
+                padding: 1,
+                margin: 1,
+                borderStyle: 'round',
+                borderColor: 'yellow'
+            }));
+        }
+        if (packagesFailHints.length || pathFailHints.length) {
+            console.log(chalk_1.default.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
+            return false;
         }
         const { nextAccept } = await inquirer_1.default.prompt([
             {
@@ -91,42 +157,6 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
         if (!nextAccept) {
             console.log(chalk_1.default.yellow(`Setup of ${pluginName} has been skipped.`));
             return false;
-        }
-        if (pluginConfig.requiredPackages?.length) {
-            console.log(chalk_1.default.blue(`Checking required packages for plugin ${pluginName}...`));
-            for (const packageName of pluginConfig.requiredPackages) {
-                const isInstalled = await (0, plugins_1.isPackageInstalled)(projectDir, packageName);
-                if (!isInstalled) {
-                    console.log(chalk_1.default.red(`Plugin ${packageName} is required for ${pluginName} but not installed!`));
-                    if (packageName?.startsWith('@tsdiapi')) {
-                        console.log(chalk_1.default.red(`Please install the required plugin by running: tsdiapi plugins add ${packageName}`));
-                    }
-                    else {
-                        console.log(chalk_1.default.red(`Please install the required package by running: npm install ${packageName}`));
-                    }
-                    return false;
-                }
-                else {
-                    console.log(chalk_1.default.green(`✅ Required plugin ${packageName} is present in the project!`));
-                }
-            }
-        }
-        if (pluginConfig?.requiredPaths?.length) {
-            console.log(chalk_1.default.blue(`Checking required paths for plugin ${pluginName}...`));
-            for (const requiredPath of pluginConfig.requiredPaths) {
-                if (!(0, cwd_1.isValidRequiredPath)(requiredPath)) {
-                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}!`));
-                    console.log(chalk_1.default.red(`Invalid required path: ${requiredPath}! Path should be relative to the root of the project and point to a specific file. Please check your plugin configuration.`));
-                    return false;
-                }
-                const fullPath = path_1.default.join(projectDir, requiredPath);
-                if (!fs_extra_1.default.existsSync(fullPath)) {
-                    console.log(chalk_1.default.bgYellow.white.bold(" ⚠️ DENIED ") +
-                        chalk_1.default.red(` Required path not found: ${requiredPath}!`));
-                    console.log(chalk_1.default.red(`The required file is necessary for the installation of this plugin. Please ensure it is present in the project.`));
-                    return false;
-                }
-            }
         }
         let handlebarsPayload = {
             name: pluginConfig.name,

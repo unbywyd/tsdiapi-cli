@@ -1,23 +1,26 @@
-import { getPackageName } from './../config';
+import { getPackageName } from '../config';
 import chalk from "chalk"
-import { findTSDIAPIServerProject, getPluginMetadata, isPackageInstalled } from "./plugins"
 import inquirer from "inquirer";
 import fs from "fs-extra";
-import { toCamelCase, toKebabCase, toPascalCase } from "./format";
+import { toCamelCase, toKebabCase, toPascalCase } from "../utils/format";
 import path from "path";
-import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
+import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer';
 import { glob } from "glob";
-import { PluginFileMapping, PluginGenerator } from './plugins-configuration';
-import { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from './hbs';
-import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from './cwd';
-import { fileModifications } from './modifications';
+import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration';
+import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd';
+import { fileModifications } from '../utils/modifications';
 import ora from 'ora'
-import { runPostInstall } from './npm';
-import Handlebars from './handlebars';
+import { runPostInstall } from '../utils/npm';
+import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars';
+import { isPackageInstalled } from '../utils/is-plg-installed';
+import { findTSDIAPIServerProject } from '../utils/app-finder';
+import { getPluginMetadata } from '../utils/plg-metadata';
 
-export async function generate(pluginName: string, generatorName?: string, _args?: Record<string, any>): Promise<void> {
+export async function generate(pluginName: string, fileName: string, generatorName?: string): Promise<void> {
     try {
-        const args: Record<string, any> = _args || {};
+        const args: Record<string, any> = {
+            name: fileName
+        };
         if (args.name) {
             const validName = /^(?!.*\.\.)([a-zA-Z0-9-_\/]+)$/;
             if (!validName.test(args.name)) {
@@ -90,7 +93,7 @@ export async function generate(pluginName: string, generatorName?: string, _args
 
         let currentGenerator: PluginGenerator = generatorByName || generators[0];
 
-        if(currentGenerator?.preMessages && currentGenerator.preMessages.length) {
+        if (currentGenerator?.preMessages && currentGenerator.preMessages.length) {
             for (const message of currentGenerator.preMessages) {
                 try {
                     const msg = Handlebars.compile(message)(args);
@@ -211,13 +214,20 @@ export async function generate(pluginName: string, generatorName?: string, _args
             }
             if (questions?.length) {
                 try {
-                    defaultObj = await inquirer.prompt(questions as any);
+                    const result = await inquirer.prompt(questions as any);
+                    if (result) {
+                        defaultObj = {
+                            ...defaultObj,
+                            ...result
+                        }
+                    }
                 } catch (e) {
                     console.log(chalk.red('Operation canceled!'))
                     return;
                 }
             }
         }
+
         if (!defaultObj.name) {
             console.log(chalk.red('Name is required!'))
             return;
@@ -256,7 +266,6 @@ export async function generate(pluginName: string, generatorName?: string, _args
         } catch (error) {
             console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
         }
-
         await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles);
 
 
@@ -305,7 +314,7 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
         for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
             const toCwd = isRoot ? currentDirectory : cwd;
             const destinationPrepared = destination.replace(/{{name}}/g, defaultObj.name);
-            const resolvedDest = path.resolve(toCwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, defaultObj.kebabcase));
+            const resolvedDest = path.resolve(toCwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, toKebabCase(defaultObj.name)));
 
             const files = glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
@@ -318,7 +327,7 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
 
 
                 const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
-                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, defaultObj.kebabcase);
+                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, toKebabCase(defaultObj.name));
 
                 if (fs.existsSync(outputPath)) {
                     console.log(chalk.yellow(`⚠️ Skipping: File already exists: ${outputPath}`));
@@ -439,8 +448,6 @@ export async function generateFeature(name: string, projectDir?: string) {
             chalk.red(` An error occurred while generating the feature:\n${e.message}\n`));
     }
 }
-
-
 
 export async function safeGenerate(pluginName: string, generatorName: string, args?: Record<string, any>) {
     const cwd = resolveTargetDirectory(process.cwd(), generatorName);

@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 import { program } from 'commander'
-import { initProject } from './commands/initProject'
+import { initProject } from './commands/init-project'
 import { CurrentVersion } from './config'
-import { addPlugin, checkPluginConfig, updatePlugin } from './utils/plugins'
-import { generate } from './utils/generate'
-import qs from 'qs'
+import { generate } from './commands/generate'
 import { toSetupPlugin } from './utils/setup-plugin'
-import { runNpmScript } from './utils/npm'
-import { promptPluginDetails } from './utils/dev-plugin'
-import Handlebars from './utils/handlebars'
+import { promptPluginDetails } from './commands/dev-create-plg'
+import { addPlugin } from './commands/add-plugin'
+import { updatePlugin } from './commands/update-plg'
+import { checkPluginConfig } from './commands/check-plg-config'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 
@@ -85,23 +84,11 @@ devCommand
   );
 
 program
-  .command('generate <pluginName> [generatorName] [options]')
+  .command('generate <pluginArg> <name>')
   .description('Generate files using a specific plugin')
-  .action(async (pluginName, generatorName, _options) => {
-    let options: Record<any, any> = {};
-    if (_options) {
-      if (_options?.includes('=')) {
-        options = qs.parse(_options, { delimiter: ';' });
-        try {
-          for (const key in options) {
-            options[key] = JSON.parse(options[key]);
-          }
-        } catch (e) { }
-      } else {
-        options['name'] = _options
-      }
-    }
-    generate(pluginName, generatorName, options);
+  .action(async (pluginArg, name) => {
+    const [pluginName, generatorName] = pluginArg.split(':')?.map((x: any) => x.trim());
+    generate(pluginName, name, generatorName);
   });
 
 
