@@ -78,7 +78,7 @@ const addPlugin = async (selectedPluginName) => {
                 return;
             }
             try {
-                if (config.afterInstall && result && !isInstalled) {
+                if (config.afterInstall && result) {
                     const cond = config.afterInstall?.when ? (0, inquirer_1.convertWhenToFunction)(config.afterInstall.when)(result) : true;
                     if (cond) {
                         console.log(chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`));

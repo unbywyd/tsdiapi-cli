@@ -82,7 +82,7 @@ export const addPlugin = async (selectedPluginName: string) => {
         return;
       }
       try {
-        if (config.afterInstall && result && !isInstalled) {
+        if (config.afterInstall && result) {
 
           const cond = config.afterInstall?.when ? convertWhenToFunction(config.afterInstall.when)(result) : true;
           if (cond) {
