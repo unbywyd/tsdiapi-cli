@@ -8,59 +8,57 @@ A powerful and flexible command-line interface (CLI) for managing **TSDIAPI** pr
 
 TSDIAPI CLI is designed to provide a streamlined experience when working with **TSDIAPI-based servers**. It allows developers to:
 
-- Quickly **initialize** new API projects.
-- Extend functionality using **plugins**.
-- Automate **code generation** for services, controllers, and events.
-- Manage **configuration files** and environment variables.
+- **Initialize** new API projects quickly.
+- **Extend functionality** using modular plugins.
+- **Automate code generation** for services, controllers, and events.
+- **Manage configuration files** and environment variables effortlessly.
 
-By default, the generated project is minimal and provides a **solid foundation** for further customization.
+By default, the generated project provides a **solid foundation** for further customization.
 
 ---
 
 ## **Installation**
 
-You can install the CLI globally using npm:
+Install the CLI globally using npm:
 
 ```bash
 npm install -g @tsdiapi/cli
 ```
 
-Once installed, you can use the `tsdiapi` command from any terminal.
+Once installed, use the `tsdiapi` command from any terminal.
 
 ---
 
 ## **Creating a New Project**
 
-To create a new API project, use the following command:
+To create a new API project, use:
 
 ```bash
 tsdiapi init <project-name>
 ```
 
-This will **guide you through an interactive setup** where you can configure the project name, host, and port.
+This will **guide you through an interactive setup**, allowing you to configure project details like name, host, and port.
 
-### **Fast Initialization Mode**
+### **Quick Start**
 
-For a quick setup that **skips all prompts** and **immediately starts the server**, use:
+For a fast setup that **skips all prompts** and **immediately starts the server**, use:
 
 ```bash
 tsdiapi start <project-name>
 ```
 
-This will create a project with default settings and start it instantly.
-
-| Command       | Description                                                       |
-|--------------|-------------------------------------------------------------------|
-| `init`       | Creates a new project with interactive setup.                     |
-| `start`      | Creates a new project with defaults and starts it immediately.    |
+| Command | Description                                                    |
+| ------- | -------------------------------------------------------------- |
+| `init`  | Creates a new project with interactive setup.                  |
+| `start` | Creates a new project with defaults and starts it immediately. |
 
 ---
 
 ## **Extending Your Project with Plugins**
 
-TSDIAPI allows for modular extensions through **plugins**. You can add plugins for features like **Prisma**, **Socket.IO**, **JWT authentication**, and more.
+TSDIAPI supports modular extensions through **plugins**. Plugins can introduce features like **Prisma ORM**, **Socket.IO**, **JWT authentication**, and more.
 
-### **Adding Plugins**
+### **Installing Plugins**
 
 To install a new plugin, use:
 
@@ -76,7 +74,7 @@ tsdiapi plugins add prisma
 
 ### **Configuring Plugins**
 
-Some plugins require additional configuration. To configure a plugin, use:
+Some plugins require additional configuration. Use:
 
 ```bash
 tsdiapi plugins config <plugin-name>
@@ -84,22 +82,20 @@ tsdiapi plugins config <plugin-name>
 
 This will guide you through setting up the necessary parameters.
 
-You can find available plugins on **npm**:
-
-[🔗 Explore all plugins](https://www.npmjs.com/search?q=%40tsdiapi)
+🔗 [Explore all available plugins](https://www.npmjs.com/search?q=%40tsdiapi)
 
 ---
 
 ## **Generating Code Automatically**
 
-TSDIAPI CLI provides a **powerful code generation system**. It dynamically detects **installed plugins** and their associated **generators**.
+TSDIAPI CLI features a **powerful code generation system** that detects installed plugins and their **generators** dynamically.
 
 ### **Using Generators**
 
 To generate code, use:
 
 ```bash
-tsdiapi generate <resource> <name>
+tsdiapi generate <resource|pluginName> <name>
 ```
 
 Example:
@@ -108,33 +104,25 @@ Example:
 tsdiapi generate controller user
 ```
 
-This will create a new **UserController**.
+This will create a **UserController**.
 
-| Resource     | Description                          |
-|-------------|--------------------------------------|
-| `feature`   | Generate a new feature module.       |
-| `service`   | Generate a new service.              |
-| `controller`| Generate a new controller.           |
-| `event`     | Generate an event handler.           |
-| `prisma`    | Generate a Prisma model or resource. |
-| `cron`      | Generate a cron job.                 |
+| Resource     | Description                    |
+| ------------ | ------------------------------ |
+| `feature`    | Generate a new feature module. |
+| `service`    | Generate a new service.        |
+| `controller` | Generate a new controller.     |
 
 ### **How Generators Work**
 
-- **Plugins define generators.** Each plugin can introduce new generation rules.
-- The CLI **automatically detects installed plugins** and provides relevant generation options.
-- You don’t need to configure generators manually—just install the necessary plugins!
+- **Plugins define generators.** Each plugin can introduce its own generators.
+- The CLI **automatically detects installed plugins** and provides relevant options.
+- You don’t need to configure generators manually—just install the required plugins.
 
 ---
 
 ## **How Plugins Work**
 
-Plugins extend the functionality of a **TSDIAPI** server. Each plugin can:
-
-- **Introduce new dependencies.**
-- **Modify the project structure.**
-- **Provide generators** for automatic code creation.
-- **Expose configuration options.**
+Plugins extend **TSDIAPI** by introducing new services, middleware, configurations, and generators.
 
 ### **Plugin System Diagram**
 
@@ -156,40 +144,73 @@ Plugins extend the functionality of a **TSDIAPI** server. Each plugin can:
 +--------------+ +--------------+
 ```
 
-You can explore all available plugins on npm:
-
-[🔗 Available Plugins](https://www.npmjs.com/search?q=%40tsdiapi)
+🔗 [Available Plugins](https://www.npmjs.com/search?q=%40tsdiapi)
 
 ---
 
-
 ## **Developing Plugins**
 
-TSDIAPI CLI allows developers to create their own plugins to extend the framework. Plugins can introduce **new services, middleware, configurations, and generators**.
+TSDIAPI CLI allows developers to create custom plugins that extend the framework.
 
+### **Development Commands (`tsdiapi dev`)**
 
-For detailed development instructions, see [DEV.README.md](https://github.com/unbywyd/tsdiapi-cli/blob/master/DEV.README.md).
+The `dev` command provides tools for **plugin development**. It allows you to quickly scaffold a new plugin and validate its configuration.
 
+#### **Creating a New Plugin**
 
-### **Creating a New Plugin**
-
-To create a plugin template, run:
+To generate a new plugin, use:
 
 ```bash
 tsdiapi dev plugin <name>
 ```
 
-This will generate a **basic plugin structure** including configuration files and a boilerplate setup.
+This will prompt you to configure the plugin by providing:
+
+- A **name** (automatically converted to the correct format).
+- A **description**.
+- An **author name**.
+- A **GitHub repository URL** (optional).
+- Whether the plugin should support **automatic file loading**.
+- And other settings.
+
+Once configured, the CLI will:
+
+1. **Create the plugin directory**.
+2. **Generate the necessary files** (e.g., `index.ts`, `package.json`, `README.md`).
+3. **Set up a base plugin structure** with optional bootstrap support.
+4. **Install dependencies** required for the plugin.
+
+After completion, you can start modifying the generated plugin to fit your needs.
+
+---
+
+#### **Validating Plugin Configuration**
+
+To check if a plugin’s configuration is correct, use:
+
+```bash
+tsdiapi dev check
+```
+
+This command validates the plugin’s `tsdiapi.config.json` file and ensures that:
+
+- All **required fields** are present.
+- No **conflicting configurations** exist.
+- The **plugin structure** follows the best practices.
+
+If errors are found, the CLI will output detailed messages to help you resolve them.
+
+---
 
 ### **Plugin Lifecycle Methods**
 
 Each plugin supports the following lifecycle methods:
 
-| Method         | Description |
-|---------------|-------------|
-| `onInit`      | Executed when the plugin is initialized. Ideal for setting up configurations. |
-| `beforeStart` | Runs before the server starts. Used for preloading data or dependencies. |
-| `afterStart`  | Runs after the server starts. Can be used for logging, event listeners, etc. |
+| Method        | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| `onInit`      | Executed when the plugin is initialized, used for setup.            |
+| `beforeStart` | Runs before the server starts, used for preloading dependencies.    |
+| `afterStart`  | Runs after the server starts, ideal for logging or event listeners. |
 
 ### **Auto-loading Files**
 
@@ -203,11 +224,11 @@ Example:
 }
 ```
 
-This ensures that all event files matching the pattern are automatically registered.
+This ensures that all matching files are automatically registered.
 
 ### **Publishing a Plugin**
 
-To publish a plugin, contact the **TSDIAPI** team and request publishing rights. You can reach out via:
+To publish a plugin, contact the **TSDIAPI** team and request publishing rights.
 
 📧 Contact: [unbywyd](https://unbywyd.com)
 
@@ -222,4 +243,3 @@ TSDIAPI is an open-source project. Contributions are always welcome! If you want
 📧 Contact: [unbywyd](https://unbywyd.com)
 
 🚀 Happy coding with **TSDIAPI CLI**!
-
