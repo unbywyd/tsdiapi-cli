@@ -91,48 +91,80 @@ async function promptPluginDetails(sourcePluginName) {
             variables = await promptPluginVariables(packageName);
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring plugin variables: ${error.message}`));
         }
         try {
             requiredPackages = await promptRequiredPackages();
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring required packages: ${error.message}`));
         }
         try {
             requiredPaths = await promptRequiredPaths();
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring required paths: ${error.message}`));
         }
         try {
             promptPost = await promptPostInstall(pluginName);
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring post-install: ${error.message}`));
         }
         try {
             afterInstall = await promptAfterInstall(pluginName);
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring after-install: ${error.message}`));
         }
         try {
             promptScripts = await promptProvideScripts(pluginName);
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring scripts: ${error.message}`));
         }
         try {
             preMessages = await promptMessages(pluginName, "🚀 Do you want to display messages before installing?");
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring pre-install messages: ${error.message}`));
         }
         try {
             postMessages = await promptMessages(pluginName, "🚀 Do you want to display messages after installing?");
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring post-install messages: ${error.message}`));
         }
         let files = [];
@@ -140,6 +172,10 @@ async function promptPluginDetails(sourcePluginName) {
             files = await promptFiles(pluginName);
         }
         catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
             console.error(chalk_1.default.red(`❌ Error while configuring files: ${error.message}`));
         }
         await fs_extra_1.default.ensureDir(pluginDir);
@@ -510,7 +546,7 @@ async function promptProvideScripts(pluginName) {
             type: "confirm",
             name: "accept",
             message: `🚀 Do you want to provide scripts for ${pluginName}?`,
-            default: true
+            default: false
         }
     ]);
     if (!accept) {
@@ -573,6 +609,7 @@ async function promptPluginVariables(pluginName) {
                 type: "input",
                 name: "name",
                 message: "📌 Enter the variable name:",
+                default: (0, format_1.toConstantCase)(pluginName + "_VARIABLE_NAME"),
                 transformer: (input) => (0, format_1.toConstantCase)(input),
                 validate: (input) => input ? true : "❌ Variable name must be only letters, numbers, and underscores."
             }
@@ -740,7 +777,7 @@ async function promptPluginVariables(pluginName) {
             }
         ]);
         variables.push({
-            name: (0, format_1.toConstantCase)(pluginName + '_' + name),
+            name: name,
             type,
             default: defaultValue,
             configurable,
@@ -819,4 +856,11 @@ async function promptFiles(pluginName) {
     }
     return mappings;
 }
+const checkIfUserForsed = (source) => {
+    const text = "User force closed the prompt with 0 null";
+    if (source?.message?.includes(text)) {
+        return true;
+    }
+    return false;
+};
 //# sourceMappingURL=dev-plugin.js.map

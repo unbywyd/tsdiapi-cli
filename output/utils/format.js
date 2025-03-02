@@ -54,9 +54,10 @@ function toConstantCase(input) {
     return input
         .normalize("NFD") // Normalize accents
         .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-        .replace(/[^a-zA-Z0-9\s]/g, "") // Remove special characters
-        .trim() // Trim spaces
         .replace(/\s+/g, "_") // Replace spaces with underscores
+        .replace(/[^a-zA-Z0-9_]/g, "_") // Replace special characters with underscores (keep existing underscores)
+        .trim() // Trim spaces
+        .replace(/_+/g, "_") // Collapse multiple underscores
         .toUpperCase(); // Convert to uppercase
 }
 //# sourceMappingURL=format.js.map
