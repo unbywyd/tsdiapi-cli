@@ -119,7 +119,7 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
                 {
                     type: 'confirm',
                     name: 'setupCommon',
-                    message: chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to configure ${pluginName} settings?`),
+                    message: `${chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to configure ${pluginName} settings?`)}`,
                     default: true,
                 },
             ]);

@@ -58,7 +58,7 @@ export const addPlugin = async (selectedPluginName: string) => {
       if (!config) {
         spinner.warn(chalk.yellow(`⚠️ Plugin ${packageName} is already installed.`));
         return;
-      } 
+      }
     }
 
     if (!config) {
@@ -75,6 +75,7 @@ export const addPlugin = async (selectedPluginName: string) => {
       }
 
       spinner.text = chalk.blue(`🔧 Configuring ${packageName}...`);
+      spinner.stop();
       const result = await setupCommon(packageName, currentDirectory, config);
       if (!result) {
         spinner.fail(chalk.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
@@ -85,7 +86,6 @@ export const addPlugin = async (selectedPluginName: string) => {
 
           const cond = config.afterInstall?.when ? convertWhenToFunction(config.afterInstall.when)(result) : true;
           if (cond) {
-            spinner.text = chalk.blue(`⚙️ Running after-install script for ${packageName}...`);
             console.log(chalk.blue(`⚙️ Running after-install script for ${packageName}...`));
             await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall?.command);
             spinner.succeed(chalk.green(`✅ After-install script executed.`));

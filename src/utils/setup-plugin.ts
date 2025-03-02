@@ -123,7 +123,9 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
             description: pluginConfig.description,
             pluginName,
         }
+
         const varNames = pluginConfig.variables?.map((v) => v.name);
+
         if (!varNames?.length) {
             console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
         } else {
@@ -131,10 +133,11 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 {
                     type: 'confirm',
                     name: 'setupCommon',
-                    message: chalk.cyan(`${chalk.bgBlue('Do you want')} to configure ${pluginName} settings?`),
+                    message: `${chalk.cyan(`${chalk.bgBlue('Do you want')} to configure ${pluginName} settings?`)}`,
                     default: true,
                 },
             ]);
+
             if (!setupCommon) {
                 console.log(chalk.yellow(`Setup of ${pluginName} settings has been skipped.`));
             } else {
@@ -180,6 +183,7 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 console.error(chalk.red(`Error while adding scripts to package.json: ${e.message}`));
             }
         }
+
         const name = pluginConfig.name || pluginName;
         const pascalCaseName = toPascalCase(name);
         const payload = {
