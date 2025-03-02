@@ -6,7 +6,7 @@ export declare function promptAfterInstall(pluginName: string): Promise<CommandW
 export declare function promptRequiredPackages(): Promise<string[]>;
 export declare function promptRequiredPaths(): Promise<string[]>;
 export declare function promptPostInstall(pluginName: string): Promise<string | null>;
-export declare function promptProvideScripts(pluginNamel: string): Promise<Record<string, string> | null>;
-export declare function promptPluginVariables(): Promise<PluginConfigVariable[]>;
+export declare function promptProvideScripts(pluginName: string): Promise<Record<string, string> | null>;
+export declare function promptPluginVariables(pluginName: string): Promise<PluginConfigVariable[]>;
 export declare function promptFiles(pluginName: string): Promise<Array<PluginFileMapping>>;
 //# sourceMappingURL=dev-plugin.d.ts.map

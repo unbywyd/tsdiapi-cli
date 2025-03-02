@@ -88,7 +88,7 @@ async function promptPluginDetails(sourcePluginName) {
         ]);
         let variables = [], promptPost = null, promptScripts = null, afterInstall = null, requiredPackages = [], requiredPaths = [], preMessages = [], postMessages = [];
         try {
-            variables = await promptPluginVariables();
+            variables = await promptPluginVariables(packageName);
         }
         catch (error) {
             console.error(chalk_1.default.red(`❌ Error while configuring plugin variables: ${error.message}`));
@@ -504,12 +504,12 @@ async function promptPostInstall(pluginName) {
     return postInstall;
 }
 // provideScripts
-async function promptProvideScripts(pluginNamel) {
+async function promptProvideScripts(pluginName) {
     const { accept } = await inquirer_1.default.prompt([
         {
             type: "confirm",
             name: "accept",
-            message: `🚀 Do you want to provide scripts for ${pluginNamel}?`,
+            message: `🚀 Do you want to provide scripts for ${pluginName}?`,
             default: true
         }
     ]);
@@ -554,7 +554,7 @@ async function promptProvideScripts(pluginNamel) {
     }
     return commands;
 }
-async function promptPluginVariables() {
+async function promptPluginVariables(pluginName) {
     const variables = [];
     const { useEnv } = await inquirer_1.default.prompt([
         {
@@ -740,7 +740,7 @@ async function promptPluginVariables() {
             }
         ]);
         variables.push({
-            name,
+            name: (0, format_1.toConstantCase)(pluginName + '_' + name),
             type,
             default: defaultValue,
             configurable,

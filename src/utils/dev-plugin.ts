@@ -92,7 +92,7 @@ export async function promptPluginDetails(sourcePluginName: string) {
             postMessages: string[] = [];
 
         try {
-            variables = await promptPluginVariables();
+            variables = await promptPluginVariables(packageName);
         } catch (error) {
             console.error(chalk.red(`❌ Error while configuring plugin variables: ${error.message}`));
         }
@@ -544,12 +544,12 @@ export async function promptPostInstall(pluginName: string): Promise<string | nu
 
 
 // provideScripts
-export async function promptProvideScripts(pluginNamel: string): Promise<Record<string, string> | null> {
+export async function promptProvideScripts(pluginName: string): Promise<Record<string, string> | null> {
     const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
-            message: `🚀 Do you want to provide scripts for ${pluginNamel}?`,
+            message: `🚀 Do you want to provide scripts for ${pluginName}?`,
             default: true
         }
     ]);
@@ -598,7 +598,7 @@ export async function promptProvideScripts(pluginNamel: string): Promise<Record<
 
 }
 
-export async function promptPluginVariables(): Promise<PluginConfigVariable[]> {
+export async function promptPluginVariables(pluginName: string): Promise<PluginConfigVariable[]> {
     const variables: PluginConfigVariable[] = [];
 
     const { useEnv } = await inquirer.prompt([
@@ -796,7 +796,7 @@ export async function promptPluginVariables(): Promise<PluginConfigVariable[]> {
         ]);
 
         variables.push({
-            name,
+            name: toConstantCase(pluginName + '_' + name),
             type,
             default: defaultValue,
             configurable,
