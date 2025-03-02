@@ -56,12 +56,8 @@ const addPlugin = async (selectedPluginName) => {
         if (isInstalled) {
             if (!config) {
                 spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${packageName} is already installed.`));
+                return;
             }
-            else {
-                spinner.warn(chalk_1.default.cyan(`Plugin ${packageName} is already installed. Configuring...`));
-                await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
-            }
-            return;
         }
         if (!config) {
             spinner.warn(chalk_1.default.yellow(`⚠️ No additional setup required for ${packageName}.`));
@@ -81,7 +77,7 @@ const addPlugin = async (selectedPluginName) => {
                 return;
             }
             try {
-                if (config.afterInstall && result) {
+                if (config.afterInstall && result && !isInstalled) {
                     const cond = config.afterInstall?.when ? (0, inquirer_1.convertWhenToFunction)(config.afterInstall.when)(result) : true;
                     if (cond) {
                         spinner.text = chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`);

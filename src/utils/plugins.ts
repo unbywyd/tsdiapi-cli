@@ -57,12 +57,8 @@ export const addPlugin = async (selectedPluginName: string) => {
     if (isInstalled) {
       if (!config) {
         spinner.warn(chalk.yellow(`⚠️ Plugin ${packageName} is already installed.`));
-      } else {
-        spinner.warn(chalk.cyan(`Plugin ${packageName} is already installed. Configuring...`));
-        await setupCommon(packageName, currentDirectory, config);
-      }
-
-      return;
+        return;
+      } 
     }
 
     if (!config) {
@@ -85,7 +81,7 @@ export const addPlugin = async (selectedPluginName: string) => {
         return;
       }
       try {
-        if (config.afterInstall && result) {
+        if (config.afterInstall && result && !isInstalled) {
 
           const cond = config.afterInstall?.when ? convertWhenToFunction(config.afterInstall.when)(result) : true;
           if (cond) {
