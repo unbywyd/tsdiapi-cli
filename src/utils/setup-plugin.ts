@@ -76,6 +76,18 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 }
             }
         }
+        const {nextAccept} = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'nextAccept',
+                message: `${chalk.cyan(`${chalk.bgBlue('Do you want')} to continue with the setup of ${pluginName}?`)}`,
+                default: true,
+            },
+        ]);
+        if (!nextAccept) {
+            console.log(chalk.yellow(`Setup of ${pluginName} has been skipped.`));
+            return false;
+        }
         if (pluginConfig.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
             for (const packageName of pluginConfig.requiredPackages) {
