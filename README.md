@@ -152,6 +152,8 @@ Plugins extend **TSDIAPI** by introducing new services, middleware, configuratio
 
 TSDIAPI CLI allows developers to create custom plugins that extend the framework.
 
+For detailed development instructions, see [DEV.README.md](https://github.com/unbywyd/tsdiapi-cli/blob/master/DEV.README.md).
+
 ### **Development Commands (`tsdiapi dev`)**
 
 The `dev` command provides tools for **plugin development**. It allows you to quickly scaffold a new plugin and validate its configuration.
