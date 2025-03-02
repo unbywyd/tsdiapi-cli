@@ -55,3 +55,13 @@ export function toKebabCase(input: string): string {
 export const nameToImportName = (name: string, suffix: string = "Plugin"): string => {
     return toPascalCase(name) + suffix;
 };
+
+export function toConstantCase(input: string): string {
+    return input
+        .normalize("NFD") // Normalize accents
+        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .replace(/[^a-zA-Z0-9\s]/g, "") // Remove special characters
+        .trim() // Trim spaces
+        .replace(/\s+/g, "_") // Replace spaces with underscores
+        .toUpperCase(); // Convert to uppercase
+}

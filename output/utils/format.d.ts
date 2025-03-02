@@ -5,4 +5,5 @@ export declare function normalizeName(input: string, lowercaseFirst: boolean): s
 export declare function capitalize(str: string): string;
 export declare function toKebabCase(input: string): string;
 export declare const nameToImportName: (name: string, suffix?: string) => string;
+export declare function toConstantCase(input: string): string;
 //# sourceMappingURL=format.d.ts.map

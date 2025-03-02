@@ -66,6 +66,12 @@ devCommand
     .action((name) => {
     (0, dev_plugin_1.promptPluginDetails)(name);
 });
+devCommand
+    .command('check')
+    .description('Check if the config of plugin is valid')
+    .action(() => {
+    (0, plugins_1.checkPluginConfig)();
+});
 commander_1.program
     .command('generate <pluginName> [generatorName] [options]')
     .description('Generate files using a specific plugin')

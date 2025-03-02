@@ -104,6 +104,17 @@ export const addPlugin = async (selectedPluginName: string) => {
   }
 };
 
+export async function checkPluginConfig() {
+  const currentDirectory = await findTSDIAPIServerProject();
+  if (!currentDirectory) {
+    return console.log(chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
+  }
+  const config = await getPluginMetaDataFromRoot(currentDirectory);
+  if (!config) {
+    return console.log(chalk.red(`No plugin configuration found`));
+  }
+  return true;
+}
 export async function getPluginMetaDataFromRoot(packagePath: string) {
   const configPath = path.join(packagePath, 'tsdiapi.config.json');
   if (!fs.existsSync(configPath)) {

@@ -17,6 +17,11 @@ export interface PluginInquirerOption {
     when?: string;
     inquirer?: Partial<Question>;
 }
+export interface PluginConfigVariable extends PluginInquirerOption {
+    type: AppParam['type'];
+    default?: string | number | boolean;
+    configurable: boolean;
+}
 export interface PluginGeneratorArg extends PluginInquirerOption {
 }
 export interface PluginGenerator {
@@ -31,11 +36,7 @@ export interface PluginGenerator {
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
 }
-export interface PluginConfigVariable extends PluginInquirerOption {
-    type: AppParam['type'];
-    default?: string | number | boolean;
-    configurable: boolean;
-}
+
 
 export interface PluginFileMapping {
     source: string;
@@ -310,3 +311,4 @@ export function validatePluginConfig(config: PluginMetadata): boolean {
         return false;
     }
 }
+

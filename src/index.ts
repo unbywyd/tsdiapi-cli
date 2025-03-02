@@ -2,7 +2,7 @@
 import { program } from 'commander'
 import { initProject } from './commands/initProject'
 import { CurrentVersion } from './config'
-import { addPlugin, updatePlugin } from './utils/plugins'
+import { addPlugin, checkPluginConfig, updatePlugin } from './utils/plugins'
 import { generate } from './utils/generate'
 import qs from 'qs'
 import { toSetupPlugin } from './utils/setup-plugin'
@@ -76,6 +76,13 @@ devCommand
   }
   );
 
+devCommand
+  .command('check')
+  .description('Check if the config of plugin is valid')
+  .action(() => {
+    checkPluginConfig();
+  }
+  );
 
 program
   .command('generate <pluginName> [generatorName] [options]')

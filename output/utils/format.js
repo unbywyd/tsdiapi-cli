@@ -7,6 +7,7 @@ exports.toLowerCase = toLowerCase;
 exports.normalizeName = normalizeName;
 exports.capitalize = capitalize;
 exports.toKebabCase = toKebabCase;
+exports.toConstantCase = toConstantCase;
 function toCamelCase(input) {
     return normalizeName(input, true);
 }
@@ -49,4 +50,13 @@ const nameToImportName = (name, suffix = "Plugin") => {
     return toPascalCase(name) + suffix;
 };
 exports.nameToImportName = nameToImportName;
+function toConstantCase(input) {
+    return input
+        .normalize("NFD") // Normalize accents
+        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .replace(/[^a-zA-Z0-9\s]/g, "") // Remove special characters
+        .trim() // Trim spaces
+        .replace(/\s+/g, "_") // Replace spaces with underscores
+        .toUpperCase(); // Convert to uppercase
+}
 //# sourceMappingURL=format.js.map
