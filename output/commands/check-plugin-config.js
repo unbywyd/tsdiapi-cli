@@ -1,7 +1,6 @@
 import chalk from "chalk";
-import { findTSDIAPIServerProject } from "../utils/app-finder";
-import { getPluginMetaDataFromRoot } from "../utils/plg-metadata";
-
+import { findTSDIAPIServerProject } from "../utils/app-finder.js";
+import { getPluginMetaDataFromRoot } from "../utils/plg-metadata.js";
 export async function checkPluginConfig() {
     const currentDirectory = await findTSDIAPIServerProject();
     if (!currentDirectory) {
@@ -13,3 +12,4 @@ export async function checkPluginConfig() {
     }
     return true;
 }
+//# sourceMappingURL=check-plugin-config.js.map

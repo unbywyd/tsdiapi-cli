@@ -1,95 +1,74 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.addPlugin = void 0;
-const chalk_1 = __importDefault(require("chalk"));
-const config_1 = require("../config");
-const path_1 = __importDefault(require("path"));
-const ora_1 = __importDefault(require("ora"));
-const npm_1 = require("../utils/npm");
-const format_1 = require("../utils/format");
-const setup_plugin_1 = require("../utils/setup-plugin");
-const inquirer_1 = require("../utils/inquirer");
-const app_finder_1 = require("../utils/app-finder");
-const is_plg_installed_1 = require("../utils/is-plg-installed");
-const app_plg_to_app_1 = require("../utils/app-plg-to-app");
-const plg_metadata_1 = require("../utils/plg-metadata");
-const addPlugin = async (selectedPluginName) => {
+import chalk from 'chalk';
+import path from 'path';
+import ora from 'ora';
+import { getPackageName } from '../config.js';
+import { packageExistsOnNpm, runPostInstall } from '../utils/npm.js';
+import { nameToImportName } from '../utils/format.js';
+import { setupCommon } from '../utils/setup-plugin.js';
+import { findTSDIAPIServerProject } from '../utils/app-finder.js';
+import { isPackageInstalled } from '../utils/is-plg-installed.js';
+import { addPluginToApp } from '../utils/app-plg-to-app.js';
+import { getPluginMetadata } from '../utils/plg-metadata.js';
+export const addPlugin = async (selectedPluginName) => {
     try {
-        const spinner = (0, ora_1.default)().start();
-        spinner.text = chalk_1.default.blue("🔍 Searching for an existing TSDIAPI project...");
-        const currentDirectory = await (0, app_finder_1.findTSDIAPIServerProject)();
+        const spinner = ora().start();
+        spinner.text = chalk.blue("🔍 Searching for an existing TSDIAPI project...");
+        const currentDirectory = await findTSDIAPIServerProject();
         if (!currentDirectory) {
-            spinner.fail(chalk_1.default.red("❌ No package.json found or @tsdiapi/server is not detected."));
+            spinner.fail(chalk.red("❌ No package.json found or @tsdiapi/server is not detected."));
             return;
         }
-        const appFilePath = path_1.default.resolve(`${currentDirectory}/src`, "main.ts");
-        const packageName = (0, config_1.getPackageName)(selectedPluginName);
+        const appFilePath = path.resolve(`${currentDirectory}/src`, "main.ts");
+        const packageName = getPackageName(selectedPluginName);
         if (!packageName?.startsWith("@tsdiapi/")) {
-            spinner.fail(chalk_1.default.red(`❌ Invalid plugin: ${packageName}. Must start with @tsdiapi/`));
+            spinner.fail(chalk.red(`❌ Invalid plugin: ${packageName}. Must start with @tsdiapi/`));
             return;
         }
-        spinner.text = chalk_1.default.blue(`🔎 Checking if ${packageName} exists on npm...`);
-        const packageExists = await (0, npm_1.packageExistsOnNpm)(packageName);
+        spinner.text = chalk.blue(`🔎 Checking if ${packageName} exists on npm...`);
+        const packageExists = await packageExistsOnNpm(packageName);
         if (!packageExists) {
-            spinner.fail(chalk_1.default.red(`❌ Package ${packageName} does not exist on npm.`));
+            spinner.fail(chalk.red(`❌ Package ${packageName} does not exist on npm.`));
             return;
         }
-        const isInstalled = (0, is_plg_installed_1.isPackageInstalled)(currentDirectory, packageName);
+        const isInstalled = isPackageInstalled(currentDirectory, packageName);
         if (!isInstalled) {
-            spinner.text = chalk_1.default.blue(`📥 Installing ${packageName}...`);
-            await (0, app_plg_to_app_1.addPluginToApp)(appFilePath, (0, format_1.nameToImportName)(selectedPluginName), packageName, currentDirectory);
-            spinner.succeed(chalk_1.default.green(`✅ Successfully added ${packageName} to the application.`));
+            spinner.text = chalk.blue(`📥 Installing ${packageName}...`);
+            await addPluginToApp(appFilePath, nameToImportName(selectedPluginName), packageName, currentDirectory);
+            spinner.succeed(chalk.green(`✅ Successfully added ${packageName} to the application.`));
         }
-        spinner.text = chalk_1.default.blue(`🔍 Checking setup configuration for ${packageName}...`);
-        const config = await (0, plg_metadata_1.getPluginMetadata)(currentDirectory, packageName);
+        spinner.text = chalk.blue(`🔍 Checking setup configuration for ${packageName}...`);
+        const config = await getPluginMetadata(currentDirectory, packageName);
         if (isInstalled) {
             if (!config) {
-                spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${packageName} is already installed.`));
+                spinner.warn(chalk.yellow(`⚠️ Plugin ${packageName} is already installed.`));
                 return;
             }
         }
         if (!config) {
-            spinner.warn(chalk_1.default.yellow(`⚠️ No additional setup required for ${packageName}.`));
-            spinner.succeed(chalk_1.default.green(`✅ Plugin ${packageName} installed successfully.`));
+            spinner.warn(chalk.yellow(`⚠️ No additional setup required for ${packageName}.`));
+            spinner.succeed(chalk.green(`✅ Plugin ${packageName} installed successfully.`));
         }
         else {
             if (config.postInstall) {
-                spinner.text = chalk_1.default.blue(`⚙️ Running post-install script for ${packageName}...`);
-                console.log(chalk_1.default.blue(`⚙️ Running post-install script for ${packageName}...`));
-                await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.postInstall);
-                spinner.succeed(chalk_1.default.green(`✅ Post-install script executed.`));
+                spinner.text = chalk.blue(`⚙️ Running post-install script for ${packageName}...`);
+                console.log(chalk.blue(`⚙️ Running post-install script for ${packageName}...`));
+                await runPostInstall(selectedPluginName, currentDirectory, config.postInstall);
+                spinner.succeed(chalk.green(`✅ Post-install script executed.`));
             }
-            spinner.text = chalk_1.default.blue(`🔧 Configuring ${packageName}...`);
+            spinner.text = chalk.blue(`🔧 Configuring ${packageName}...`);
             spinner.stop();
-            const result = await (0, setup_plugin_1.setupCommon)(packageName, currentDirectory, config);
+            const result = await setupCommon(packageName, currentDirectory, config);
             if (!result) {
-                spinner.fail(chalk_1.default.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
+                spinner.fail(chalk.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
                 return;
             }
-            try {
-                if (config.afterInstall && result) {
-                    const cond = config.afterInstall?.when ? (0, inquirer_1.convertWhenToFunction)(config.afterInstall.when)(result) : true;
-                    if (cond) {
-                        console.log(chalk_1.default.blue(`⚙️ Running after-install script for ${packageName}...`));
-                        await (0, npm_1.runPostInstall)(selectedPluginName, currentDirectory, config.afterInstall?.command);
-                        spinner.succeed(chalk_1.default.green(`✅ After-install script executed.`));
-                    }
-                }
-            }
-            catch (error) {
-                spinner.fail(chalk_1.default.red(`❌ Error running after-setup script: ${error.message}`));
-            }
-            spinner.succeed(chalk_1.default.green(`✅ Configuration for ${packageName} completed.`));
+            spinner.succeed(chalk.green(`✅ Configuration for ${packageName} completed.`));
         }
-        console.log(chalk_1.default.green(`\n🎉 Plugin ${chalk_1.default.bold(selectedPluginName)} installed successfully! 🚀\n`));
+        console.log(chalk.green(`\n🎉 Plugin ${chalk.bold(selectedPluginName)} installed successfully! 🚀\n`));
     }
     catch (error) {
-        console.error(chalk_1.default.red("❌ An unexpected error occurred: "), error.message);
+        console.error(chalk.red("❌ An unexpected error occurred: "), error.message);
         process.exit(1);
     }
 };
-exports.addPlugin = addPlugin;
 //# sourceMappingURL=add-plugin.js.map

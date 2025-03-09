@@ -1,19 +1,22 @@
 
-import { getPackageName } from '../config';
 import chalk from "chalk"
 import inquirer from "inquirer";
 import fs from "fs-extra";
-import { toConstantCase, toLowerCase } from "../utils/format";
 import path from "path";
-import { CommandWithCondition, PluginConfigVariable, PluginFileMapping, PluginMetadata } from '../utils/plugins-configuration';
-import { packageExistsOnNpm } from '../utils/npm';
 import ora from 'ora';
-import { exec } from 'child_process'
 import util from 'util'
-import { devBuildHandlebarsTemplate } from '../utils/handlebars';
-async function loadBoxen() {
-    return (await eval('import("boxen")')).default;
-}
+import boxen from 'boxen';
+import { exec } from 'child_process'
+import { toConstantCase, toLowerCase } from "../utils/format.js";
+import { getPackageName } from '../config.js';
+import { CommandWithCondition, PluginConfigVariable, PluginFileMapping, PluginMetadata } from '../utils/plugins-configuration.js';
+import { packageExistsOnNpm } from '../utils/npm.js';
+import { devBuildHandlebarsTemplate } from '../utils/handlebars.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const execAsync = util.promisify(exec)
 
@@ -320,7 +323,6 @@ ${chalk.gray('💡 Questions, feedback, or need approval for publishing?')}
 ${chalk.cyan('📧 Contact:')} ${chalk.white('unbywyd@gmail.com')}
 `;
 
-        const boxen = await loadBoxen();
         console.log(boxen(message, {
             padding: 1,
             margin: 1,

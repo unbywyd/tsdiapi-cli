@@ -1,23 +1,24 @@
-import { getPackageName } from './../config';
+import { getPackageName } from './../config.js';
 import inquirer, { Question } from 'inquirer';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
 import { glob } from "glob";
-import { applyTransform, convertWhenToFunction, validateInput } from './inquirer';
-import { PluginConfigVariable, PluginFileMapping, PluginFileModification, PluginMetadata } from './plugins-configuration';
-import { findNearestPackageJson, isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath } from './cwd';
-import { updateAllEnvFilesWithVariable } from './env';
-import { addAppConfigParams } from './app.config';
-import { fileModifications } from './modifications';
-import { toPascalCase } from './format';
-import Handlebars from './handlebars';
-import { findTSDIAPIServerProject } from './app-finder';
-import { isPackageInstalled } from './is-plg-installed';
-import { getPluginMetadata, getPluginMetaDataFromRoot } from './plg-metadata';
-async function loadBoxen() {
-    return (await eval('import("boxen")')).default;
-}
+import { applyTransform, convertWhenToFunction, validateInput } from './inquirer.js';
+import { PluginConfigVariable, PluginFileMapping, PluginMetadata } from './plugins-configuration.js';
+import { findNearestPackageJson, isDirectoryPath, replacePlaceholdersInPath } from './cwd.js';
+import { updateAllEnvFilesWithVariable } from './env.js';
+import { addAppConfigParams } from './app.config.js';
+import { fileModifications } from './modifications.js';
+import { toPascalCase } from './format.js';
+import Handlebars from './handlebars.js';
+import { findTSDIAPIServerProject } from './app-finder.js';
+import { isPackageInstalled } from './is-plg-installed.js';
+import { getPluginMetadata, getPluginMetaDataFromRoot } from './plg-metadata.js';
+import { checkPrismaExist } from './check-prisma-exists.js';
+import { applyPrismaScripts } from './apply-prisma-scripts.js';
+import boxen from 'boxen';
+import { runPostInstall } from './npm.js';
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
     return {
@@ -67,7 +68,6 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
     }
 }
 
-
 export async function setupCommon(pluginName: string, projectDir: string, pluginConfig: PluginMetadata): Promise<Record<string, any> | false> {
     try {
 
@@ -88,6 +88,28 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 }
             }
         }
+        if (pluginConfig?.prisma?.required) {
+            const prismaExists = await checkPrismaExist(projectDir);
+            if (pluginConfig.prisma.scripts?.length) {
+                const prismaScripts = pluginConfig.prisma.scripts;
+                console.log(chalk.yellowBright(`⚠️ The plugin ${pluginName} requires Prisma and will extend it by executing the following scripts:`));
+                for (const script of prismaScripts) {
+                    console.log(chalk.yellow(`- ${script.description}`));
+                }
+            } else {
+                console.log(chalk.yellowBright(`⚠️The plugin ${pluginName} requires Prisma`));
+            }
+            console.log(chalk.blue(`Checking required dependencies for plugin ${pluginName}...`));
+            for (const message of prismaExists?.results) {
+                console.log(`- ${message}`);
+            }
+            if (!prismaExists.prismaExist) {
+                console.log(chalk.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
+                console.log(chalk.red(`Please install Prisma via ${chalk.cyan('tsdiapi plugins add @tsdiapi/prisma')} or manually and run ${chalk.cyan('prisma init')}`));
+                console.log(chalk.yellow(`Please ensure all required dependencies are met, then return to configuration using the command ${chalk.cyan(`tsdiapi plugins config ${pluginName}`)}`));
+                return false;
+            }
+        }
 
         if (pluginConfig.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
@@ -95,35 +117,34 @@ export async function setupCommon(pluginName: string, projectDir: string, plugin
                 const isInstalled = await isPackageInstalled(projectDir, packageName);
                 if (!isInstalled) {
                     if (packageName.startsWith('@tsdiapi')) {
-                        packagesFailHints.push(`${chalk.red('✘')} ${packageName} - Install with: ${chalk.cyan(`tsdiapi plugins add ${packageName}`)}`);
+                        packagesFailHints.push(`${chalk.red('❌')} ${packageName} - Install with: ${chalk.cyan(`tsdiapi plugins config ${packageName}`)}`);
                     } else {
-                        packagesFailHints.push(`${chalk.red('✘')} ${packageName} - Install with: ${chalk.cyan(`npm install ${packageName}`)}`);
+                        packagesFailHints.push(`${chalk.red('❌')} ${packageName} - Install with: ${chalk.cyan(`npm install ${packageName}`)}`);
                     }
                 } else {
-                    packagesSuccessHints.push(`${chalk.green('✔')} ${packageName} - Already installed`);
+                    packagesSuccessHints.push(`${chalk.green('✅')} ${packageName} - Already installed`);
                 }
             }
         }
+
         if (pluginConfig?.requiredPaths?.length) {
             console.log(chalk.blue(`Checking required paths for plugin ${pluginName}...`));
             for (const requiredPath of pluginConfig.requiredPaths) {
                 const fullPath = path.join(projectDir, requiredPath);
                 if (!fs.existsSync(fullPath)) {
-                    pathFailHints.push(`${chalk.red('✘')} ${requiredPath} - File or directory not found`);
+                    pathFailHints.push(`${chalk.red('❌')} ${requiredPath} - File or directory not found`);
                 } else {
-                    pathSuccessHints.push(`${chalk.green('✔')} ${requiredPath} - Found`);
+                    pathSuccessHints.push(`${chalk.green('✅')} ${requiredPath} - Found`);
                 }
             }
         }
 
-        const boxen = await loadBoxen();
 
         if (packagesFailHints.length || pathFailHints.length || packagesSuccessHints.length || pathSuccessHints.length || beforeMessages.length) {
             let sections = [];
 
             if (beforeMessages.length) {
-                sections.push(`${chalk.bold.cyan('Pre-Setup Messages:')}
-${beforeMessages.join('\n')}`);
+                sections.push(...beforeMessages);
             }
 
             if (packagesSuccessHints.length || pathSuccessHints.length) {
@@ -135,18 +156,22 @@ ${[...packagesSuccessHints, ...pathSuccessHints].join('\n')}`);
                 sections.push(`${chalk.bold.red('❌ Missing Dependencies:')}
 ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             }
+            if (packagesFailHints.length) {
+                sections.push(chalk.yellow('Ensure all required dependencies are met before installation.'));
+            }
 
-            const message = sections.join('\n\n') + '\n' + chalk.yellow('Ensure all required dependencies are met before installation.');
-
-            console.log(boxen(message, {
-                padding: 1,
-                margin: 1,
-                borderStyle: 'round',
-                borderColor: 'yellow'
-            }));
+            if (sections.length) {
+                const message = sections.join('\n');
+                console.log(boxen(message, {
+                    padding: 1,
+                    margin: 1,
+                    borderStyle: 'round',
+                    borderColor: 'blue'
+                }));
+            }
         }
 
-        if(packagesFailHints.length || pathFailHints.length) {
+        if (packagesFailHints.length || pathFailHints.length) {
             console.log(chalk.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
             return false;
         }
@@ -164,9 +189,6 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             console.log(chalk.yellow(`Setup of ${pluginName} has been skipped.`));
             return false;
         }
-
-
-
 
         let handlebarsPayload = {
             name: pluginConfig.name,
@@ -246,6 +268,21 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
 
         const packagePath = path.resolve(projectDir, 'node_modules', pluginName);
 
+        const prismaScripts = pluginConfig?.prisma?.scripts || [];
+        if (prismaScripts?.length) {
+            try {
+                const succesInstalled = await applyPrismaScripts(projectDir, prismaScripts, payload);
+                if (!succesInstalled) {
+                    console.error(chalk.redBright(`Skipping Installation of ${pluginName}.`));
+                    console.log(chalk.yellow(`Please fix the issue and try configuring the plugin again using the command ${chalk.cyan(`tsdiapi plugins config ${pluginName}`)}`));
+                    return false;
+                }
+            } catch (e) {
+                console.error(chalk.red(`Error while setting up ${pluginName} settings: ${e.message}`));
+                return false;
+            }
+        }
+
         if (pluginConfig.files && pluginConfig.files.length) {
             await copyPluginFiles(packagePath, projectDir, pluginConfig.files, payload);
         }
@@ -264,6 +301,26 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
                     console.error(chalk.red(`Error while rendering post message: ${e.message}`));
                 }
             }
+        }
+
+        try {
+            const configAfterInstallCommand = pluginConfig.afterInstall?.command || '';
+            if (pluginConfig.afterInstall && pluginConfig) {
+                const cond = pluginConfig.afterInstall?.when ? convertWhenToFunction(pluginConfig.afterInstall.when)(payload) : true;
+                if (cond) {
+                    console.log(chalk.blue(`⚙️ Running after-install script for ${pluginName}...`));
+                    await runPostInstall(pluginName, projectDir, pluginConfig.afterInstall?.command);
+                    console.log(chalk.green(`✅ After-install script executed.`));
+                }
+            }
+            if ((payload && pluginConfig?.prisma?.scripts?.length) && !configAfterInstallCommand.includes('prisma')) {
+                const command = 'npx prisma generate';
+                console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
+                await runPostInstall(pluginName, projectDir, command);
+                console.log(chalk.green(`✅ Prisma client generated.`));
+            }
+        } catch (error) {
+            console.log(chalk.red(`❌ Error running after-setup script: ${error.message}`));
         }
 
         return payload;
@@ -392,5 +449,14 @@ export async function copyPluginFiles(packagePath: string, projectDir: string, m
 
     } catch (error) {
         console.error(`❌ Error copying plugin files: ${error.message}`);
+    }
+}
+
+export function replaceSafeVariables(command: string, variables: Record<string, string>): string {
+    try {
+        return Handlebars.compile(command)(variables);
+    } catch (error) {
+        console.error(chalk.red(`❌ Error while replacing variables: ${error.message}`));
+        return command;
     }
 }

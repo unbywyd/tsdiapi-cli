@@ -1,5 +1,5 @@
 import { Question } from "inquirer";
-import { AppParam } from "./app.config";
+import { AppParam } from "./app.config.js";
 export interface CommandWithCondition {
     when?: string;
     command: string;
@@ -20,6 +20,11 @@ export interface PluginConfigVariable extends PluginInquirerOption {
 }
 export interface PluginGeneratorArg extends PluginInquirerOption {
 }
+export interface PrismaScript {
+    description: string;
+    command: string;
+    when?: string;
+}
 export interface PluginGenerator {
     name: string;
     description?: string;
@@ -31,6 +36,7 @@ export interface PluginGenerator {
     afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
+    prismaScripts?: PrismaScript[];
 }
 export interface PluginFileMapping {
     source: string;
@@ -62,6 +68,10 @@ export interface PluginMetadata {
     postFileModifications?: Array<PluginFileModification>;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
+    prisma?: {
+        required: boolean;
+        scripts?: Array<PrismaScript>;
+    };
 }
 export declare function validatePluginConfig(config: PluginMetadata): boolean;
 //# sourceMappingURL=plugins-configuration.d.ts.map

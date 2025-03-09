@@ -5,4 +5,4 @@
  * @returns {Promise<void>} - A promise that resolves after the plugin is updated.
  */
 export declare const updatePlugin: (sourceName: string) => Promise<void>;
-//# sourceMappingURL=update-plg.d.ts.map
+//# sourceMappingURL=update-plugin.d.ts.map

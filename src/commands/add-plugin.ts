@@ -1,15 +1,15 @@
 import chalk from 'chalk'
-import { getPackageName } from '../config'
 import path from 'path'
 import ora from 'ora'
-import { packageExistsOnNpm, runPostInstall } from '../utils/npm'
-import { nameToImportName } from '../utils/format'
-import { setupCommon } from '../utils/setup-plugin'
-import { convertWhenToFunction } from '../utils/inquirer'
-import { findTSDIAPIServerProject } from '../utils/app-finder'
-import { isPackageInstalled } from '../utils/is-plg-installed'
-import { addPluginToApp } from '../utils/app-plg-to-app'
-import { getPluginMetadata } from '../utils/plg-metadata'
+import { getPackageName } from '../config.js'
+import { packageExistsOnNpm, runPostInstall } from '../utils/npm.js'
+import { nameToImportName } from '../utils/format.js'
+import { setupCommon } from '../utils/setup-plugin.js'
+import { convertWhenToFunction } from '../utils/inquirer.js'
+import { findTSDIAPIServerProject } from '../utils/app-finder.js'
+import { isPackageInstalled } from '../utils/is-plg-installed.js'
+import { addPluginToApp } from '../utils/app-plg-to-app.js'
+import { getPluginMetadata } from '../utils/plg-metadata.js'
 
 export const addPlugin = async (selectedPluginName: string) => {
     try {
@@ -77,19 +77,6 @@ export const addPlugin = async (selectedPluginName: string) => {
             if (!result) {
                 spinner.fail(chalk.red(`❌ Plugin not configured correctly. Please check the logs for more information.`));
                 return;
-            }
-            try {
-                if (config.afterInstall && result) {
-
-                    const cond = config.afterInstall?.when ? convertWhenToFunction(config.afterInstall.when)(result) : true;
-                    if (cond) {
-                        console.log(chalk.blue(`⚙️ Running after-install script for ${packageName}...`));
-                        await runPostInstall(selectedPluginName, currentDirectory, config.afterInstall?.command);
-                        spinner.succeed(chalk.green(`✅ After-install script executed.`));
-                    }
-                }
-            } catch (error) {
-                spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
             }
             spinner.succeed(chalk.green(`✅ Configuration for ${packageName} completed.`));
         }

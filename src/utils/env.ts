@@ -2,7 +2,6 @@ import fs from 'fs-extra'
 import path from 'path'
 import chalk from 'chalk'
 
-
 /**
  * Updates or adds a key-value pair in the .env file.
  *

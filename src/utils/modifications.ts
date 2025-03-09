@@ -1,9 +1,9 @@
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
-import { PluginFileModification } from './plugins-configuration';
-import Handlebars from "./handlebars";
-import { convertWhenToFunction } from './inquirer';
+import { PluginFileModification } from './plugins-configuration.js';
+import Handlebars from "./handlebars.js";
+import { convertWhenToFunction } from './inquirer.js';
 
 export async function fileModifications(pluginName: string, projectDir: string, modifications: Array<PluginFileModification>, payload: Record<string, any> = {}): Promise<void> {
     try {

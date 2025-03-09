@@ -1,22 +1,26 @@
-import { getCdCommand, isDirSuitableToNewProject, isPathSuitableToNewProject } from '../utils/cwd';
-import { installBaseDependencies, runUnsafeNpmScript } from '../utils/npm';
-import { DefaultHost } from '../config';
 import chalk from "chalk";
 import inquirer from "inquirer";
 import path from "path";
 import fs from "fs-extra";
-import { DefaultPort } from "../config";
 import ora from 'ora';
 import figlet from "figlet";
-import { generateFeature } from './generate';
-import { buildHandlebarsTemplate } from '../utils/handlebars';
-import { findTSDIAPIServerProject } from '../utils/app-finder';
-async function loadGradient() {
-    return (await eval('import("gradient-string")')).default;
-}
-async function loadBoxen() {
-    return (await eval('import("boxen")')).default;
-}
+import boxen from "boxen";
+import { pastel } from "gradient-string";
+import { getCdCommand, isDirSuitableToNewProject, isPathSuitableToNewProject } from '../utils/cwd.js';
+import { installBaseDependencies, runUnsafeNpmScript } from '../utils/npm.js';
+import { DefaultHost } from '../config.js';
+import { DefaultPort } from "../config.js";
+import { generateFeature } from './generate.js';
+import { buildHandlebarsTemplate } from '../utils/handlebars.js';
+import { findTSDIAPIServerProject } from '../utils/app-finder.js';
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+
 type CreateProjectOptions = {
     name?: string;
     host?: string;
@@ -50,8 +54,7 @@ export async function initProject(_installpath: string, options: CreateProjectOp
             }
         }
 
-        const gradient = await loadGradient();
-        console.log(gradient.pastel.multiline(figlet.textSync("TSDIAPI", { horizontalLayout: "full" })));
+        console.log(pastel.multiline(figlet.textSync("TSDIAPI", { horizontalLayout: "full" })));
         console.log(chalk.yellow("\n✨ Welcome to the TSDIAPI project initializer!\n"));
 
         const questions: Array<any> = [];
@@ -183,7 +186,6 @@ export async function initProject(_installpath: string, options: CreateProjectOp
         ${chalk.cyan('📧 Contact:')} ${chalk.white('unbywyd@gmail.com')}
         `;
 
-        const boxen = await loadBoxen();
         console.log(boxen(message, {
             padding: 1,
             margin: 1,

@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from "path";
-import { PluginMetadata, validatePluginConfig } from './plugins-configuration';
+import { PluginMetadata, validatePluginConfig } from './plugins-configuration.js';
 
 export async function getPluginMetaDataFromRoot(packagePath: string) {
     const configPath = path.join(packagePath, 'tsdiapi.config.json');

@@ -1,13 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.addAppConfigParams = addAppConfigParams;
-const path_1 = __importDefault(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
-const ts_morph_1 = require("ts-morph");
-const format_1 = require("./format");
+import path from 'path';
+import chalk from 'chalk';
+import { Project } from 'ts-morph';
+import { capitalize } from './format.js';
 // Utility function to ensure imports are present or add them if missing
 function ensureImports(sourceFile, imports) {
     imports.forEach(({ name, moduleSpecifier }) => {
@@ -32,11 +26,11 @@ function ensureImports(sourceFile, imports) {
         }
     });
 }
-async function addAppConfigParams(projectDir, params) {
+export async function addAppConfigParams(projectDir, params) {
     try {
-        const appConfigPath = path_1.default.join(projectDir, 'src/app.config.ts');
+        const appConfigPath = path.join(projectDir, 'src/app.config.ts');
         // Initialize ts-morph project
-        const project = new ts_morph_1.Project();
+        const project = new Project();
         const sourceFile = project.addSourceFileAtPath(appConfigPath);
         // Ensure required imports are present
         ensureImports(sourceFile, [
@@ -55,7 +49,7 @@ async function addAppConfigParams(projectDir, params) {
             // Check if the property already exists
             const existingProperty = classDeclaration.getProperty(param.key);
             if (existingProperty) {
-                console.log(chalk_1.default.yellow(`Property '${param.key}' already exists in ConfigSchema.`));
+                console.log(chalk.yellow(`Property '${param.key}' already exists in ConfigSchema.`));
                 return;
             }
             // Add the new property with decorators based on the type
@@ -68,7 +62,7 @@ async function addAppConfigParams(projectDir, params) {
                 name: param.key,
                 type: param.type,
             });
-            property.addDecorator({ name: 'Is' + (0, format_1.capitalize)(param.type), arguments: [] });
+            property.addDecorator({ name: 'Is' + capitalize(param.type), arguments: [] });
             property.addDecorator({ name: 'Expose', arguments: [] });
             property.addDecorator({
                 name: 'Type',
@@ -77,10 +71,10 @@ async function addAppConfigParams(projectDir, params) {
         });
         // Save the modified file
         await sourceFile.save();
-        console.log(chalk_1.default.green('app.config.ts has been successfully updated.'));
+        console.log(chalk.green('app.config.ts has been successfully updated.'));
     }
     catch (error) {
-        console.error(chalk_1.default.red('An error occurred while updating app.config.ts:'), error.message);
+        console.error(chalk.red('An error occurred while updating app.config.ts:'), error.message);
     }
 }
 //# sourceMappingURL=app.config.js.map

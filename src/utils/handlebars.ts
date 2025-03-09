@@ -1,7 +1,12 @@
 import Handlebars from "handlebars";
-import { toCamelCase, toKebabCase, toLowerCase, toPascalCase } from "./format";
+import { toCamelCase, toKebabCase, toLowerCase, toPascalCase } from "./format.js";
 import path from "path";
 import fs from 'fs-extra'
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 Handlebars.registerHelper("camelCase", (str) => {
     if (typeof str !== "string") return str;

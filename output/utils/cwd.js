@@ -1,44 +1,30 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.findNearestPackageJson = findNearestPackageJson;
-exports.getCdCommand = getCdCommand;
-exports.isValidProjectPath = isValidProjectPath;
-exports.isDirSuitableToNewProject = isDirSuitableToNewProject;
-exports.isPathSuitableToNewProject = isPathSuitableToNewProject;
-exports.resolveTargetDirectory = resolveTargetDirectory;
-exports.isDirectoryPath = isDirectoryPath;
-exports.isValidRequiredPath = isValidRequiredPath;
-exports.replacePlaceholdersInPath = replacePlaceholdersInPath;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const chalk_1 = __importDefault(require("chalk"));
+import fs from "fs";
+import path from "path";
+import chalk from 'chalk';
 /**
  * Finds the nearest package.json file from the given directory up to the root.
  * @param startDir The directory to start searching from (defaults to process.cwd()).
  * @returns The path to package.json or null if not found.
  */
-function findNearestPackageJson(startDir = process.cwd()) {
-    const root = path_1.default.parse(startDir).root; // System root ("/" on Unix, "C:\" on Windows)
-    let currentDir = path_1.default.resolve(startDir);
+export function findNearestPackageJson(startDir = process.cwd()) {
+    const root = path.parse(startDir).root; // System root ("/" on Unix, "C:\" on Windows)
+    let currentDir = path.resolve(startDir);
     do {
-        const packageJsonPath = path_1.default.join(currentDir, "package.json");
-        if (fs_1.default.existsSync(packageJsonPath)) {
+        const packageJsonPath = path.join(currentDir, "package.json");
+        if (fs.existsSync(packageJsonPath)) {
             return packageJsonPath;
         }
-        currentDir = path_1.default.dirname(currentDir);
+        currentDir = path.dirname(currentDir);
     } while (currentDir !== root); // Stop at the system root
     return null; // No package.json found
 }
-function getCdCommand(targetPath) {
+export function getCdCommand(targetPath) {
     const cwd = process.cwd();
-    const fullPath = path_1.default.resolve(targetPath);
+    const fullPath = path.resolve(targetPath);
     if (cwd === fullPath) {
         return false;
     }
-    const relativePath = path_1.default.relative(cwd, fullPath);
+    const relativePath = path.relative(cwd, fullPath);
     if (relativePath.startsWith('..')) {
         return false;
     }
@@ -51,61 +37,61 @@ function getCdCommand(targetPath) {
  * - The path does not start with "..".
  * - The path is inside the current working directory.
  */
-function isValidProjectPath(inputPath) {
+export function isValidProjectPath(inputPath) {
     const pathPartRegex = /^[a-zA-Z0-9._-]+$/; // Allow dots, underscores, and hyphens.
     try {
-        const normalizedPath = path_1.default.normalize(inputPath); // Normalize slashes
-        const parts = normalizedPath.split(path_1.default.sep); // Use platform-specific separator
+        const normalizedPath = path.normalize(inputPath); // Normalize slashes
+        const parts = normalizedPath.split(path.sep); // Use platform-specific separator
         for (const part of parts) {
             if (part === "" || part.startsWith("..") || !pathPartRegex.test(part)) {
-                console.log(chalk_1.default.red(`❌ Error: Invalid directory name "${part}".`));
+                console.log(chalk.red(`❌ Error: Invalid directory name "${part}".`));
                 return false;
             }
         }
-        const resolvedPath = path_1.default.resolve(process.cwd(), normalizedPath);
+        const resolvedPath = path.resolve(process.cwd(), normalizedPath);
         if (!resolvedPath.startsWith(process.cwd())) {
-            console.log(chalk_1.default.red(`🚨 Error: The project path must be inside the current directory.`));
+            console.log(chalk.red(`🚨 Error: The project path must be inside the current directory.`));
             return false;
         }
         return true;
     }
     catch (error) {
-        console.log(chalk_1.default.red(`❌ Error: Invalid path "${inputPath}".`));
+        console.log(chalk.red(`❌ Error: Invalid path "${inputPath}".`));
         return false;
     }
 }
-function isDirSuitableToNewProject(pathName) {
-    const projectDir = path_1.default.resolve(process.cwd(), pathName);
-    if (fs_1.default.existsSync(projectDir) && fs_1.default.readdirSync(projectDir).length > 0) {
+export function isDirSuitableToNewProject(pathName) {
+    const projectDir = path.resolve(process.cwd(), pathName);
+    if (fs.existsSync(projectDir) && fs.readdirSync(projectDir).length > 0) {
         return false;
     }
     return projectDir;
 }
-function isPathSuitableToNewProject(pathName) {
+export function isPathSuitableToNewProject(pathName) {
     if (!isValidProjectPath(pathName)) {
-        console.log(chalk_1.default.red(`🚫 Error: The project path is not valid.`));
+        console.log(chalk.red(`🚫 Error: The project path is not valid.`));
         return false;
     }
     return pathName;
 }
-function resolveTargetDirectory(cwd, name) {
-    const normalized = path_1.default.normalize(name).replace(/\\/g, "/");
+export function resolveTargetDirectory(cwd, name) {
+    const normalized = path.normalize(name).replace(/\\/g, "/");
     const lastSlashIndex = normalized.lastIndexOf("/");
     if (lastSlashIndex === -1) {
         return cwd;
     }
     const directory = normalized.substring(0, lastSlashIndex);
-    return path_1.default.resolve(cwd, directory);
+    return path.resolve(cwd, directory);
 }
-function isDirectoryPath(inputPath) {
-    const normalized = path_1.default.normalize(inputPath).replace(/\\/g, "/");
-    return path_1.default.extname(normalized) === "";
+export function isDirectoryPath(inputPath) {
+    const normalized = path.normalize(inputPath).replace(/\\/g, "/");
+    return path.extname(normalized) === "";
 }
-function isValidRequiredPath(requiredPath) {
+export function isValidRequiredPath(requiredPath) {
     // Forbidden glob pattern characters
     const globChars = ["*", "?", "[", "]", "{", "}"];
     // Check if the path is absolute
-    if (path_1.default.isAbsolute(requiredPath)) {
+    if (path.isAbsolute(requiredPath)) {
         return false;
     }
     // Check if the path contains glob patterns
@@ -117,18 +103,18 @@ function isValidRequiredPath(requiredPath) {
         return false;
     }
     // Get the file extension
-    const ext = path_1.default.extname(requiredPath);
+    const ext = path.extname(requiredPath);
     // The path must contain a file extension
     return ext.length > 1;
 }
-function replacePlaceholdersInPath(filePath, replacements, defaultName) {
-    const dir = path_1.default.dirname(filePath);
-    let ext = path_1.default.extname(filePath);
-    let fileName = path_1.default.basename(filePath, ext);
+export function replacePlaceholdersInPath(filePath, replacements, defaultName) {
+    const dir = path.dirname(filePath);
+    let ext = path.extname(filePath);
+    let fileName = path.basename(filePath, ext);
     fileName = fileName.replace(/\[([^\]]+)\]/g, (_, key) => replacements[key] || "");
     if (!/[a-zA-Z0-9]/.test(fileName)) {
         fileName = defaultName;
     }
-    return path_1.default.join(dir, `${fileName}${ext}`);
+    return path.join(dir, `${fileName}${ext}`);
 }
 //# sourceMappingURL=cwd.js.map

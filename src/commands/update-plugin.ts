@@ -1,9 +1,9 @@
 import chalk from 'chalk'
-import { getPackageName } from '../config'
 import util from 'util'
 import { exec } from 'child_process'
-import { findTSDIAPIServerProject } from '../utils/app-finder'
-import { isPackageInstalled } from '../utils/is-plg-installed'
+import { getPackageName } from '../config.js'
+import { findTSDIAPIServerProject } from '../utils/app-finder.js'
+import { isPackageInstalled } from '../utils/is-plg-installed.js'
 const execAsync = util.promisify(exec)
 
 

@@ -1,20 +1,22 @@
-import { getPackageName } from '../config';
+import path from "path";
 import chalk from "chalk"
 import inquirer from "inquirer";
 import fs from "fs-extra";
-import { toCamelCase, toKebabCase, toPascalCase } from "../utils/format";
-import path from "path";
-import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer';
 import { glob } from "glob";
-import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration';
-import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd';
-import { fileModifications } from '../utils/modifications';
 import ora from 'ora'
-import { runPostInstall } from '../utils/npm';
-import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars';
-import { isPackageInstalled } from '../utils/is-plg-installed';
-import { findTSDIAPIServerProject } from '../utils/app-finder';
-import { getPluginMetadata } from '../utils/plg-metadata';
+import { getPackageName } from '../config.js';
+import { toCamelCase, toKebabCase, toPascalCase } from "../utils/format.js";
+import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer.js';
+import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration.js';
+import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd.js';
+import { fileModifications } from '../utils/modifications.js';
+import { runPostInstall } from '../utils/npm.js';
+import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars.js';
+import { isPackageInstalled } from '../utils/is-plg-installed.js';
+import { findTSDIAPIServerProject } from '../utils/app-finder.js';
+import { getPluginMetadata } from '../utils/plg-metadata.js';
+import { checkPrismaExist } from "../utils/check-prisma-exists.js";
+import { applyPrismaScripts } from "../utils/apply-prisma-scripts.js";
 
 export async function generate(pluginName: string, fileName: string, generatorName?: string): Promise<void> {
     try {
@@ -97,12 +99,31 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             for (const message of currentGenerator.preMessages) {
                 try {
                     const msg = Handlebars.compile(message)(args);
-                    console.log(chalk.green(`- ${msg}`));
+                    console.log(chalk.gray(`- ${msg}`));
                 } catch (error) {
                     console.error(chalk.red(`❌ Handlebars error: ${error.message}`));
                 }
             }
         }
+
+        // Check prisma required scripts
+        if (currentGenerator?.prismaScripts?.length) {
+            const prismaExists = await checkPrismaExist(currentDirectory);
+            console.log(chalk.yellowBright(`⚠️ The generator ${pluginName} requires Prisma and will extend it by executing the following scripts:`));
+            const prismaScripts = currentGenerator.prismaScripts;
+            for (const script of prismaScripts) {
+                console.log(chalk.yellow(`- ${script.description}`));
+            }
+            console.log(chalk.blue(`Checking required dependencies for plugin ${pluginName}...`));
+            for (const message of prismaExists?.results) {
+                console.log(`- ${message}`);
+            }
+            if (!prismaExists.prismaExist) {
+                console.log(chalk.red(`Prisma is required for generator ${currentGenerator.name}!`));
+                return console.log(chalk.red(`Please install Prisma via ${chalk.cyan('tsdiapi plugins add @tsdiapi/prisma')} or manually and run ${chalk.cyan('prisma init')}`));
+            }
+        }
+
 
         if (currentGenerator.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
@@ -257,7 +278,16 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             }
         }
 
-
+        if (currentGenerator?.prismaScripts?.length) {
+            try {
+                const result = await applyPrismaScripts(currentDirectory, currentGenerator.prismaScripts, defaultObj);
+                if (!result) {
+                    return console.error(chalk.red(`Error applying Prisma scripts!`));
+                }
+            } catch (e) {
+                return console.error(chalk.red(`Error applying Prisma scripts: ${e.message}`));
+            }
+        }
         const _fileModifications = currentGenerator?.fileModifications || [];
         try {
             if (fileModifications.length) {
@@ -287,12 +317,19 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                 spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
             }
         }
+        const prismaScripts = currentGenerator.prismaScripts, afterGenerate = currentGenerator?.afterGenerate?.command || '';
+        if ((prismaScripts?.length) && !afterGenerate.includes('prisma')) {
+            const command = 'npx prisma generate';
+            console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
+            await runPostInstall(pluginName, currentDirectory, command);
+            console.log(chalk.green(`✅ Prisma client generated.`));
+        }
 
         if (currentGenerator.postMessages && currentGenerator.postMessages.length) {
             for (const message of currentGenerator.postMessages) {
                 try {
                     const msg = Handlebars.compile(message)(defaultObj);
-                    console.log(chalk.green(`- ${msg}`));
+                    console.log(chalk.gray(`- ${msg}`));
                 } catch (error) {
                     console.error(chalk.red(`❌ Handlebars error: ${error.message}`));
                 }

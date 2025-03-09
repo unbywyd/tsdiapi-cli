@@ -1,24 +1,18 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isPackageInstalled = isPackageInstalled;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-function isPackageInstalled(projectPath, packageName) {
+import fs from 'fs';
+import path from 'path';
+export function isPackageInstalled(projectPath, packageName) {
     try {
-        const nodeModulesPath = path_1.default.resolve(projectPath, 'node_modules');
-        const pathInNodeModules = path_1.default.resolve(nodeModulesPath, packageName);
-        if (fs_1.default.existsSync(pathInNodeModules)) {
+        const nodeModulesPath = path.resolve(projectPath, 'node_modules');
+        const pathInNodeModules = path.resolve(nodeModulesPath, packageName);
+        if (fs.existsSync(pathInNodeModules)) {
             return true;
         }
-        const packageJsonPath = path_1.default.resolve(projectPath, 'package.json');
-        if (!fs_1.default.existsSync(packageJsonPath)) {
+        const packageJsonPath = path.resolve(projectPath, 'package.json');
+        if (!fs.existsSync(packageJsonPath)) {
             console.error(`package.json not found in the directory: ${projectPath}`);
             return false;
         }
-        const packageJson = JSON.parse(fs_1.default.readFileSync(packageJsonPath, 'utf8'));
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
         const dependencies = packageJson.dependencies || {};
         const devDependencies = packageJson.devDependencies || {};
         const peerDependencies = packageJson.peerDependencies || {};

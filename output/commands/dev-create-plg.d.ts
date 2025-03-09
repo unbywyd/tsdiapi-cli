@@ -1,4 +1,4 @@
-import { CommandWithCondition, PluginConfigVariable, PluginFileMapping } from '../utils/plugins-configuration';
+import { CommandWithCondition, PluginConfigVariable, PluginFileMapping } from '../utils/plugins-configuration.js';
 export declare function promptPluginDetails(sourcePluginName: string): Promise<void>;
 export declare function installDependencies(projectDir: string): Promise<void>;
 export declare function promptMessages(pluginName: string, prompt: string): Promise<string[]>;

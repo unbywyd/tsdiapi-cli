@@ -5,7 +5,7 @@ import path from 'path'
 import ora from "ora";
 import fetch from 'node-fetch';
 import fs from "fs";
-import { findNearestPackageJson } from './cwd'
+import { findNearestPackageJson } from './cwd.js';
 const execAsync = util.promisify(exec)
 
 export function runUnsafeNpmScript(projectDir: string, scriptName: string) {

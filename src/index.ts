@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { program } from 'commander'
-import { initProject } from './commands/init-project'
-import { CurrentVersion } from './config'
-import { generate } from './commands/generate'
-import { toSetupPlugin } from './utils/setup-plugin'
-import { promptPluginDetails } from './commands/dev-create-plg'
-import { addPlugin } from './commands/add-plugin'
-import { updatePlugin } from './commands/update-plg'
-import { checkPluginConfig } from './commands/check-plg-config'
+import { initProject } from './commands/init-project.js'
+import { CurrentVersion } from './config.js'
+import { generate } from './commands/generate.js'
+import { toSetupPlugin } from './utils/setup-plugin.js'
+import { promptPluginDetails } from './commands/dev-create-plg.js'
+import { addPlugin } from './commands/add-plugin.js'
+import { updatePlugin } from './commands/update-plugin.js'
+import { checkPluginConfig } from './commands/check-plugin-config.js'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 

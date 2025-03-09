@@ -1,66 +1,53 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.promptPluginDetails = promptPluginDetails;
-exports.installDependencies = installDependencies;
-exports.promptMessages = promptMessages;
-exports.promptAfterInstall = promptAfterInstall;
-exports.promptRequiredPackages = promptRequiredPackages;
-exports.promptRequiredPaths = promptRequiredPaths;
-exports.promptPostInstall = promptPostInstall;
-exports.promptProvideScripts = promptProvideScripts;
-exports.promptPluginVariables = promptPluginVariables;
-exports.promptFiles = promptFiles;
-const config_1 = require("../config");
-const chalk_1 = __importDefault(require("chalk"));
-const inquirer_1 = __importDefault(require("inquirer"));
-const fs_extra_1 = __importDefault(require("fs-extra"));
-const format_1 = require("../utils/format");
-const path_1 = __importDefault(require("path"));
-const npm_1 = require("../utils/npm");
-const ora_1 = __importDefault(require("ora"));
-const child_process_1 = require("child_process");
-const util_1 = __importDefault(require("util"));
-const handlebars_1 = require("../utils/handlebars");
-async function loadBoxen() {
-    return (await eval('import("boxen")')).default;
-}
-const execAsync = util_1.default.promisify(child_process_1.exec);
-async function promptPluginDetails(sourcePluginName) {
+import chalk from "chalk";
+import inquirer from "inquirer";
+import fs from "fs-extra";
+import path from "path";
+import ora from 'ora';
+import util from 'util';
+import boxen from 'boxen';
+import { exec } from 'child_process';
+import { toConstantCase, toLowerCase } from "../utils/format.js";
+import { getPackageName } from '../config.js';
+import { packageExistsOnNpm } from '../utils/npm.js';
+import { devBuildHandlebarsTemplate } from '../utils/handlebars.js';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const execAsync = util.promisify(exec);
+export async function promptPluginDetails(sourcePluginName) {
     try {
-        const pluginName = (0, format_1.toLowerCase)(sourcePluginName);
+        const pluginName = toLowerCase(sourcePluginName);
         const regexp = /^[a-z0-9-]+$/;
         const minLen = 3;
         const maxLen = 50;
         if (!regexp.test(pluginName)) {
-            console.log(chalk_1.default.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must be lowercase and contain only letters, numbers, and hyphens.`));
+            console.log(chalk.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must be lowercase and contain only letters, numbers, and hyphens.`));
             return;
         }
         if (pluginName.length < minLen || pluginName.length > maxLen) {
-            console.log(chalk_1.default.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must be between ${minLen} and ${maxLen} characters.`));
+            console.log(chalk.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must be between ${minLen} and ${maxLen} characters.`));
             return;
         }
         const nonAcceptablePluginNames = ["feature", "controller", "service", "middleware", "plugin"];
         if (nonAcceptablePluginNames.includes(pluginName)) {
-            console.log(chalk_1.default.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must not be one of the following: ${nonAcceptablePluginNames.join(", ")}.`));
+            console.log(chalk.red(`❌ Invalid plugin name: ${pluginName}. Plugin name must not be one of the following: ${nonAcceptablePluginNames.join(", ")}.`));
             return;
         }
         const pluginFullName = pluginName.startsWith('tsdiapi') ? pluginName : 'tsdiapi-' + pluginName;
-        const pluginDir = path_1.default.join(process.cwd(), pluginFullName);
-        if (fs_extra_1.default.existsSync(pluginDir)) {
-            console.log(chalk_1.default.red(`❌ Plugin directory already exists: ${pluginDir}. Please choose a different name.`));
+        const pluginDir = path.join(process.cwd(), pluginFullName);
+        if (fs.existsSync(pluginDir)) {
+            console.log(chalk.red(`❌ Plugin directory already exists: ${pluginDir}. Please choose a different name.`));
             return;
         }
-        const packageName = (0, config_1.getPackageName)(pluginName);
-        const isExists = await (0, npm_1.packageExistsOnNpm)(packageName, true);
+        const packageName = getPackageName(pluginName);
+        const isExists = await packageExistsOnNpm(packageName, true);
         if (isExists) {
-            console.log(chalk_1.default.red(`❌ Plugin package already exists on npm: ${packageName}. Please choose a different name.`));
+            console.log(chalk.red(`❌ Plugin package already exists on npm: ${packageName}. Please choose a different name.`));
             return;
         }
-        console.log(chalk_1.default.cyan(`🔧 Configuring plugin: ${chalk_1.default.bold(pluginName)}`));
-        const answers = await inquirer_1.default.prompt([
+        console.log(chalk.cyan(`🔧 Configuring plugin: ${chalk.bold(pluginName)}`));
+        const answers = await inquirer.prompt([
             {
                 type: "input",
                 name: "description",
@@ -92,80 +79,80 @@ async function promptPluginDetails(sourcePluginName) {
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring plugin variables: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring plugin variables: ${error.message}`));
         }
         try {
             requiredPackages = await promptRequiredPackages();
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring required packages: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring required packages: ${error.message}`));
         }
         try {
             requiredPaths = await promptRequiredPaths();
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring required paths: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring required paths: ${error.message}`));
         }
         try {
             promptPost = await promptPostInstall(pluginName);
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring post-install: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring post-install: ${error.message}`));
         }
         try {
             afterInstall = await promptAfterInstall(pluginName);
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring after-install: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring after-install: ${error.message}`));
         }
         try {
             promptScripts = await promptProvideScripts(pluginName);
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring scripts: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring scripts: ${error.message}`));
         }
         try {
             preMessages = await promptMessages(pluginName, "🚀 Do you want to display messages before installing?");
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring pre-install messages: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring pre-install messages: ${error.message}`));
         }
         try {
             postMessages = await promptMessages(pluginName, "🚀 Do you want to display messages after installing?");
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring post-install messages: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring post-install messages: ${error.message}`));
         }
         let files = [];
         try {
@@ -173,27 +160,27 @@ async function promptPluginDetails(sourcePluginName) {
         }
         catch (error) {
             if (checkIfUserForsed(error)) {
-                console.log(chalk_1.default.red(`❌ User force closed the prompt with 0 null`));
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
                 process.exit(0);
             }
-            console.error(chalk_1.default.red(`❌ Error while configuring files: ${error.message}`));
+            console.error(chalk.red(`❌ Error while configuring files: ${error.message}`));
         }
-        await fs_extra_1.default.ensureDir(pluginDir);
-        console.log(chalk_1.default.cyan("📦 Creating plugin files..."));
-        const sourceDir = path_1.default.resolve(__dirname, "../dev/project/copy");
-        await fs_extra_1.default.copy(sourceDir, pluginDir);
-        console.log(chalk_1.default.cyan("📦 Creating package.json file..."));
-        const packageData = (0, handlebars_1.devBuildHandlebarsTemplate)("project/package.hbs", {
+        await fs.ensureDir(pluginDir);
+        console.log(chalk.cyan("📦 Creating plugin files..."));
+        const sourceDir = path.resolve(__dirname, "../dev/project/copy");
+        await fs.copy(sourceDir, pluginDir);
+        console.log(chalk.cyan("📦 Creating package.json file..."));
+        const packageData = devBuildHandlebarsTemplate("project/package.hbs", {
             name: pluginName,
             ...answers
         });
-        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, "package.json"), packageData);
+        await fs.writeFile(path.join(pluginDir, "package.json"), packageData);
         await installDependencies(pluginDir);
-        const packageJsonPath = path_1.default.join(pluginDir, "package.json");
-        const pkg = JSON.parse(fs_extra_1.default.readFileSync(packageJsonPath, "utf-8"));
+        const packageJsonPath = path.join(pluginDir, "package.json");
+        const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
         pkg.peerDependencies = pkg.dependencies;
         delete pkg.dependencies;
-        fs_extra_1.default.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
+        fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
         const gitignore = `
 node_modules
 # Keep environment variables out of version control
@@ -204,27 +191,27 @@ node_modules
 dist
 logs/*  
 `;
-        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, ".gitignore"), gitignore);
+        await fs.writeFile(path.join(pluginDir, ".gitignore"), gitignore);
         // README.hbs
-        console.log(chalk_1.default.cyan("📦 Creating README.md file..."));
-        const readmeData = (0, handlebars_1.devBuildHandlebarsTemplate)("project/README.hbs", {
+        console.log(chalk.cyan("📦 Creating README.md file..."));
+        const readmeData = devBuildHandlebarsTemplate("project/README.hbs", {
             name: pluginName,
             ...answers
         });
-        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, "README.md"), readmeData);
+        await fs.writeFile(path.join(pluginDir, "README.md"), readmeData);
         // index.ts
-        console.log(chalk_1.default.cyan("📦 Creating index.ts file..."));
-        const indexData = (0, handlebars_1.devBuildHandlebarsTemplate)("project/index.hbs", {
+        console.log(chalk.cyan("📦 Creating index.ts file..."));
+        const indexData = devBuildHandlebarsTemplate("project/index.hbs", {
             name: pluginName,
             ...answers
         });
-        await fs_extra_1.default.ensureDir(path_1.default.join(pluginDir, "src"));
-        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, "src/index.ts"), indexData);
-        const providerData = (0, handlebars_1.devBuildHandlebarsTemplate)("project/provider.hbs", {
+        await fs.ensureDir(path.join(pluginDir, "src"));
+        await fs.writeFile(path.join(pluginDir, "src/index.ts"), indexData);
+        const providerData = devBuildHandlebarsTemplate("project/provider.hbs", {
             name: pluginName,
             ...answers
         });
-        await fs_extra_1.default.writeFile(path_1.default.join(pluginDir, "src/provider.ts"), providerData);
+        await fs.writeFile(path.join(pluginDir, "src/provider.ts"), providerData);
         /*
         *
         *   +++
@@ -264,95 +251,94 @@ logs/*
             configData.files = files;
         }
         const configName = "tsdiapi.config.json";
-        const configPath = path_1.default.join(pluginDir, configName);
-        if (!fs_extra_1.default.existsSync(configPath)) {
-            console.log(chalk_1.default.cyan(`Creating ${configName} file...`));
-            await fs_extra_1.default.writeFile(configPath, JSON.stringify(configData, null, 2));
+        const configPath = path.join(pluginDir, configName);
+        if (!fs.existsSync(configPath)) {
+            console.log(chalk.cyan(`Creating ${configName} file...`));
+            await fs.writeFile(configPath, JSON.stringify(configData, null, 2));
         }
         if (files.length) {
-            const filesPath = path_1.default.join(pluginDir, "files");
-            await fs_extra_1.default.ensureDir(filesPath);
+            const filesPath = path.join(pluginDir, "files");
+            await fs.ensureDir(filesPath);
         }
         if (answers.giturl) {
             try {
                 process.chdir(pluginDir);
-                console.log(chalk_1.default.cyan("🚀 Initializing git repository..."));
+                console.log(chalk.cyan("🚀 Initializing git repository..."));
                 await execAsync("git init");
                 // Optional: add everything and commit
                 await execAsync('git add .');
                 await execAsync('git commit -m "Initial commit"');
                 // Optional: set remote origin
                 await execAsync(`git remote add origin ${answers.giturl}`);
-                console.log(chalk_1.default.green("✅ Git repository initialized successfully!"));
+                console.log(chalk.green("✅ Git repository initialized successfully!"));
             }
             catch (e) {
-                console.log(chalk_1.default.red(`❌ Failed to initialize git repository: ${e.message}`));
+                console.log(chalk.red(`❌ Failed to initialize git repository: ${e.message}`));
             }
             finally {
                 process.chdir(".."); // go back to original folder
             }
         }
         const message = `
-${chalk_1.default.yellow.bold('🚀 Congratulations! Your TSDIAPI plugin has been successfully created!')}
+${chalk.yellow.bold('🚀 Congratulations! Your TSDIAPI plugin has been successfully created!')}
 
-${chalk_1.default.green('🎯 You are now part of the TSDIAPI development community!')}
-${chalk_1.default.green('💡 Your plugin can extend TSDIAPI with new features, automation, and more.')}
+${chalk.green('🎯 You are now part of the TSDIAPI development community!')}
+${chalk.green('💡 Your plugin can extend TSDIAPI with new features, automation, and more.')}
 
-${chalk_1.default.cyan('🔧 To start working on your plugin, explore the generated files and documentation.')}
-${chalk_1.default.cyan('📖 Refer to the official TSDIAPI documentation for best practices.')}
+${chalk.cyan('🔧 To start working on your plugin, explore the generated files and documentation.')}
+${chalk.cyan('📖 Refer to the official TSDIAPI documentation for best practices.')}
 
-${chalk_1.default.blue.bold('📢 Want to publish your plugin?')}
+${chalk.blue.bold('📢 Want to publish your plugin?')}
 - To publish your plugin on npm under the official @tsdiapi scope:
   ✅ Ensure your plugin follows TSDIAPI’s best practices.
   ✅ Contact me to be added as a maintainer for npm publishing.
   ✅ Once approved, your plugin will be publicly available!
 
-${chalk_1.default.gray('────────────────────────────────────────────')}
-${chalk_1.default.gray('💡 Questions, feedback, or need approval for publishing?')}
-${chalk_1.default.cyan('📧 Contact:')} ${chalk_1.default.white('unbywyd@gmail.com')}
+${chalk.gray('────────────────────────────────────────────')}
+${chalk.gray('💡 Questions, feedback, or need approval for publishing?')}
+${chalk.cyan('📧 Contact:')} ${chalk.white('unbywyd@gmail.com')}
 `;
-        const boxen = await loadBoxen();
         console.log(boxen(message, {
             padding: 1,
             margin: 1,
             borderStyle: 'round',
             borderColor: 'yellow'
         }));
-        console.log(chalk_1.default.green("🎉 Plugin successfully configured! Wishing you success in development! 🚀"));
+        console.log(chalk.green("🎉 Plugin successfully configured! Wishing you success in development! 🚀"));
     }
     catch (error) {
-        console.error(chalk_1.default.red(`Error: ${error.message}`));
+        console.error(chalk.red(`Error: ${error.message}`));
     }
 }
-async function installDependencies(projectDir) {
-    console.log(chalk_1.default.blue("📦 Installing base dependencies..."));
+export async function installDependencies(projectDir) {
+    console.log(chalk.blue("📦 Installing base dependencies..."));
     const devDependencies = [
         "@tsdiapi/server", "@types/node", "typescript"
     ];
     const peerDependencies = [
         "reflect-metadata", "typedi"
     ];
-    const spinner = (0, ora_1.default)({
-        text: chalk_1.default.yellow("⏳ Installing dev dependencies..."),
+    const spinner = ora({
+        text: chalk.yellow("⏳ Installing dev dependencies..."),
         spinner: "dots"
     }).start();
     try {
         await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk_1.default.green("✅ Dev dependencies installed!"));
-        spinner.text = chalk_1.default.yellow("🔗 Installing peer dependencies...");
+        spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
+        spinner.text = chalk.yellow("🔗 Installing peer dependencies...");
         spinner.start();
         await execAsync(`npm install ${peerDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk_1.default.green("✅ Peer dependencies installed!"));
-        console.log(chalk_1.default.blue("🚀 Setup complete! Your project is now ready to go."));
+        spinner.succeed(chalk.green("✅ Peer dependencies installed!"));
+        console.log(chalk.blue("🚀 Setup complete! Your project is now ready to go."));
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red("❌ Installation failed!"));
-        console.error(chalk_1.default.red(`Error: ${error.message}`));
+        spinner.fail(chalk.red("❌ Installation failed!"));
+        console.error(chalk.red(`Error: ${error.message}`));
         process.exit(1);
     }
 }
-async function promptMessages(pluginName, prompt) {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptMessages(pluginName, prompt) {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -365,7 +351,7 @@ async function promptMessages(pluginName, prompt) {
     }
     const messages = [];
     while (true) {
-        const { icon } = await inquirer_1.default.prompt([
+        const { icon } = await inquirer.prompt([
             {
                 type: "list",
                 name: "icon",
@@ -375,7 +361,7 @@ async function promptMessages(pluginName, prompt) {
                 ]
             }
         ]);
-        const { message } = await inquirer_1.default.prompt([
+        const { message } = await inquirer.prompt([
             {
                 type: "input",
                 name: "message",
@@ -383,7 +369,7 @@ async function promptMessages(pluginName, prompt) {
             }
         ]);
         messages.push(`${icon} ${message}`);
-        const { moreMessages } = await inquirer_1.default.prompt([
+        const { moreMessages } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "moreMessages",
@@ -397,8 +383,8 @@ async function promptMessages(pluginName, prompt) {
     }
     return messages;
 }
-async function promptAfterInstall(pluginName) {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptAfterInstall(pluginName) {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -409,14 +395,14 @@ async function promptAfterInstall(pluginName) {
     if (!accept) {
         return null;
     }
-    const { command } = await inquirer_1.default.prompt([
+    const { command } = await inquirer.prompt([
         {
             type: "input",
             name: "command",
             message: "📝 Enter the command to run after installation:"
         }
     ]);
-    const { whenNeeded } = await inquirer_1.default.prompt([
+    const { whenNeeded } = await inquirer.prompt([
         {
             type: "confirm",
             name: "whenNeeded",
@@ -425,7 +411,7 @@ async function promptAfterInstall(pluginName) {
         }
     ]);
     if (whenNeeded) {
-        const { condition } = await inquirer_1.default.prompt([
+        const { condition } = await inquirer.prompt([
             {
                 type: "input",
                 name: "condition",
@@ -442,8 +428,8 @@ async function promptAfterInstall(pluginName) {
     };
 }
 // requiredPackages?: Array<string>;
-async function promptRequiredPackages() {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptRequiredPackages() {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -456,7 +442,7 @@ async function promptRequiredPackages() {
     }
     const packages = [];
     while (true) {
-        const { packageName } = await inquirer_1.default.prompt([
+        const { packageName } = await inquirer.prompt([
             {
                 type: "input",
                 name: "packageName",
@@ -464,7 +450,7 @@ async function promptRequiredPackages() {
             }
         ]);
         packages.push(packageName);
-        const { morePackages } = await inquirer_1.default.prompt([
+        const { morePackages } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "morePackages",
@@ -479,8 +465,8 @@ async function promptRequiredPackages() {
     return packages;
 }
 // requiredPaths?: Array<string>;
-async function promptRequiredPaths() {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptRequiredPaths() {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -493,7 +479,7 @@ async function promptRequiredPaths() {
     }
     const paths = [];
     while (true) {
-        const { path } = await inquirer_1.default.prompt([
+        const { path } = await inquirer.prompt([
             {
                 type: "input",
                 name: "path",
@@ -502,7 +488,7 @@ async function promptRequiredPaths() {
             }
         ]);
         paths.push(path);
-        const { morePaths } = await inquirer_1.default.prompt([
+        const { morePaths } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "morePaths",
@@ -517,8 +503,8 @@ async function promptRequiredPaths() {
     return paths;
 }
 // request to postInstall
-async function promptPostInstall(pluginName) {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptPostInstall(pluginName) {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -529,7 +515,7 @@ async function promptPostInstall(pluginName) {
     if (!accept) {
         return null;
     }
-    const { postInstall } = await inquirer_1.default.prompt([
+    const { postInstall } = await inquirer.prompt([
         {
             type: "input",
             name: "postInstall",
@@ -540,8 +526,8 @@ async function promptPostInstall(pluginName) {
     return postInstall;
 }
 // provideScripts
-async function promptProvideScripts(pluginName) {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptProvideScripts(pluginName) {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -554,7 +540,7 @@ async function promptProvideScripts(pluginName) {
     }
     const commands = {};
     while (true) {
-        const { command } = await inquirer_1.default.prompt([
+        const { command } = await inquirer.prompt([
             {
                 type: "input",
                 name: "command",
@@ -572,11 +558,11 @@ async function promptProvideScripts(pluginName) {
         ]);
         const [scriptName, scriptValue] = command.split(":")?.map((v) => v.trim());
         if (!scriptName || !scriptValue) {
-            console.log(chalk_1.default.red("❌ Invalid command format. Please provide a valid script name and value."));
+            console.log(chalk.red("❌ Invalid command format. Please provide a valid script name and value."));
             continue;
         }
         commands[scriptName] = scriptValue;
-        const { moreCommands } = await inquirer_1.default.prompt([
+        const { moreCommands } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "moreCommands",
@@ -590,9 +576,9 @@ async function promptProvideScripts(pluginName) {
     }
     return commands;
 }
-async function promptPluginVariables(pluginName) {
+export async function promptPluginVariables(pluginName) {
     const variables = [];
-    const { useEnv } = await inquirer_1.default.prompt([
+    const { useEnv } = await inquirer.prompt([
         {
             type: "confirm",
             name: "useEnv",
@@ -604,99 +590,99 @@ async function promptPluginVariables(pluginName) {
         return variables;
     }
     while (true) {
-        const { name } = await inquirer_1.default.prompt([
+        const { name } = await inquirer.prompt([
             {
                 type: "input",
                 name: "name",
                 message: "📌 Enter the variable name:",
-                default: (0, format_1.toConstantCase)(pluginName + "_VARIABLE_NAME"),
-                transformer: (input) => (0, format_1.toConstantCase)(input),
+                default: toConstantCase(pluginName + "_VARIABLE_NAME"),
+                transformer: (input) => toConstantCase(input),
                 validate: (input) => input ? true : "❌ Variable name must be only letters, numbers, and underscores."
             }
         ]);
-        const { requestMessage } = await inquirer_1.default.prompt([
+        const { requestMessage } = await inquirer.prompt([
             {
                 type: "input",
                 name: "requestMessage",
-                message: `📝 Enter a message to request ${chalk_1.default.yellow(name)}:`,
+                message: `📝 Enter a message to request ${chalk.yellow(name)}:`,
                 default: `Enter value for ${name}`
             }
         ]);
-        const { type } = await inquirer_1.default.prompt([
+        const { type } = await inquirer.prompt([
             {
                 type: "list",
                 name: "type",
-                message: `🔢 Choose the type for ${chalk_1.default.yellow(name)}:`,
+                message: `🔢 Choose the type for ${chalk.yellow(name)}:`,
                 choices: ["string", "number", "boolean", "enum"]
             }
         ]);
         let defaultValue = null;
         let choices = undefined;
         if (type === "enum") {
-            const { enumValues } = await inquirer_1.default.prompt([
+            const { enumValues } = await inquirer.prompt([
                 {
                     type: "input",
                     name: "enumValues",
-                    message: `📝 Enter possible values for ${chalk_1.default.yellow(name)} (comma-separated):`,
+                    message: `📝 Enter possible values for ${chalk.yellow(name)} (comma-separated):`,
                     validate: (input) => input.includes(",") ? true : "❌ Enter at least two values, separated by commas."
                 }
             ]);
             choices = enumValues.split(",").map((v) => v.trim());
-            const { defaultEnum } = await inquirer_1.default.prompt([
+            const { defaultEnum } = await inquirer.prompt([
                 {
                     type: "list",
                     name: "defaultEnum",
-                    message: `⚙️ Choose a default value for ${chalk_1.default.yellow(name)}:`,
+                    message: `⚙️ Choose a default value for ${chalk.yellow(name)}:`,
                     choices
                 }
             ]);
             defaultValue = defaultEnum;
         }
         else if (type !== "boolean") {
-            const { defaultAnswer } = await inquirer_1.default.prompt([
+            const { defaultAnswer } = await inquirer.prompt([
                 {
                     type: type === "number" ? "number" : "input",
                     name: "defaultAnswer",
-                    message: `⚙️ Enter default value for ${chalk_1.default.yellow(name)} (leave empty if none):`,
+                    message: `⚙️ Enter default value for ${chalk.yellow(name)} (leave empty if none):`,
                 }
             ]);
             defaultValue = defaultAnswer || undefined;
         }
         else {
-            const { defaultBool } = await inquirer_1.default.prompt([
+            const { defaultBool } = await inquirer.prompt([
                 {
                     type: "confirm",
                     name: "defaultBool",
-                    message: `⚙️ Default value for ${chalk_1.default.yellow(name)}?`,
+                    message: `⚙️ Default value for ${chalk.yellow(name)}?`,
                     default: true
                 }
             ]);
             defaultValue = defaultBool;
         }
-        const { configurable } = await inquirer_1.default.prompt([
+        const { configurable } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "configurable",
-                message: `🔧 Should ${chalk_1.default.yellow(name)} be configurable?`,
+                message: `🔧 Should ${chalk.yellow(name)} be configurable?`,
                 default: true
             }
         ]);
         let when = null;
         if (type !== "boolean" && type !== "enum") {
-            const { addCondition } = await inquirer_1.default.prompt([
+            const { addCondition } = await inquirer.prompt([
                 {
                     type: "confirm",
                     name: "addCondition",
-                    message: `✅ Do you want to add condition for ${chalk_1.default.yellow(name)}?`,
+                    message: `✅ Do you want to add condition for ${chalk.yellow(name)}?`,
                     default: false
                 }
             ]);
             if (addCondition) {
-                const { schema } = await inquirer_1.default.prompt([
+                const { schema } = await inquirer.prompt([
                     {
                         type: "input",
                         name: "schema",
-                        message: `📜 Enter JEXL Condition for ${chalk_1.default.yellow(name)}:`
+                        message: `📜 Enter JEXL Condition for ${chalk.yellow(name)}:`
                     }
                 ]);
                 when = schema;
@@ -704,16 +690,16 @@ async function promptPluginVariables(pluginName) {
         }
         let validate = null;
         if (type !== "boolean" && type !== "enum") {
-            const { addValidation } = await inquirer_1.default.prompt([
+            const { addValidation } = await inquirer.prompt([
                 {
                     type: "confirm",
                     name: "addValidation",
-                    message: `✅ Do you want to add validation for ${chalk_1.default.yellow(name)}?`,
+                    message: `✅ Do you want to add validation for ${chalk.yellow(name)}?`,
                     default: false
                 }
             ]);
             if (addValidation) {
-                const { validationType } = await inquirer_1.default.prompt([
+                const { validationType } = await inquirer.prompt([
                     {
                         type: "list",
                         name: "validationType",
@@ -722,53 +708,53 @@ async function promptPluginVariables(pluginName) {
                     }
                 ]);
                 if (validationType === "Regular Expression") {
-                    const { regex } = await inquirer_1.default.prompt([
+                    const { regex } = await inquirer.prompt([
                         {
                             type: "input",
                             name: "regex",
-                            message: `🔍 Enter regex pattern (string format) for ${chalk_1.default.yellow(name)}:`
+                            message: `🔍 Enter regex pattern (string format) for ${chalk.yellow(name)}:`
                         }
                     ]);
                     validate = regex;
                 }
                 else {
-                    const { schema } = await inquirer_1.default.prompt([
+                    const { schema } = await inquirer.prompt([
                         {
                             type: "input",
                             name: "schema",
-                            message: `📜 Enter JSON Schema for ${chalk_1.default.yellow(name)}:`
+                            message: `📜 Enter JSON Schema for ${chalk.yellow(name)}:`
                         }
                     ]);
                     try {
                         validate = JSON.parse(schema);
                     }
                     catch {
-                        console.log(chalk_1.default.red("❌ Invalid JSON Schema. Skipping validation."));
+                        console.log(chalk.red("❌ Invalid JSON Schema. Skipping validation."));
                         validate = null;
                     }
                 }
             }
         }
         let transform = null;
-        const { addTransform } = await inquirer_1.default.prompt([
+        const { addTransform } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "addTransform",
-                message: `🔀 Do you want to add transformation for ${chalk_1.default.yellow(name)}?`,
+                message: `🔀 Do you want to add transformation for ${chalk.yellow(name)}?`,
                 default: false
             }
         ]);
         if (addTransform) {
-            const { transformExpr } = await inquirer_1.default.prompt([
+            const { transformExpr } = await inquirer.prompt([
                 {
                     type: "input",
                     name: "transformExpr",
-                    message: `🔄 Enter JEXL expression for ${chalk_1.default.yellow(name)} transformation (e.g., \`capitalize(x)\`):`
+                    message: `🔄 Enter JEXL expression for ${chalk.yellow(name)} transformation (e.g., \`capitalize(x)\`):`
                 }
             ]);
             transform = transformExpr;
         }
-        const { moreVariables } = await inquirer_1.default.prompt([
+        const { moreVariables } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "moreVariables",
@@ -799,8 +785,8 @@ async function promptPluginVariables(pluginName) {
     }
     return variables;
 }
-async function promptFiles(pluginName) {
-    const { accept } = await inquirer_1.default.prompt([
+export async function promptFiles(pluginName) {
+    const { accept } = await inquirer.prompt([
         {
             type: "confirm",
             name: "accept",
@@ -813,7 +799,7 @@ async function promptFiles(pluginName) {
     }
     const mappings = [];
     while (true) {
-        const { source } = await inquirer_1.default.prompt([
+        const { source } = await inquirer.prompt([
             {
                 type: "input",
                 name: "source",
@@ -821,7 +807,7 @@ async function promptFiles(pluginName) {
                 default: "files/src/*.ts"
             }
         ]);
-        const { destination } = await inquirer_1.default.prompt([
+        const { destination } = await inquirer.prompt([
             {
                 type: "input",
                 name: "destination",
@@ -829,7 +815,7 @@ async function promptFiles(pluginName) {
                 default: "src/"
             }
         ]);
-        const { isHandlebarsTemplate } = await inquirer_1.default.prompt([
+        const { isHandlebarsTemplate } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "isHandlebarsTemplate",
@@ -842,7 +828,7 @@ async function promptFiles(pluginName) {
             destination,
             isHandlebarsTemplate
         });
-        const { moreMappings } = await inquirer_1.default.prompt([
+        const { moreMappings } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "moreMappings",

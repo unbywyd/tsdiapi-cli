@@ -1,81 +1,79 @@
 #!/usr/bin/env node
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const commander_1 = require("commander");
-const init_project_1 = require("./commands/init-project");
-const config_1 = require("./config");
-const generate_1 = require("./commands/generate");
-const setup_plugin_1 = require("./utils/setup-plugin");
-const dev_create_plg_1 = require("./commands/dev-create-plg");
-const add_plugin_1 = require("./commands/add-plugin");
-const update_plg_1 = require("./commands/update-plg");
-const check_plg_config_1 = require("./commands/check-plg-config");
-commander_1.program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(config_1.CurrentVersion);
-commander_1.program.command('init [name]').description('Initialize a new TSDIAPI project')
+import { program } from 'commander';
+import { initProject } from './commands/init-project.js';
+import { CurrentVersion } from './config.js';
+import { generate } from './commands/generate.js';
+import { toSetupPlugin } from './utils/setup-plugin.js';
+import { promptPluginDetails } from './commands/dev-create-plg.js';
+import { addPlugin } from './commands/add-plugin.js';
+import { updatePlugin } from './commands/update-plugin.js';
+import { checkPluginConfig } from './commands/check-plugin-config.js';
+program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
+program.command('init [name]').description('Initialize a new TSDIAPI project')
     .option('-s, --skip', 'Skip all questions and use default settings')
     .action((name, options) => {
-    (0, init_project_1.initProject)(name || '.', {
+    initProject(name || '.', {
         skipAll: options.skip || false
     });
 });
-commander_1.program.command('create <name>').description('Initialize a new TSDIAPI project')
+program.command('create <name>').description('Initialize a new TSDIAPI project')
     .option('-s, --skip', 'Skip all questions and use default settings')
     .action((name, options) => {
-    (0, init_project_1.initProject)(name, {
+    initProject(name, {
         name: name,
         skipAll: options.skip || false
     });
 });
-commander_1.program.command('start <name>').description('Initialize and Fast start a new TSDIAPI project')
+program.command('start <name>').description('Initialize and Fast start a new TSDIAPI project')
     .action((name) => {
-    (0, init_project_1.initProject)(name, {
+    initProject(name, {
         name: name,
         skipAll: true,
         startMode: true
     });
 });
-const pluginCommand = commander_1.program
+const pluginCommand = program
     .command('plugins')
     .description('Manage plugins in your TSDIAPI project');
 pluginCommand
     .command('add <pluginName>')
     .description('Add a plugin to your TSDIAPI project')
     .action((pluginName) => {
-    (0, add_plugin_1.addPlugin)(pluginName);
+    addPlugin(pluginName);
 });
 pluginCommand
     .command('config <pluginName>')
     .description('Configure a plugin in your TSDIAPI project')
     .action((pluginName) => {
-    (0, setup_plugin_1.toSetupPlugin)(pluginName);
+    toSetupPlugin(pluginName);
 });
 pluginCommand
     .command('update <pluginName>')
     .description('Update an existing plugin in your TSDIAPI project')
     .action((pluginName) => {
-    (0, update_plg_1.updatePlugin)(pluginName);
+    updatePlugin(pluginName);
 });
-const devCommand = commander_1.program
+const devCommand = program
     .command('dev')
     .description('Development commands');
 devCommand
     .command('plugin <name>')
     .description('Create a new plugin')
     .action((name) => {
-    (0, dev_create_plg_1.promptPluginDetails)(name);
+    promptPluginDetails(name);
 });
 devCommand
     .command('check')
     .description('Check if the config of plugin is valid')
     .action(() => {
-    (0, check_plg_config_1.checkPluginConfig)();
+    checkPluginConfig();
 });
-commander_1.program
+program
     .command('generate <pluginArg> <name>')
     .description('Generate files using a specific plugin')
     .action(async (pluginArg, name) => {
     const [pluginName, generatorName] = pluginArg.split(':')?.map((x) => x.trim());
-    (0, generate_1.generate)(pluginName, name, generatorName);
+    generate(pluginName, name, generatorName);
 });
-commander_1.program.parse(process.argv);
+program.parse(process.argv);
 //# sourceMappingURL=index.js.map

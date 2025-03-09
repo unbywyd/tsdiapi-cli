@@ -1,31 +1,23 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.toSetupPlugin = toSetupPlugin;
-exports.setupCommon = setupCommon;
-exports.addScriptsToPackageJson = addScriptsToPackageJson;
-exports.copyPluginFiles = copyPluginFiles;
-const config_1 = require("./../config");
-const inquirer_1 = __importDefault(require("inquirer"));
-const chalk_1 = __importDefault(require("chalk"));
-const fs_extra_1 = __importDefault(require("fs-extra"));
-const path_1 = __importDefault(require("path"));
-const glob_1 = require("glob");
-const inquirer_2 = require("./inquirer");
-const cwd_1 = require("./cwd");
-const env_1 = require("./env");
-const app_config_1 = require("./app.config");
-const modifications_1 = require("./modifications");
-const format_1 = require("./format");
-const handlebars_1 = __importDefault(require("./handlebars"));
-const app_finder_1 = require("./app-finder");
-const is_plg_installed_1 = require("./is-plg-installed");
-const plg_metadata_1 = require("./plg-metadata");
-async function loadBoxen() {
-    return (await eval('import("boxen")')).default;
-}
+import { getPackageName } from './../config.js';
+import inquirer from 'inquirer';
+import chalk from 'chalk';
+import fs from 'fs-extra';
+import path from 'path';
+import { glob } from "glob";
+import { applyTransform, convertWhenToFunction, validateInput } from './inquirer.js';
+import { findNearestPackageJson, isDirectoryPath, replacePlaceholdersInPath } from './cwd.js';
+import { updateAllEnvFilesWithVariable } from './env.js';
+import { addAppConfigParams } from './app.config.js';
+import { fileModifications } from './modifications.js';
+import { toPascalCase } from './format.js';
+import Handlebars from './handlebars.js';
+import { findTSDIAPIServerProject } from './app-finder.js';
+import { isPackageInstalled } from './is-plg-installed.js';
+import { getPluginMetadata, getPluginMetaDataFromRoot } from './plg-metadata.js';
+import { checkPrismaExist } from './check-prisma-exists.js';
+import { applyPrismaScripts } from './apply-prisma-scripts.js';
+import boxen from 'boxen';
+import { runPostInstall } from './npm.js';
 function generateInquirerQuestion(variable) {
     return {
         ...variable.inquirer,
@@ -33,46 +25,46 @@ function generateInquirerQuestion(variable) {
         name: variable.name,
         message: variable.inquirer?.message || variable.description || variable.name,
         default: variable.inquirer?.default || variable.default || "",
-        validate: variable.validate ? (0, inquirer_2.validateInput)(variable.validate) : undefined,
-        filter: variable.transform ? (0, inquirer_2.applyTransform)(variable.transform) : undefined,
-        when: (0, inquirer_2.convertWhenToFunction)(variable.when)
+        validate: variable.validate ? validateInput(variable.validate) : undefined,
+        filter: variable.transform ? applyTransform(variable.transform) : undefined,
+        when: convertWhenToFunction(variable.when)
     };
 }
-async function toSetupPlugin(pluginName) {
+export async function toSetupPlugin(pluginName) {
     try {
-        const currentDirectory = await (0, app_finder_1.findTSDIAPIServerProject)();
+        const currentDirectory = await findTSDIAPIServerProject();
         let isLocalPath = false;
         if (!currentDirectory) {
-            return console.log(chalk_1.default.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
+            return console.log(chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`));
         }
-        const packageName = (0, config_1.getPackageName)(pluginName);
-        const isInstalled = (0, is_plg_installed_1.isPackageInstalled)(currentDirectory, packageName);
+        const packageName = getPackageName(pluginName);
+        const isInstalled = isPackageInstalled(currentDirectory, packageName);
         if (!isInstalled) {
-            const findByPath = path_1.default.join(process.cwd(), pluginName, 'tsdiapi.config.json');
-            const isInstalled = fs_extra_1.default.existsSync(findByPath);
+            const findByPath = path.join(process.cwd(), pluginName, 'tsdiapi.config.json');
+            const isInstalled = fs.existsSync(findByPath);
             if (!isInstalled) {
-                console.log(chalk_1.default.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
+                console.log(chalk.yellow(`Plugin ${packageName} is not installed. Skipping setup.`));
                 return;
             }
             else {
                 isLocalPath = true;
             }
         }
-        const config = isLocalPath ? await (0, plg_metadata_1.getPluginMetaDataFromRoot)(path_1.default.join(process.cwd(), pluginName)) : await (0, plg_metadata_1.getPluginMetadata)(currentDirectory, packageName);
+        const config = isLocalPath ? await getPluginMetaDataFromRoot(path.join(process.cwd(), pluginName)) : await getPluginMetadata(currentDirectory, packageName);
         if (!config) {
-            console.log(chalk_1.default.yellow(`No setup logic defined for plugin: ${packageName}`));
-            console.log(chalk_1.default.green(`${packageName} setup has been successfully completed.`));
+            console.log(chalk.yellow(`No setup logic defined for plugin: ${packageName}`));
+            console.log(chalk.green(`${packageName} setup has been successfully completed.`));
         }
         else {
-            console.log(chalk_1.default.blue(`Loaded configuration for ${packageName}`));
+            console.log(chalk.blue(`Loaded configuration for ${packageName}`));
             await setupCommon(packageName, currentDirectory, config);
         }
     }
     catch (e) {
-        console.error(chalk_1.default.red(`Error while setting up plugin: ${pluginName}: ${e.message}`));
+        console.error(chalk.red(`Error while setting up plugin: ${pluginName}: ${e.message}`));
     }
 }
-async function setupCommon(pluginName, projectDir, pluginConfig) {
+export async function setupCommon(pluginName, projectDir, pluginConfig) {
     try {
         const packagesFailHints = [];
         const packagesSuccessHints = [];
@@ -82,80 +74,106 @@ async function setupCommon(pluginName, projectDir, pluginConfig) {
         if (pluginConfig?.preMessages?.length) {
             for (const message of pluginConfig.preMessages) {
                 try {
-                    const template = handlebars_1.default.compile(message);
-                    beforeMessages.push(chalk_1.default.cyan(`- ${template({ pluginName, name: pluginName })}`));
+                    const template = Handlebars.compile(message);
+                    beforeMessages.push(chalk.cyan(`- ${template({ pluginName, name: pluginName })}`));
                 }
                 catch (e) {
-                    console.error(chalk_1.default.red(`Error while rendering pre message: ${e.message}`));
+                    console.error(chalk.red(`Error while rendering pre message: ${e.message}`));
                 }
             }
         }
+        if (pluginConfig?.prisma?.required) {
+            const prismaExists = await checkPrismaExist(projectDir);
+            if (pluginConfig.prisma.scripts?.length) {
+                const prismaScripts = pluginConfig.prisma.scripts;
+                console.log(chalk.yellowBright(`⚠️ The plugin ${pluginName} requires Prisma and will extend it by executing the following scripts:`));
+                for (const script of prismaScripts) {
+                    console.log(chalk.yellow(`- ${script.description}`));
+                }
+            }
+            else {
+                console.log(chalk.yellowBright(`⚠️The plugin ${pluginName} requires Prisma`));
+            }
+            console.log(chalk.blue(`Checking required dependencies for plugin ${pluginName}...`));
+            for (const message of prismaExists?.results) {
+                console.log(`- ${message}`);
+            }
+            if (!prismaExists.prismaExist) {
+                console.log(chalk.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
+                console.log(chalk.red(`Please install Prisma via ${chalk.cyan('tsdiapi plugins add @tsdiapi/prisma')} or manually and run ${chalk.cyan('prisma init')}`));
+                console.log(chalk.yellow(`Please ensure all required dependencies are met, then return to configuration using the command ${chalk.cyan(`tsdiapi plugins config ${pluginName}`)}`));
+                return false;
+            }
+        }
         if (pluginConfig.requiredPackages?.length) {
-            console.log(chalk_1.default.blue(`Checking required packages for plugin ${pluginName}...`));
+            console.log(chalk.blue(`Checking required packages for plugin ${pluginName}...`));
             for (const packageName of pluginConfig.requiredPackages) {
-                const isInstalled = await (0, is_plg_installed_1.isPackageInstalled)(projectDir, packageName);
+                const isInstalled = await isPackageInstalled(projectDir, packageName);
                 if (!isInstalled) {
                     if (packageName.startsWith('@tsdiapi')) {
-                        packagesFailHints.push(`${chalk_1.default.red('✘')} ${packageName} - Install with: ${chalk_1.default.cyan(`tsdiapi plugins add ${packageName}`)}`);
+                        packagesFailHints.push(`${chalk.red('❌')} ${packageName} - Install with: ${chalk.cyan(`tsdiapi plugins config ${packageName}`)}`);
                     }
                     else {
-                        packagesFailHints.push(`${chalk_1.default.red('✘')} ${packageName} - Install with: ${chalk_1.default.cyan(`npm install ${packageName}`)}`);
+                        packagesFailHints.push(`${chalk.red('❌')} ${packageName} - Install with: ${chalk.cyan(`npm install ${packageName}`)}`);
                     }
                 }
                 else {
-                    packagesSuccessHints.push(`${chalk_1.default.green('✔')} ${packageName} - Already installed`);
+                    packagesSuccessHints.push(`${chalk.green('✅')} ${packageName} - Already installed`);
                 }
             }
         }
         if (pluginConfig?.requiredPaths?.length) {
-            console.log(chalk_1.default.blue(`Checking required paths for plugin ${pluginName}...`));
+            console.log(chalk.blue(`Checking required paths for plugin ${pluginName}...`));
             for (const requiredPath of pluginConfig.requiredPaths) {
-                const fullPath = path_1.default.join(projectDir, requiredPath);
-                if (!fs_extra_1.default.existsSync(fullPath)) {
-                    pathFailHints.push(`${chalk_1.default.red('✘')} ${requiredPath} - File or directory not found`);
+                const fullPath = path.join(projectDir, requiredPath);
+                if (!fs.existsSync(fullPath)) {
+                    pathFailHints.push(`${chalk.red('❌')} ${requiredPath} - File or directory not found`);
                 }
                 else {
-                    pathSuccessHints.push(`${chalk_1.default.green('✔')} ${requiredPath} - Found`);
+                    pathSuccessHints.push(`${chalk.green('✅')} ${requiredPath} - Found`);
                 }
             }
         }
-        const boxen = await loadBoxen();
         if (packagesFailHints.length || pathFailHints.length || packagesSuccessHints.length || pathSuccessHints.length || beforeMessages.length) {
             let sections = [];
             if (beforeMessages.length) {
-                sections.push(`${chalk_1.default.bold.cyan('Pre-Setup Messages:')}
-${beforeMessages.join('\n')}`);
+                sections.push(...beforeMessages);
             }
             if (packagesSuccessHints.length || pathSuccessHints.length) {
-                sections.push(`${chalk_1.default.bold.green('✅ Already Installed:')}
+                sections.push(`${chalk.bold.green('✅ Already Installed:')}
 ${[...packagesSuccessHints, ...pathSuccessHints].join('\n')}`);
             }
             if (packagesFailHints.length || pathFailHints.length) {
-                sections.push(`${chalk_1.default.bold.red('❌ Missing Dependencies:')}
+                sections.push(`${chalk.bold.red('❌ Missing Dependencies:')}
 ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             }
-            const message = sections.join('\n\n') + '\n' + chalk_1.default.yellow('Ensure all required dependencies are met before installation.');
-            console.log(boxen(message, {
-                padding: 1,
-                margin: 1,
-                borderStyle: 'round',
-                borderColor: 'yellow'
-            }));
+            if (packagesFailHints.length) {
+                sections.push(chalk.yellow('Ensure all required dependencies are met before installation.'));
+            }
+            if (sections.length) {
+                const message = sections.join('\n');
+                console.log(boxen(message, {
+                    padding: 1,
+                    margin: 1,
+                    borderStyle: 'round',
+                    borderColor: 'blue'
+                }));
+            }
         }
         if (packagesFailHints.length || pathFailHints.length) {
-            console.log(chalk_1.default.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
+            console.log(chalk.red(`Setup of ${pluginName} has been skipped due to missing dependencies.`));
             return false;
         }
-        const { nextAccept } = await inquirer_1.default.prompt([
+        const { nextAccept } = await inquirer.prompt([
             {
                 type: 'confirm',
                 name: 'nextAccept',
-                message: `${chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to continue with the setup of ${pluginName}?`)}`,
+                message: `${chalk.cyan(`${chalk.bgBlue('Do you want')} to continue with the setup of ${pluginName}?`)}`,
                 default: true,
             },
         ]);
         if (!nextAccept) {
-            console.log(chalk_1.default.yellow(`Setup of ${pluginName} has been skipped.`));
+            console.log(chalk.yellow(`Setup of ${pluginName} has been skipped.`));
             return false;
         }
         let handlebarsPayload = {
@@ -165,30 +183,30 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
         };
         const varNames = pluginConfig.variables?.map((v) => v.name);
         if (!varNames?.length) {
-            console.log(chalk_1.default.yellow(`No settings found for ${pluginName}. Skipping setup.`));
+            console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
         }
         else {
-            const { setupCommon } = await inquirer_1.default.prompt([
+            const { setupCommon } = await inquirer.prompt([
                 {
                     type: 'confirm',
                     name: 'setupCommon',
-                    message: `${chalk_1.default.cyan(`${chalk_1.default.bgBlue('Do you want')} to configure ${pluginName} settings?`)}`,
+                    message: `${chalk.cyan(`${chalk.bgBlue('Do you want')} to configure ${pluginName} settings?`)}`,
                     default: true,
                 },
             ]);
             if (!setupCommon) {
-                console.log(chalk_1.default.yellow(`Setup of ${pluginName} settings has been skipped.`));
+                console.log(chalk.yellow(`Setup of ${pluginName} settings has been skipped.`));
             }
             else {
                 const vars = pluginConfig.variables || [];
                 if (!vars.length) {
-                    console.log(chalk_1.default.yellow(`No settings found for ${pluginName}. Skipping setup.`));
+                    console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
                 }
                 else {
                     const questions = vars
                         .filter((v) => v.inquirer && v.configurable)
                         .map(generateInquirerQuestion);
-                    const envAnswers = await inquirer_1.default.prompt(questions);
+                    const envAnswers = await inquirer.prompt(questions);
                     for (const envKey in envAnswers) {
                         const v = vars.find(v => v.name === envKey);
                         if (v?.alias) {
@@ -198,31 +216,31 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
                     handlebarsPayload = { ...handlebarsPayload, ...envAnswers };
                     vars.forEach((variable) => {
                         const value = envAnswers[variable.name] ?? variable.default;
-                        (0, env_1.updateAllEnvFilesWithVariable)(projectDir, variable.name, value);
+                        updateAllEnvFilesWithVariable(projectDir, variable.name, value);
                     });
-                    console.log(chalk_1.default.green('.env file has been successfully updated with settings.'));
+                    console.log(chalk.green('.env file has been successfully updated with settings.'));
                     const configParams = vars.map((v) => {
                         return { key: v.name, type: v.type };
                     });
-                    await (0, app_config_1.addAppConfigParams)(projectDir, configParams);
+                    await addAppConfigParams(projectDir, configParams);
                 }
             }
         }
         if (pluginConfig.provideScripts) {
             try {
-                const packageJsonPath = (0, cwd_1.findNearestPackageJson)(projectDir);
+                const packageJsonPath = findNearestPackageJson(projectDir);
                 if (packageJsonPath) {
-                    const packageJson = JSON.parse(fs_extra_1.default.readFileSync(packageJsonPath, 'utf-8'));
+                    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
                     const updatedPackageJson = await addScriptsToPackageJson(packageJson, pluginConfig.provideScripts);
-                    fs_extra_1.default.writeFileSync(packageJsonPath, JSON.stringify(updatedPackageJson, null, 2));
+                    fs.writeFileSync(packageJsonPath, JSON.stringify(updatedPackageJson, null, 2));
                 }
             }
             catch (e) {
-                console.error(chalk_1.default.red(`Error while adding scripts to package.json: ${e.message}`));
+                console.error(chalk.red(`Error while adding scripts to package.json: ${e.message}`));
             }
         }
         const name = pluginConfig.name || pluginName;
-        const pascalCaseName = (0, format_1.toPascalCase)(name);
+        const pascalCaseName = toPascalCase(name);
         const payload = {
             ...handlebarsPayload,
             pluginName: name,
@@ -230,33 +248,68 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             classname: pascalCaseName,
             packageName: pluginName,
         };
-        const packagePath = path_1.default.resolve(projectDir, 'node_modules', pluginName);
+        const packagePath = path.resolve(projectDir, 'node_modules', pluginName);
+        const prismaScripts = pluginConfig?.prisma?.scripts || [];
+        if (prismaScripts?.length) {
+            try {
+                const succesInstalled = await applyPrismaScripts(projectDir, prismaScripts, payload);
+                if (!succesInstalled) {
+                    console.error(chalk.redBright(`Skipping Installation of ${pluginName}.`));
+                    console.log(chalk.yellow(`Please fix the issue and try configuring the plugin again using the command ${chalk.cyan(`tsdiapi plugins config ${pluginName}`)}`));
+                    return false;
+                }
+            }
+            catch (e) {
+                console.error(chalk.red(`Error while setting up ${pluginName} settings: ${e.message}`));
+                return false;
+            }
+        }
         if (pluginConfig.files && pluginConfig.files.length) {
             await copyPluginFiles(packagePath, projectDir, pluginConfig.files, payload);
         }
         if (pluginConfig?.postFileModifications?.length) {
-            await (0, modifications_1.fileModifications)(pluginName, projectDir, pluginConfig.postFileModifications, payload);
+            await fileModifications(pluginName, projectDir, pluginConfig.postFileModifications, payload);
         }
-        console.log(chalk_1.default.green(`${pluginName} setup has been successfully completed.`));
+        console.log(chalk.green(`${pluginName} setup has been successfully completed.`));
         if (pluginConfig.postMessages && pluginConfig.postMessages.length) {
             for (const message of pluginConfig.postMessages) {
                 try {
-                    const template = handlebars_1.default.compile(message);
-                    console.log(chalk_1.default.green(`- ${template(handlebarsPayload)}`));
+                    const template = Handlebars.compile(message);
+                    console.log(chalk.green(`- ${template(handlebarsPayload)}`));
                 }
                 catch (e) {
-                    console.error(chalk_1.default.red(`Error while rendering post message: ${e.message}`));
+                    console.error(chalk.red(`Error while rendering post message: ${e.message}`));
                 }
             }
+        }
+        try {
+            const configAfterInstallCommand = pluginConfig.afterInstall?.command || '';
+            if (pluginConfig.afterInstall && pluginConfig) {
+                const cond = pluginConfig.afterInstall?.when ? convertWhenToFunction(pluginConfig.afterInstall.when)(payload) : true;
+                if (cond) {
+                    console.log(chalk.blue(`⚙️ Running after-install script for ${pluginName}...`));
+                    await runPostInstall(pluginName, projectDir, pluginConfig.afterInstall?.command);
+                    console.log(chalk.green(`✅ After-install script executed.`));
+                }
+            }
+            if ((payload && pluginConfig?.prisma?.scripts?.length) && !configAfterInstallCommand.includes('prisma')) {
+                const command = 'npx prisma generate';
+                console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
+                await runPostInstall(pluginName, projectDir, command);
+                console.log(chalk.green(`✅ Prisma client generated.`));
+            }
+        }
+        catch (error) {
+            console.log(chalk.red(`❌ Error running after-setup script: ${error.message}`));
         }
         return payload;
     }
     catch (error) {
-        console.error(chalk_1.default.red(`Error while setting up ${pluginName} settings: ${error.message}`));
+        console.error(chalk.red(`Error while setting up ${pluginName} settings: ${error.message}`));
         return false;
     }
 }
-async function addScriptsToPackageJson(packageJson, provideScripts) {
+export async function addScriptsToPackageJson(packageJson, provideScripts) {
     if (!packageJson.scripts) {
         packageJson.scripts = {};
     }
@@ -266,99 +319,108 @@ async function addScriptsToPackageJson(packageJson, provideScripts) {
             toAddScripts.push({ scriptName, command });
         }
         else {
-            console.log(chalk_1.default.yellow(`⚠️ Script "${scriptName}" already exists in the package.json.`));
+            console.log(chalk.yellow(`⚠️ Script "${scriptName}" already exists in the package.json.`));
         }
     }
     if (toAddScripts.length) {
-        console.log(chalk_1.default.yellow('The following scripts will be added to your package.json:'));
+        console.log(chalk.yellow('The following scripts will be added to your package.json:'));
         for (const { scriptName, command } of toAddScripts) {
-            console.log(`${chalk_1.default.green('🟡 (new)')} ${chalk_1.default.white(scriptName)}: ${chalk_1.default.white(command)}`);
+            console.log(`${chalk.green('🟡 (new)')} ${chalk.white(scriptName)}: ${chalk.white(command)}`);
         }
         console.log('\n');
-        const { accepted } = await inquirer_1.default.prompt([
+        const { accepted } = await inquirer.prompt([
             {
                 type: 'confirm',
                 name: 'accepted',
-                message: chalk_1.default.cyan(`${chalk_1.default.blue("Do you want")} to add these scripts to your package.json?`),
+                message: chalk.cyan(`${chalk.blue("Do you want")} to add these scripts to your package.json?`),
                 default: true,
             },
         ]);
         if (!accepted) {
-            console.log(chalk_1.default.yellow('❌ Scripts were not added to the package.json.'));
+            console.log(chalk.yellow('❌ Scripts were not added to the package.json.'));
             return packageJson;
         }
         for (const { scriptName, command } of toAddScripts) {
             packageJson.scripts[scriptName] = command;
-            console.log(chalk_1.default.green(`✅ Script "${scriptName}" has been added to the package.json.`));
+            console.log(chalk.green(`✅ Script "${scriptName}" has been added to the package.json.`));
         }
     }
     return packageJson;
 }
-async function copyPluginFiles(packagePath, projectDir, mappings, payload) {
+export async function copyPluginFiles(packagePath, projectDir, mappings, payload) {
     try {
         const filesToCopy = [];
         for (const { source, destination, overwrite = false, isHandlebarsTemplate } of mappings) {
-            const resolvedDest = path_1.default.resolve(projectDir, destination);
-            const files = glob_1.glob.sync(source, { cwd: packagePath });
+            const resolvedDest = path.resolve(projectDir, destination);
+            const files = glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
                 continue;
             }
             for (const file of files) {
-                let sourceFile = path_1.default.resolve(packagePath, file);
-                const fileName = path_1.default.basename(file);
-                let targetPath = (0, cwd_1.isDirectoryPath)(resolvedDest) ? path_1.default.join(resolvedDest, fileName) : resolvedDest;
-                targetPath = (0, cwd_1.replacePlaceholdersInPath)(targetPath, payload, payload.kebabcase);
-                const isExisting = fs_extra_1.default.existsSync(targetPath);
+                let sourceFile = path.resolve(packagePath, file);
+                const fileName = path.basename(file);
+                let targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
+                targetPath = replacePlaceholdersInPath(targetPath, payload, payload.kebabcase);
+                const isExisting = fs.existsSync(targetPath);
                 if (!overwrite && isExisting) {
-                    console.log(chalk_1.default.yellow(`⚠️ Skipping: File already exists: ${targetPath}`));
+                    console.log(chalk.yellow(`⚠️ Skipping: File already exists: ${targetPath}`));
                     continue;
                 }
                 filesToCopy.push({ sourceFile, isHandlebarsTemplate: isHandlebarsTemplate ? true : false, targetPath, overwrite, isExisting });
             }
         }
         if (filesToCopy.length) {
-            console.log(chalk_1.default.yellow('The following files will be added/updated in your project:'));
+            console.log(chalk.yellow('The following files will be added/updated in your project:'));
             for (const { targetPath, isExisting } of filesToCopy) {
                 if (isExisting) {
-                    console.log(`${chalk_1.default.yellow('⚠️ (replace)')} ${chalk_1.default.white(targetPath)}`);
+                    console.log(`${chalk.yellow('⚠️ (replace)')} ${chalk.white(targetPath)}`);
                 }
                 else {
-                    console.log(`${chalk_1.default.green('🟡 (new)')} ${chalk_1.default.white(targetPath)}`);
+                    console.log(`${chalk.green('🟡 (new)')} ${chalk.white(targetPath)}`);
                 }
             }
             console.log('\n');
-            const { accepted } = await inquirer_1.default.prompt([
+            const { accepted } = await inquirer.prompt([
                 {
                     type: 'confirm',
                     name: 'accepted',
-                    message: chalk_1.default.cyan(`${chalk_1.default.blue("Do you want")} to add these files to your project?`),
+                    message: chalk.cyan(`${chalk.blue("Do you want")} to add these files to your project?`),
                     default: true,
                 },
             ]);
             if (!accepted) {
-                console.log(chalk_1.default.yellow('❌ Files were not added to the project.'));
+                console.log(chalk.yellow('❌ Files were not added to the project.'));
                 return;
             }
             for (const { sourceFile, targetPath, isHandlebarsTemplate, overwrite } of filesToCopy) {
-                fs_extra_1.default.ensureDirSync(path_1.default.dirname(targetPath));
+                fs.ensureDirSync(path.dirname(targetPath));
                 if (!isHandlebarsTemplate) {
-                    fs_extra_1.default.copySync(sourceFile, targetPath, { overwrite });
+                    fs.copySync(sourceFile, targetPath, { overwrite });
                 }
                 else {
                     try {
-                        const template = handlebars_1.default.compile(fs_extra_1.default.readFileSync(sourceFile, 'utf-8'));
-                        fs_extra_1.default.writeFileSync(targetPath, template(payload));
+                        const template = Handlebars.compile(fs.readFileSync(sourceFile, 'utf-8'));
+                        fs.writeFileSync(targetPath, template(payload));
                     }
                     catch (e) {
-                        console.error(chalk_1.default.red(`Error while rendering handlebars template: ${e.message}`));
+                        console.error(chalk.red(`Error while rendering handlebars template: ${e.message}`));
                     }
                 }
-                console.log(chalk_1.default.green(`✅ File "${targetPath}" has been added to the project.`));
+                console.log(chalk.green(`✅ File "${targetPath}" has been added to the project.`));
             }
         }
     }
     catch (error) {
         console.error(`❌ Error copying plugin files: ${error.message}`);
+    }
+}
+export function replaceSafeVariables(command, variables) {
+    try {
+        return Handlebars.compile(command)(variables);
+    }
+    catch (error) {
+        console.error(chalk.red(`❌ Error while replacing variables: ${error.message}`));
+        return command;
     }
 }
 //# sourceMappingURL=setup-plugin.js.map

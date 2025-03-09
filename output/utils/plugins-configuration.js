@@ -1,12 +1,6 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.validatePluginConfig = validatePluginConfig;
-const ajv_1 = __importDefault(require("ajv"));
-const ajv = new ajv_1.default({ allErrors: true, strict: false });
-const chalk_1 = __importDefault(require("chalk"));
+import Ajv from "ajv";
+const ajv = new Ajv.default({ allErrors: true, strict: false });
+import chalk from 'chalk';
 const pluginConfigSchema = {
     type: "object",
     properties: {
@@ -147,6 +141,20 @@ const pluginConfigSchema = {
                         type: "array",
                         items: { type: "string", minLength: 1 },
                         nullable: true
+                    },
+                    prismaScripts: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                command: { type: "string", minLength: 1 },
+                                description: { type: "string", minLength: 1 },
+                                when: { type: "string", nullable: true }
+                            },
+                            required: ["command", "description"],
+                            additionalProperties: false
+                        },
+                        nullable: true
                     }
                 },
                 required: ["name", "files"],
@@ -213,29 +221,50 @@ const pluginConfigSchema = {
             type: "array",
             items: { type: "string", minLength: 1 },
             nullable: true
+        },
+        prisma: {
+            type: "object",
+            properties: {
+                required: { type: "boolean" },
+                scripts: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            command: { type: "string", minLength: 1 },
+                            description: { type: "string", minLength: 1 },
+                            when: { type: "string", nullable: true }
+                        },
+                        required: ["command", "description"],
+                        additionalProperties: false
+                    }
+                }
+            },
+            required: ["required"],
+            additionalProperties: false
         }
     },
     required: ["name"],
     additionalProperties: false
 };
-function validatePluginConfig(config) {
+export function validatePluginConfig(config) {
     try {
         const validate = ajv.compile(pluginConfigSchema);
         const isValid = validate(config);
         if (!isValid) {
-            console.log(chalk_1.default.red("\n❌ Plugin configuration validation errors:\n"));
+            console.log(chalk.red("\n❌ Plugin configuration validation errors:\n"));
             for (const error of validate.errors || []) {
-                console.log(` ${chalk_1.default.yellow("⚠")} ${chalk_1.default.bold(error.instancePath || "(root)")}: ${chalk_1.default.red(error.message || "Error")}`);
+                console.log(` ${chalk.yellow("⚠")} ${chalk.bold(error.instancePath || "(root)")}: ${chalk.red(error.message || "Error")}`);
             }
             console.log("\nPlease fix the errors and try again.\n");
             return false;
         }
-        console.log(chalk_1.default.green("✅ Plugin configuration is valid."));
+        console.log(chalk.green("✅ Plugin configuration is valid."));
         return true;
     }
     catch (error) {
         console.log(error);
-        console.error(chalk_1.default.red(`Error while validating plugin configuration: ${error.message}`));
+        console.error(chalk.red(`Error while validating plugin configuration: ${error.message}`));
         return false;
     }
 }

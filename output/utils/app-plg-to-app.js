@@ -1,28 +1,22 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.addPluginToApp = addPluginToApp;
-const chalk_1 = __importDefault(require("chalk"));
-const ora_1 = __importDefault(require("ora"));
-const util_1 = __importDefault(require("util"));
-const child_process_1 = require("child_process");
-const ts_morph_1 = require("ts-morph");
-const execAsync = util_1.default.promisify(child_process_1.exec);
-async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
-    const spinner = (0, ora_1.default)().start();
+import chalk from "chalk";
+import ora from "ora";
+import util from 'util';
+import { exec } from 'child_process';
+import { Project, SyntaxKind } from "ts-morph";
+const execAsync = util.promisify(exec);
+export async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
+    const spinner = ora().start();
     try {
-        spinner.text = chalk_1.default.blue(`📦 Installing ${chalk_1.default.bold(pluginImportPath)}...`);
+        spinner.text = chalk.blue(`📦 Installing ${chalk.bold(pluginImportPath)}...`);
         await execAsync(`npm install ${pluginImportPath}`, { cwd: projectDir });
-        spinner.succeed(chalk_1.default.green(`✅ Installed ${chalk_1.default.bold(pluginImportPath)} successfully!`));
-        spinner.text = chalk_1.default.blue("🔍 Updating application entry file...");
-        const project = new ts_morph_1.Project();
+        spinner.succeed(chalk.green(`✅ Installed ${chalk.bold(pluginImportPath)} successfully!`));
+        spinner.text = chalk.blue("🔍 Updating application entry file...");
+        const project = new Project();
         const sourceFile = project.addSourceFileAtPath(filePath);
         // Check if import already exists
         const existingImport = sourceFile.getImportDeclaration((imp) => imp.getModuleSpecifier().getLiteralValue() === pluginImportPath);
         if (existingImport) {
-            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${pluginName} is already imported. Skipping.`));
+            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginName} is already imported. Skipping.`));
             return false;
         }
         // Add import statement
@@ -32,25 +26,25 @@ async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir
         });
         // Locate `createApp` function
         const createAppCall = sourceFile
-            .getFirstDescendantByKind(ts_morph_1.SyntaxKind.CallExpression)
-            ?.getFirstChildByKind(ts_morph_1.SyntaxKind.Identifier);
+            .getFirstDescendantByKind(SyntaxKind.CallExpression)
+            ?.getFirstChildByKind(SyntaxKind.Identifier);
         if (createAppCall?.getText() === "createApp") {
-            const createAppExpression = createAppCall.getParentIfKind(ts_morph_1.SyntaxKind.CallExpression);
+            const createAppExpression = createAppCall.getParentIfKind(SyntaxKind.CallExpression);
             const argument = createAppExpression?.getArguments()[0];
-            if (argument?.getKind() === ts_morph_1.SyntaxKind.ObjectLiteralExpression) {
-                const argumentObject = argument.asKindOrThrow(ts_morph_1.SyntaxKind.ObjectLiteralExpression);
+            if (argument?.getKind() === SyntaxKind.ObjectLiteralExpression) {
+                const argumentObject = argument.asKindOrThrow(SyntaxKind.ObjectLiteralExpression);
                 const pluginsProperty = argumentObject.getProperty("plugins");
                 if (pluginsProperty) {
-                    const pluginsArray = pluginsProperty.getFirstChildByKind(ts_morph_1.SyntaxKind.ArrayLiteralExpression);
+                    const pluginsArray = pluginsProperty.getFirstChildByKind(SyntaxKind.ArrayLiteralExpression);
                     if (pluginsArray) {
                         if (pluginsArray.getText().includes(pluginName)) {
-                            spinner.warn(chalk_1.default.yellow(`⚠️ Plugin ${pluginName} is already registered. Skipping.`));
+                            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginName} is already registered. Skipping.`));
                             return false;
                         }
                         pluginsArray.addElement(`${pluginName}()`);
                     }
                     else {
-                        spinner.fail(chalk_1.default.red("❌ Failed to locate 'plugins' array in createApp."));
+                        spinner.fail(chalk.red("❌ Failed to locate 'plugins' array in createApp."));
                         return false;
                     }
                 }
@@ -66,15 +60,15 @@ async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir
             }
         }
         else {
-            spinner.fail(chalk_1.default.red("❌ Failed to find 'createApp' function in main file."));
+            spinner.fail(chalk.red("❌ Failed to find 'createApp' function in main file."));
             return false;
         }
         sourceFile.saveSync();
-        spinner.succeed(chalk_1.default.green(`✅ Plugin ${chalk_1.default.bold(pluginName)} successfully added to createApp!`));
+        spinner.succeed(chalk.green(`✅ Plugin ${chalk.bold(pluginName)} successfully added to createApp!`));
         return true;
     }
     catch (error) {
-        spinner.fail(chalk_1.default.red(`❌ Error: ${error.message}`));
+        spinner.fail(chalk.red(`❌ Error: ${error.message}`));
         return false;
     }
 }

@@ -1,6 +1,6 @@
 import path from "path";
-import { findNearestPackageJson } from "./cwd";
 import fs from 'fs'
+import { findNearestPackageJson } from "./cwd.js";
 
 
 /**

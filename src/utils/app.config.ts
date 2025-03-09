@@ -1,8 +1,7 @@
 import path from 'path'
 import chalk from 'chalk'
 import { Project, SourceFile, ClassDeclaration } from 'ts-morph'
-import { capitalize } from './format'
-
+import { capitalize } from './format.js'
 
 
 // Utility function to ensure imports are present or add them if missing

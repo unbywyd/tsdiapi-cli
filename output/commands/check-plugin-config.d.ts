@@ -1,2 +1,2 @@
 export declare function checkPluginConfig(): Promise<true | void>;
-//# sourceMappingURL=check-plg-config.d.ts.map
+//# sourceMappingURL=check-plugin-config.d.ts.map

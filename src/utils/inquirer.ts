@@ -1,12 +1,11 @@
 import Ajv from "ajv";
+const ajv = new Ajv.default({ allErrors: true, strict: false });
 import jexl from "jexl";
 
 jexl.addFunction('capitalize', (str: string) => {
     if (!str || typeof str !== "string") return str;
     return str.charAt(0).toUpperCase() + str.slice(1);
 });
-
-const ajv = new Ajv({ allErrors: true, strict: false });
 
 export function validateInput(schema: Record<string, any> | string): (input: any) => boolean | string {
     if (typeof schema === "string") {
@@ -33,7 +32,6 @@ export function applyTransform(expression?: string): (input: any) => any {
         }
     };
 }
-
 
 export function convertWhenToFunction(expression?: string): (answers: Record<string, any>) => boolean {
     if (!expression) return () => true;

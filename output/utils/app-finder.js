@@ -1,24 +1,18 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.findTSDIAPIServerProject = findTSDIAPIServerProject;
-const path_1 = __importDefault(require("path"));
-const cwd_1 = require("./cwd");
-const fs_1 = __importDefault(require("fs"));
+import path from "path";
+import fs from 'fs';
+import { findNearestPackageJson } from "./cwd.js";
 /**
  * Finds the root directory of the nearest project containing "@tsdiapi/server" in its dependencies.
  *
  * @returns The root directory path of the TSDIAPI-Server project or null if not found.
  */
-async function findTSDIAPIServerProject(cwd) {
+export async function findTSDIAPIServerProject(cwd) {
     try {
-        const packageJsonPath = (0, cwd_1.findNearestPackageJson)(cwd);
+        const packageJsonPath = findNearestPackageJson(cwd);
         if (!packageJsonPath) {
             return null;
         }
-        const packageJson = JSON.parse(fs_1.default.readFileSync(packageJsonPath, 'utf-8'));
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
         const dependencies = {
             ...packageJson.dependencies,
             ...packageJson.devDependencies,
@@ -26,7 +20,7 @@ async function findTSDIAPIServerProject(cwd) {
             ...packageJson.optionalDependencies,
         };
         if (dependencies && dependencies['@tsdiapi/server']) {
-            return path_1.default.dirname(packageJsonPath);
+            return path.dirname(packageJsonPath);
         }
         return null;
     }

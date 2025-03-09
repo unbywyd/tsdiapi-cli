@@ -1,8 +1,8 @@
 import Ajv, { JSONSchemaType } from "ajv";
-const ajv = new Ajv({ allErrors: true, strict: false });
+const ajv = new Ajv.default({ allErrors: true, strict: false });
 import chalk from 'chalk'
 import { Question } from "inquirer";
-import { AppParam } from "./app.config";
+import { AppParam } from "./app.config.js";
 
 export interface CommandWithCondition {
     when?: string;
@@ -24,6 +24,12 @@ export interface PluginConfigVariable extends PluginInquirerOption {
 }
 export interface PluginGeneratorArg extends PluginInquirerOption {
 }
+
+export interface PrismaScript {
+    description: string;
+    command: string;
+    when?: string;
+}
 export interface PluginGenerator {
     name: string;
     description?: string;
@@ -35,6 +41,7 @@ export interface PluginGenerator {
     afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
+    prismaScripts?: PrismaScript[];
 }
 
 
@@ -56,7 +63,6 @@ export interface PluginFileModification {
     when?: string;
 }
 
-
 export interface PluginMetadata {
     name: string;
     description?: string;
@@ -71,6 +77,10 @@ export interface PluginMetadata {
     postFileModifications?: Array<PluginFileModification>;
     requiredPackages?: Array<string>;
     requiredPaths?: Array<string>;
+    prisma?: {
+        required: boolean;
+        scripts?: Array<PrismaScript>;
+    }
 }
 
 const pluginConfigSchema = {
@@ -213,6 +223,20 @@ const pluginConfigSchema = {
                         type: "array",
                         items: { type: "string", minLength: 1 },
                         nullable: true
+                    },
+                    prismaScripts: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                command: { type: "string", minLength: 1 },
+                                description: { type: "string", minLength: 1 },
+                                when: { type: "string", nullable: true }
+                            },
+                            required: ["command", "description"],
+                            additionalProperties: false
+                        },
+                        nullable: true
                     }
                 },
                 required: ["name", "files"],
@@ -279,6 +303,27 @@ const pluginConfigSchema = {
             type: "array",
             items: { type: "string", minLength: 1 },
             nullable: true
+        },
+        prisma: {
+            type: "object",
+            properties: {
+                required: { type: "boolean" },
+                scripts: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            command: { type: "string", minLength: 1 },
+                            description: { type: "string", minLength: 1 },
+                            when: { type: "string", nullable: true }
+                        },
+                        required: ["command", "description"],
+                        additionalProperties: false
+                    }
+                }
+            },
+            required: ["required"],
+            additionalProperties: false
         }
     },
     required: ["name"],
