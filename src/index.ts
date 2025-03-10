@@ -87,7 +87,7 @@ program
   .command('generate <pluginArg> <name>')
   .description('Generate files using a specific plugin')
   .action(async (pluginArg, name) => {
-    const [pluginName, generatorName] = pluginArg.split(':')?.map((x: any) => x.trim());
+    let [pluginName, generatorName] = pluginArg.split(':')?.map((x: any) => x.trim());
     generate(pluginName, name, generatorName);
   });
 

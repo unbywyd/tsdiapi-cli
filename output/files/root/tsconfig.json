@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "skipLibCheck": true,
-    "module": "commonjs",
+    "module": "NodeNext",
     "esModuleInterop": true,
-    "target": "ES6",
+    "target": "ES2022",
     "noImplicitAny": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",

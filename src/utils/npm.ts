@@ -114,13 +114,13 @@ export async function installBaseDependencies(projectDir: string) {
         "class-validator",
         "routing-controllers",
         "routing-controllers-openapi",
-        "typedi"
+        "typedi",
+        "cross-env"
     ];
 
     const devDependencies = [
         "@types/node",
         "cpy-cli",
-        "cross-env",
         "nodemon",
         "ts-node",
         "tslib",
@@ -142,8 +142,6 @@ export async function installBaseDependencies(projectDir: string) {
 
         await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
         spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
-
-        //console.log(chalk.blue("\n🚀 Setup complete! Your project is now ready to go.\n"));
     } catch (error: any) {
         spinner.fail(chalk.red("❌ Installation failed!"));
         console.error(chalk.red(`Error: ${error.message}`));

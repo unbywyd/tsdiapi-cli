@@ -2,19 +2,15 @@
   "version": "1.0.0",
   "name": "{{name}}",
   "description": "A starter server project built with TSDIAPI-Server, a modular TypeScript framework for building scalable APIs.",
-  "overrides": {
-    "@koa/multer": false,
-    "@koa/router": false,
-    "koa": false,
-    "koa-bodyparser": false
-  },
+  "type": "module",
   "scripts": {
     "install:prod": "npm install --omit=optional",
-    "fast-dev": "cross-env NODE_ENV=development ./node_modules/.bin/nodemon --exec './node_modules/.bin/ts-node --transpile-only' src/main.ts",
-    "dev": "cross-env NODE_ENV=development ./node_modules/.bin/nodemon --exec ts-node src/main.ts",
-    "build": "tsc && npm run copy-public",     
+    "build": "tsc && npm run copy-public",
     "copy-public": "cpy \"src/public/**/*\" \"dist/public\" --parents",
-    "start": "cross-env NODE_ENV=production node ./dist/main.js"{{#if scripts}},
+    "start": "cross-env NODE_ENV=production node ./dist/main.js",
+    "fast-dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'"
+    {{#if scripts}},
     {{#each scripts}}
     "{{name}}": "{{value}}"{{#unless @last}},{{/unless}}
     {{/each}}{{/if}}

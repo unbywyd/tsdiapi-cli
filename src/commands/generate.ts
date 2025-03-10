@@ -32,26 +32,26 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             }
         }
         if (pluginName === 'feature') {
-            if (!generatorName) {
+            if (!fileName) {
                 console.log(chalk.bgRed.white.bold("⚠️ ERROR ") +
                     chalk.red(` Feature name is required!\n\n`) +
                     chalk.yellow(`Usage: tsdiapi generate feature <name>\n`) +
                     chalk.cyan(`Example: tsdiapi generate feature user`));
                 process.exit(1);
             }
-            return generateFeature(generatorName!);
+            return generateFeature(fileName!);
         }
 
         // Local generators
-        if (pluginName === 'controller' || pluginName === 'service') {
-            if (!generatorName) {
+        if ((pluginName === 'controller' || pluginName === 'service')) {
+            if (!fileName) {
                 console.log(chalk.bgRed.white.bold("⚠️ ERROR ") +
                     chalk.red(` Generator name is required!\n\n`) +
                     chalk.yellow(`Usage: tsdiapi generate ${pluginName} <name>\n`) +
                     chalk.cyan(`Example: tsdiapi generate ${pluginName} user`));
                 process.exit(1);
             }
-            return safeGenerate(pluginName, generatorName, args);
+            return safeGenerate(pluginName, fileName, args);
         }
 
         const currentDirectory = await findTSDIAPIServerProject();
