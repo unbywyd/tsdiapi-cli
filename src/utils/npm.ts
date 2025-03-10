@@ -121,6 +121,7 @@ export async function installBaseDependencies(projectDir: string) {
     const devDependencies = [
         "@types/node",
         "cpy-cli",
+        "tsc-alias",
         "nodemon",
         "ts-node",
         "tslib",
