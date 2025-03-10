@@ -5,7 +5,7 @@ import { Service } from "typedi";
 import { OpenAPI } from "routing-controllers-openapi";
 import { Summary } from '@tsdiapi/server';
 {{#if serviceClassName}}
-import {{serviceClassName}} from "./{{kebabCaseName}}.service";
+import {{serviceClassName}} from "./{{kebabCaseName}}.service.js";
 {{/if}}
 @Service()
 @OpenAPI({
