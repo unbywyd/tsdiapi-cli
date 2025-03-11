@@ -6,7 +6,7 @@ A powerful and flexible command-line interface (CLI) for managing **TSDIAPI** pr
 
 ## **Overview**
 
-TSDIAPI CLI is designed to provide a streamlined experience when working with **TSDIAPI-based servers**. It allows developers to:
+**TSDIAPI CLI** is designed to provide a streamlined experience when working with **TSDIAPI-based servers**. It allows developers to:
 
 - **Initialize** new API projects quickly.
 - **Extend functionality** using modular plugins.
@@ -18,7 +18,7 @@ By default, the generated project provides a **solid foundation** for further cu
 
 ---
 
-## Quick Get Started
+## **Get Started with npx**
 
 ```bash
 npx @tsdiapi/cli create my-api
@@ -116,11 +116,12 @@ tsdiapi generate controller user
 
 This will create a **UserController**.
 
-| Resource     | Description                    |
-| ------------ | ------------------------------ |
-| `feature`    | Generate a new feature module. |
-| `service`    | Generate a new service.        |
-| `controller` | Generate a new controller.     |
+| Resource     | Description                        |
+| ------------ | ---------------------------------- |
+| `feature`    | Generate a new feature module.     |
+| `service`    | Generate a new service.            |
+| `controller` | Generate a new controller.         |
+| `<plugin>`   | Use a specific plugin’s generator. |
 
 ### **How Generators Work**
 
