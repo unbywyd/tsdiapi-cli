@@ -190,6 +190,7 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             return false;
         }
 
+
         let handlebarsPayload = {
             name: pluginConfig.name,
             description: pluginConfig.description,
