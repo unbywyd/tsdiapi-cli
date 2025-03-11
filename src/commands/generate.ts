@@ -10,7 +10,7 @@ import { applyTransform, convertWhenToFunction, validateInput } from '../utils/i
 import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration.js';
 import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd.js';
 import { fileModifications } from '../utils/modifications.js';
-import { runPostInstall } from '../utils/npm.js';
+import { installNpmDependencies, runPostInstall } from '../utils/npm.js';
 import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars.js';
 import { isPackageInstalled } from '../utils/is-plg-installed.js';
 import { findTSDIAPIServerProject } from '../utils/app-finder.js';
@@ -95,7 +95,34 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             }
         }
 
-        let currentGenerator: PluginGenerator = generatorByName || generators[0];
+
+
+        let currentGenerator: PluginGenerator = generatorByName!;
+
+        if (!generatorByName && generators?.length > 1) {
+            const generatorNames = generators.map(g => g.name);
+            try {
+                const answer = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'generator',
+                        message: 'Select a generator:',
+                        choices: generatorNames
+                    }
+                ]);
+
+                currentGenerator = generators.find(g => g.name === answer.generator) as PluginGenerator;
+            } catch (e) {
+                console.log(chalk.red('Operation canceled!'))
+                return;
+            }
+        }
+        if (!currentGenerator) {
+            return console.log(
+                chalk.red(`Generator ${generatorName} not found in plugin ${pluginName}!`)
+            )
+        }
+
 
         if (currentGenerator?.preMessages && currentGenerator.preMessages.length) {
             for (const message of currentGenerator.preMessages) {
@@ -126,6 +153,14 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             }
         }
 
+        try {
+            if (currentGenerator?.dependencies?.length) {
+                const toInstall = currentGenerator.dependencies;
+                await installNpmDependencies(currentDirectory, toInstall);
+            }
+        } catch (error) {
+            console.error(chalk.red(`❌ Error installing required packages: ${error.message}`));
+        }
 
         if (currentGenerator.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
@@ -162,30 +197,6 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                     return
                 }
             }
-        }
-
-        if (!generatorByName && generators?.length > 1) {
-            const generatorNames = generators.map(g => g.name);
-            try {
-                const answer = await inquirer.prompt([
-                    {
-                        type: 'list',
-                        name: 'generator',
-                        message: 'Select a generator:',
-                        choices: generatorNames
-                    }
-                ]);
-
-                currentGenerator = generators.find(g => g.name === answer.generator) as PluginGenerator;
-            } catch (e) {
-                console.log(chalk.red('Operation canceled!'))
-                return;
-            }
-        }
-        if (!currentGenerator) {
-            return console.log(
-                chalk.red(`Generator ${generatorName} not found in plugin ${pluginName}!`)
-            )
         }
 
         if (currentGenerator.description) {
@@ -284,7 +295,7 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             try {
                 const result = await applyPrismaScripts(currentDirectory, currentGenerator.prismaScripts, defaultObj);
                 if (!result) {
-                    return console.error(chalk.red(`Error applying Prisma scripts!`));
+                    console.error(chalk.red(`Some Prisma scripts were not applied. Please check and apply them manually.`));
                 }
             } catch (e) {
                 return console.error(chalk.red(`Error applying Prisma scripts: ${e.message}`));

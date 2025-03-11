@@ -40,6 +40,7 @@ export interface PluginGenerator {
     preMessages?: Array<string>;
     afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
+    dependencies?: Array<string>;
     requiredPaths?: Array<string>;
     prismaScripts?: PrismaScript[];
 }
@@ -215,6 +216,11 @@ const pluginConfigSchema = {
                         nullable: true
                     },
                     requiredPackages: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    },
+                    dependencies: {
                         type: "array",
                         items: { type: "string", minLength: 1 },
                         nullable: true

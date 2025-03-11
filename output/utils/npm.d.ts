@@ -6,6 +6,7 @@ export declare function runNpmScript(scriptName: string): void;
  * @param projectDir The directory where the command should be executed.
  */
 export declare function runNpmInstall(projectDir: string): Promise<void>;
+export declare function installNpmDependencies(projectDir: string, dependencies: string[], devDependencies?: string[]): Promise<void>;
 export declare function installBaseDependencies(projectDir: string): Promise<void>;
 export declare function packageExistsOnNpm(packageName: string, silent?: boolean): Promise<boolean>;
 //# sourceMappingURL=npm.d.ts.map

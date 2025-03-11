@@ -103,6 +103,28 @@ export async function runNpmInstall(projectDir: string): Promise<void> {
     });
 }
 
+export async function installNpmDependencies(projectDir: string, dependencies: string[], devDependencies?: string[]) {
+
+    const spinner = ora({
+        text: chalk.yellow("⏳ Installing dependencies..."),
+        spinner: "dots"
+    }).start();
+    try {
+        if (dependencies.length > 0) {
+            await execAsync(`npm install ${dependencies.join(" ")}`, { cwd: projectDir });
+            spinner.succeed(chalk.green("✅ Base dependencies installed!"));
+        }
+        if (devDependencies && devDependencies?.length > 0) {
+            await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
+            spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
+        }
+    } catch (error: any) {
+        spinner.fail(chalk.red("❌ Installation failed!"));
+    } finally {
+        spinner.stop();
+    }
+}
+
 export async function installBaseDependencies(projectDir: string) {
     console.log(chalk.blue("\n📦 Installing base dependencies...\n"));
 

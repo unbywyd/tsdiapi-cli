@@ -137,6 +137,11 @@ const pluginConfigSchema = {
                         items: { type: "string", minLength: 1 },
                         nullable: true
                     },
+                    dependencies: {
+                        type: "array",
+                        items: { type: "string", minLength: 1 },
+                        nullable: true
+                    },
                     requiredPaths: {
                         type: "array",
                         items: { type: "string", minLength: 1 },

@@ -35,6 +35,7 @@ export interface PluginGenerator {
     preMessages?: Array<string>;
     afterGenerate?: CommandWithCondition;
     requiredPackages?: Array<string>;
+    dependencies?: Array<string>;
     requiredPaths?: Array<string>;
     prismaScripts?: PrismaScript[];
 }
