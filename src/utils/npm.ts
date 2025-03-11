@@ -121,6 +121,7 @@ export async function installBaseDependencies(projectDir: string) {
     const devDependencies = [
         "@types/node",
         "cpy-cli",
+        "prisma-class-dto-generator",
         "tsc-alias",
         "nodemon",
         "ts-node",

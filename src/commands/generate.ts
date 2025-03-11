@@ -18,7 +18,7 @@ import { getPluginMetadata } from '../utils/plg-metadata.js';
 import { checkPrismaExist } from "../utils/check-prisma-exists.js";
 import { applyPrismaScripts } from "../utils/apply-prisma-scripts.js";
 
-export async function generate(pluginName: string, fileName: string, generatorName?: string): Promise<void> {
+export async function generate(pluginName: string, fileName: string, generatorName?: string, toFeature?: string): Promise<void> {
     try {
         const args: Record<string, any> = {
             name: fileName
@@ -42,6 +42,13 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             return generateFeature(fileName!);
         }
 
+        const currentDirectory = await findTSDIAPIServerProject();
+        if (!currentDirectory) {
+            return console.log(
+                chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`)
+            )
+        }
+
         // Local generators
         if ((pluginName === 'controller' || pluginName === 'service')) {
             if (!fileName) {
@@ -51,15 +58,10 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                     chalk.cyan(`Example: tsdiapi generate ${pluginName} user`));
                 process.exit(1);
             }
-            return safeGenerate(pluginName, fileName, args);
+            const output = toFeature ? path.join(currentDirectory, 'src/api/features', toFeature) : fileName;
+            return safeGenerate(pluginName, output, args, toFeature ? fileName : undefined);
         }
 
-        const currentDirectory = await findTSDIAPIServerProject();
-        if (!currentDirectory) {
-            return console.log(
-                chalk.red(`Not found package.json or maybe you are not using @tsdiapi/server!`)
-            )
-        }
 
 
         const packageName = getPackageName(pluginName);
@@ -319,7 +321,7 @@ export async function generate(pluginName: string, fileName: string, generatorNa
         }
         const prismaScripts = currentGenerator.prismaScripts, afterGenerate = currentGenerator?.afterGenerate?.command || '';
         if ((prismaScripts?.length) && !afterGenerate.includes('prisma')) {
-            const command = 'npx prisma generate';
+            const command = 'npm run prisma:generate';
             console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
             await runPostInstall(pluginName, currentDirectory, command);
             console.log(chalk.green(`✅ Prisma client generated.`));
@@ -486,9 +488,9 @@ export async function generateFeature(name: string, projectDir?: string) {
     }
 }
 
-export async function safeGenerate(pluginName: string, generatorName: string, args?: Record<string, any>) {
-    const cwd = resolveTargetDirectory(process.cwd(), generatorName);
-    const name = path.basename(generatorName);
+export async function safeGenerate(pluginName: string, output: string, args: Record<string, any> = {}, fName?: string) {
+    const cwd = path.isAbsolute(output) ? output : resolveTargetDirectory(process.cwd(), output);
+    const name = fName || path.basename(output);
     try {
         const { accepted } = await inquirer.prompt([
             {
