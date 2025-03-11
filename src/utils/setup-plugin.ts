@@ -230,16 +230,19 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
                         }
                     }
                     handlebarsPayload = { ...handlebarsPayload, ...envAnswers };
-                    vars.forEach((variable: PluginConfigVariable) => {
-                        const value = envAnswers[variable.name] ?? variable.default;
-                        updateAllEnvFilesWithVariable(projectDir, variable.name, value);
-                    });
+                    const saveVars = vars.filter(el => !el.skipEnvSave);
+                    if (saveVars.length) {
+                        saveVars.forEach((variable: PluginConfigVariable) => {
+                            const value = envAnswers[variable.name] ?? variable.default;
+                            updateAllEnvFilesWithVariable(projectDir, variable.name, value);
+                        });
 
-                    console.log(chalk.green('.env file has been successfully updated with settings.'));
-                    const configParams = vars.map((v) => {
-                        return { key: v.name, type: v.type }
-                    });
-                    await addAppConfigParams(projectDir, configParams);
+                        console.log(chalk.green('.env file has been successfully updated with settings.'));
+                        const configParams = saveVars.map((v) => {
+                            return { key: v.name, type: v.type }
+                        });
+                        await addAppConfigParams(projectDir, configParams);
+                    }
                 }
             }
         }

@@ -18,6 +18,7 @@ const pluginConfigSchema = {
                         nullable: true
                     },
                     configurable: { type: "boolean" },
+                    skipEnvSave: { type: "boolean", nullable: true },
                     description: { type: "string", nullable: true },
                     validate: {
                         type: ["object", "string", "null"],
@@ -79,6 +80,7 @@ const pluginConfigSchema = {
                                 alias: { type: "string", nullable: true },
                                 name: { type: "string", minLength: 1 },
                                 description: { type: "string", nullable: true },
+                                saveEnv: { type: "boolean", nullable: true },
                                 validate: {
                                     type: ["object", "string", "null"],
                                     additionalProperties: true

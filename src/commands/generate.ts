@@ -17,6 +17,8 @@ import { findTSDIAPIServerProject } from '../utils/app-finder.js';
 import { getPluginMetadata } from '../utils/plg-metadata.js';
 import { checkPrismaExist } from "../utils/check-prisma-exists.js";
 import { applyPrismaScripts } from "../utils/apply-prisma-scripts.js";
+import { updateAllEnvFilesWithVariable } from "src/utils/env.js";
+import { addAppConfigParams, AppParam } from "src/utils/app.config.js";
 
 export async function generate(pluginName: string, fileName: string, generatorName?: string, toFeature?: string): Promise<void> {
     try {
@@ -249,6 +251,21 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             if (questions?.length) {
                 try {
                     const result = await inquirer.prompt(questions as any);
+                    const params: Array<AppParam> = [];
+                    for (const question of questions) {
+                        const key = question.name;
+                        const value = result[key];
+                        const arg = plugArgs.find(a => a.name === key);
+                        if (arg?.saveEnv) {
+                            updateAllEnvFilesWithVariable(currentDirectory, key, value);
+                            const types = ['string', 'number', 'boolean'] as const;
+                            const currentType = arg.inquirer?.type && types.includes(arg.inquirer?.type as any) ? (arg.inquirer?.type as AppParam['type']) : 'string';
+                            params.push({ key, type: currentType || 'string' });
+                        }
+                    }
+                    if (params.length) {
+                        await addAppConfigParams(currentDirectory, params);
+                    }
                     if (result) {
                         defaultObj = {
                             ...defaultObj,

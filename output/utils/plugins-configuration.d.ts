@@ -17,8 +17,10 @@ export interface PluginConfigVariable extends PluginInquirerOption {
     type: AppParam['type'];
     default?: string | number | boolean;
     configurable: boolean;
+    skipEnvSave?: boolean;
 }
 export interface PluginGeneratorArg extends PluginInquirerOption {
+    saveEnv?: boolean;
 }
 export interface PrismaScript {
     description: string;
