@@ -21,6 +21,7 @@ export interface PluginConfigVariable extends PluginInquirerOption {
 }
 export interface PluginGeneratorArg extends PluginInquirerOption {
     saveEnv?: boolean;
+    type?: AppParam['type'];
 }
 export interface PrismaScript {
     description: string;

@@ -25,6 +25,7 @@ export interface PluginConfigVariable extends PluginInquirerOption {
 }
 export interface PluginGeneratorArg extends PluginInquirerOption {
     saveEnv?: boolean;
+    type?: AppParam['type'];
 }
 
 export interface PrismaScript {
@@ -166,6 +167,7 @@ const pluginConfigSchema = {
                                 name: { type: "string", minLength: 1 },
                                 description: { type: "string", nullable: true },
                                 saveEnv: { type: "boolean", nullable: true },
+                                type: { type: "string", nullable: true },
                                 validate: {
                                     type: ["object", "string", "null"],
                                     additionalProperties: true
