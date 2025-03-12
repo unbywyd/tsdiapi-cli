@@ -15,7 +15,10 @@ export function validateInput(schema) {
         };
     }
     const validate = ajv.compile(schema);
-    return (input) => validate(input) ? true : schema?.errorMessage || "Invalid input.";
+    return (input) => {
+        const isStringIsNumber = typeof input === "string" && !isNaN(Number(input)) ? parseFloat(input) : input;
+        return validate(isStringIsNumber) ? true : schema?.errorMessage || "Invalid input.";
+    };
 }
 export function applyTransform(expression) {
     if (!expression)
