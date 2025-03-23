@@ -1,6 +1,3 @@
-Вот детальное руководство по созданию **TSDIAPI plugins**, включая **структуру, конфигурацию, генераторы и примеры кода**.
-
----
 
 # **📌 TSDIAPI Plugin Development Guide**
 This guide provides **detailed instructions** for writing **TSDIAPI plugins**, including **configuration, file structure, automatic modifications, and generators**.
@@ -41,7 +38,6 @@ A typical TSDIAPI plugin follows this structure:
 Registers the plugin with TSDIAPI.
 
 ```ts
-import "reflect-metadata";
 import type { AppContext, AppPlugin } from "@tsdiapi/server";
 import { MyPluginProvider } from "./provider";
 
@@ -68,7 +64,7 @@ class MyPlugin implements AppPlugin {
 
     async onInit(ctx: AppContext) {
         if (pluginProvider) {
-            ctx.logger.warn("⚠ Plugin is already initialized.");
+            ctx.fastify.log.warn("⚠ Plugin is already initialized.");
             return;
         }
 
@@ -80,10 +76,10 @@ class MyPlugin implements AppPlugin {
             throw new Error("❌ Missing API key.");
         }
 
-        this.provider.init(this.config, ctx.logger);
+        this.provider.init(this.config, ctx.fastify.log);
         pluginProvider = this.provider;
 
-        ctx.logger.info("✅ Plugin initialized.");
+        ctx.fastify.log.info("✅ Plugin initialized.");
     }
 }
 
@@ -106,8 +102,8 @@ export default function createPlugin(config?: PluginOptions) {
 Defines **business logic** for the plugin.
 
 ```ts
-import type { Logger } from "winston";
-
+import type { AppContext } from "@tsdiapi/server";
+type Logger = AppContext["fastify"]["log"];
 export class MyPluginProvider {
     private config: { apiKey: string };
     private logger: Logger;
@@ -149,15 +145,6 @@ Defines:
       }
     }
   ],
-  "postFileModifications": [
-    {
-      "path": "prisma/schema.prisma",
-      "mode": "append",
-      "match": "generator client",
-      "expected": false,
-      "content": "model MyPluginData {\n  id String @id @default(cuid())\n  query String\n  response String\n}"
-    }
-  ],
   "generators": [
     {
       "name": "feature",
@@ -187,101 +174,6 @@ Defines:
   ]
 }
 ```
-
----
-
-## **3️⃣ Modifications & Dynamic File Handling**
-**TSDIAPI** plugins can modify existing files. Example:
-
-**Adding a new model to `prisma/schema.prisma`**
-```json
-{
-  "path": "prisma/schema.prisma",
-  "mode": "append",
-  "match": "generator client",
-  "expected": false,
-  "content": "model MyPluginModel {\n  id String @id @default(cuid())\n  name String @unique\n}"
-}
-```
-
----
-
-## **4️⃣ Generators (Automating Plugin Structure)**
-A **generator** automates file creation. Example:
-
-```json
-{
-  "name": "feature",
-  "description": "Generate a feature for MyPlugin.",
-  "args": [
-    {
-      "name": "featureName",
-      "description": "Feature name",
-      "inquirer": {
-        "type": "input",
-        "message": "Enter the feature name:"
-      }
-    }
-  ],
-  "files": [
-    {
-      "source": "generators/feature/*.ts",
-      "destination": "src/features/{{featureName}}/",
-      "isHandlebarsTemplate": true
-    }
-  ]
-}
-```
-
-### **📌 Example Handlebars Template**
-`generators/feature/feature.controller.ts`
-```ts
-import { JsonController, Get } from "routing-controllers";
-
-@JsonController("/{{featureName}}")
-export class {{pascalCase featureName}}Controller {
-    @Get("/")
-    public getAll() {
-        return { message: "Hello from {{featureName}}!" };
-    }
-}
-```
-
----
-
-## **5️⃣ Example Plugin Installation & Usage**
-### **Installing the Plugin**
-```bash
-tsdiapi plugins add myplugin
-```
-
-### **Generating a Feature**
-```bash
-tsdiapi generate myplugin feature
-```
-
-### **Using the Plugin in a TSDIAPI Server**
-```ts
-import { createApp } from "@tsdiapi/server";
-import MyPlugin from "@tsdiapi/myplugin";
-
-createApp({
-  plugins: [MyPlugin({ apiKey: "your-api-key" })],
-});
-```
-
----
-
-## **6️⃣ Summary**
-✔ **TSDIAPI plugins are modular and extend API functionality.**  
-✔ **`index.ts` registers the plugin, `provider.ts` contains logic.**  
-✔ **`tsdiapi.config.json` defines variables, file modifications, and generators.**  
-✔ **Generators automate feature creation (controllers, services, etc.).**  
-✔ **Plugins can modify existing files dynamically.**
-
-🚀 **Now you're ready to create a TSDIAPI plugin!**
-
-### **TSDIAPI Plugin Development Protocol**
 
 ### Requirements
 1. **Plugin Naming Conventions**

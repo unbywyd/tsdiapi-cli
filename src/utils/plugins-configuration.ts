@@ -1,4 +1,4 @@
-import Ajv, { JSONSchemaType } from "ajv";
+import Ajv from "ajv";
 const ajv = new Ajv.default({ allErrors: true, strict: false });
 import chalk from 'chalk'
 import { Question } from "inquirer";

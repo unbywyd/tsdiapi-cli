@@ -9,7 +9,7 @@ export async function getPluginMetaDataFromRoot(packagePath: string) {
     } else {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            const isValid = await validatePluginConfig(config);
+            const isValid = validatePluginConfig(config);
             if (!isValid) {
                 return null;
             } else {
@@ -30,7 +30,7 @@ export async function getPluginMetadata(currentDirectory: string, packageName: s
     } else {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            const isValid = await validatePluginConfig(config);
+            const isValid = validatePluginConfig(config);
             if (!isValid) {
                 return null;
             } else {

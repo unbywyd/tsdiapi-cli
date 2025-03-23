@@ -9,8 +9,7 @@
     "copy-public": "cpy \"src/public/**/*\" \"dist/public\" --parents",
     "start": "cross-env NODE_ENV=production node ./dist/main.js",
     "fast-dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
-    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
-    "prisma:generate": "prismadtogen --output=../src/prisma-models && prisma generate"
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'"
     {{#if scripts}},
     {{#each scripts}}
     "{{name}}": "{{value}}"{{#unless @last}},{{/unless}}

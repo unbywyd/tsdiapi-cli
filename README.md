@@ -1,34 +1,38 @@
 # **TSDIAPI CLI**
 
-A powerful and flexible command-line interface (CLI) for managing **TSDIAPI** projects. TSDIAPI is a modern, **ESM-based** framework built with **TypeScript** and **NextNode**, focusing on **Dependency Injection (DI)** and seamless integration with **PrismaORM**. The CLI allows you to create, extend, and automate your API development workflow with built-in support for **plugins** and **generators**.
+A powerful and flexible **command-line interface (CLI)** for managing **TSDIAPI** projects.  
+TSDIAPI is a modern, **ESM-based** framework built with **TypeScript** and **Fastify**, focusing on **high performance, modularity, and flexibility**. The CLI enables developers to **rapidly build APIs** with a well-structured, plugin-based architecture.
 
 ---
 
-## **Overview**
+## **🚀 Overview**
 
-**TSDIAPI CLI** is designed to provide a streamlined experience when working with **TSDIAPI-based servers**. It allows developers to:
+**TSDIAPI CLI** is designed to simplify working with **TSDIAPI-based servers**. It provides:
 
-- **Initialize** new API projects quickly.
-- **Extend functionality** using modular plugins.
-- **Automate code generation** for services, controllers, and features.
-- **Manage configuration files** and environment variables effortlessly.
-- **Integrate PrismaORM** for database management with ease.
+✅ **Quick project setup** – Initialize new API projects with ease.  
+✅ **ESM support** – Leverage modern JavaScript features with ESM modules.
+✅ **Modular plugin system** – Extend functionality dynamically.  
+✅ **Automatic code generation** – Generate controllers, services, and features effortlessly.  
+✅ **Configuration management** – Easily handle environment variables and settings.  
+✅ **Fastify-powered backend** – Lightweight, high-performance server with a flexible routing system.
 
-By default, the generated project provides a **solid foundation** for further customization, leveraging the power of **Dependency Injection** and **PrismaORM** for a robust development experience.
+By default, the generated project provides a **solid foundation** leveraging **Fastify**, **TypeBox**, and **TypeDI** for a **scalable and maintainable** API architecture.
 
 ---
 
-## **Get Started with npx**
+## **📦 Get Started with npx**
 
 ```bash
-npx @tsdiapi/cli create my-api
+npx @tsdiapi/cli create myapi
 cd my-api
 npm start
 ```
 
-## **Installation**
+---
 
-Install the CLI globally using npm:
+## **🔧 Installation**
+
+To install **TSDIAPI CLI** globally using npm:
 
 ```bash
 npm install -g @tsdiapi/cli
@@ -38,17 +42,17 @@ Once installed, use the `tsdiapi` command from any terminal.
 
 ---
 
-## **Creating a New Project**
+## **🚀 Creating a New Project**
 
-To create a new API project, use:
+To create a new **Fastify-based API** project, use:
 
 ```bash
 tsdiapi init <project-name>
 ```
 
-This will **guide you through an interactive setup**, allowing you to configure project details like name, host, and port.
+This **guides you through an interactive setup**, allowing you to configure details like **project name, host, and port**.
 
-### **Quick Start**
+### **⚡ Quick Start**
 
 For a fast setup that **skips all prompts** and **immediately starts the server**, use:
 
@@ -64,9 +68,9 @@ tsdiapi start <project-name>
 
 ---
 
-## **Extending Your Project with Plugins**
+## **🔌 Extending Your Project with Plugins**
 
-TSDIAPI supports modular extensions through **plugins**. Plugins can introduce features like **Prisma ORM**, **Socket.IO**, **JWT authentication**, and more.
+TSDIAPI supports **modular plugins** to add features like **PrismaORM**, **WebSockets**, **JWT authentication**, etc.
 
 ### **Installing Plugins**
 
@@ -76,7 +80,7 @@ To install a new plugin, use:
 tsdiapi plugins add <plugin-name>
 ```
 
-For example, to add Prisma support:
+For example, to add **Prisma support**:
 
 ```bash
 tsdiapi plugins add prisma
@@ -84,19 +88,17 @@ tsdiapi plugins add prisma
 
 ### **Configuring Plugins**
 
-Some plugins require additional configuration. Use:
+Some plugins require additional setup. Use:
 
 ```bash
 tsdiapi plugins config <plugin-name>
 ```
 
-This will guide you through setting up the necessary parameters.
-
 🔗 [Explore all available plugins](https://www.npmjs.com/search?q=%40tsdiapi)
 
 ---
 
-## **Generating Code Automatically**
+## **⚙️ Generating Code Automatically**
 
 TSDIAPI CLI features a **powerful code generation system** that detects installed plugins and their **generators** dynamically.
 
@@ -111,39 +113,147 @@ tsdiapi generate <resource|pluginName> <name>
 Example:
 
 ```bash
-tsdiapi generate controller user
+tsdiapi generate module user
 ```
 
 This will create a **UserController**.
 
-| Resource     | Description                        |
-| ------------ | ---------------------------------- |
-| `feature`    | Generate a new feature module.     |
-| `service`    | Generate a new service.            |
-| `controller` | Generate a new controller.         |
-| `<plugin>`   | Use a specific plugin’s generator. |
+| Resource   | Description                        |
+| ---------- | ---------------------------------- |
+| `feature`  | Generate a new feature module.     |
+| `service`  | Generate a new service.            |
+| `module`   | Generate a new module.             |
+| `<plugin>` | Use a specific plugin’s generator. |
 
-### **How Generators Work**
+## **TSDIAPI CLI Commands**
 
-- **Plugins define generators.** Each plugin can introduce its own generators.
-- The CLI **automatically detects installed plugins** and provides relevant options.
-- You don’t need to configure generators manually—just install the required plugins.
+Below is a comprehensive list of all available commands in the TSDIAPI CLI, along with their descriptions.
+
+| **Command**                         | **Description**                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| tsdiapi init [name]                 | Initializes a new TSDIAPI project with an interactive setup.           |
+| tsdiapi create <name>               | Alias for init, creates a new project.                                 |
+| tsdiapi start <name>                | Quickly creates a project with default settings and starts the server. |
+| tsdiapi plugins add <pluginName>    | Adds a plugin to the project.                                          |
+| tsdiapi add <pluginName>            | Alias for plugins add, adds a plugin to the project.                   |
+| tsdiapi plugins config <pluginName> | Configures an installed plugin.                                        |
+| tsdiapi config <pluginName>         | Alias for plugins config, configures a plugin.                         |
+| tsdiapi plugins update <pluginName> | Updates an installed plugin.                                           |
+| tsdiapi generate <pluginArg> <name> | Generates files using a plugin or built-in generator.                  |
+| tsdiapi prisma                      | Adds PrismaORM to the project.                                         |
+| tsdiapi feature <name>              | Alias for generate feature <name>, generates a new feature module.     |
+| tsdiapi service <name> [feature]    | Alias for generate service <name> with optional feature module.        |
+| tsdiapi controller <name> [feature] | Alias for generate controller <name> with optional feature module.     |
+
+### Developer Commands
+
+| **Command**               | **Description**                                 |
+| ------------------------- | ----------------------------------------------- |
+| tsdiapi dev plugin <name> | Creates a new plugin with an interactive setup. |
+| tsdiapi dev check         | Validates the configuration of a plugin.        |
 
 ---
 
-## **PrismaORM Integration**
+### **How Generators Work**
 
-TSDIAPI seamlessly integrates with **PrismaORM** for database management. The framework uses **PrismaQL Core**, a powerful SQL-like DSL for safely and programmatically editing Prisma schema files. This ensures a flexible and robust development workflow.
+- **Plugins define generators**, introducing new capabilities.
+- The CLI **automatically detects installed plugins** and their generators.
+- No manual setup—just install plugins and start generating code.
 
-To add Prisma to your project, use:
+---
 
-```bash
-tsdiapi prisma
+## **🛠 Defining API Routes**
+
+TSDIAPI provides a **structured route-building system** via `useRoute()`, using **Fastify & TypeBox**.
+
+### **Example Controller**
+
+```ts
+import { AppContext } from "@tsdiapi/server";
+import { Type } from "@sinclair/typebox";
+
+export default function userController({ useRoute }: AppContext) {
+  useRoute()
+    .get("/users/:id")
+    .params(Type.Object({ id: Type.String() }))
+    .code(200, Type.Object({ id: Type.String(), name: Type.String() }))
+    .handler(async (req) => {
+      return { id: req.params.id, name: "John Doe" };
+    })
+    .build();
+}
 ```
 
-This command will install and configure Prisma in your project, allowing you to manage models, fields, relations, and more with ease.
+- **TypeBox schemas** ensure **runtime validation**.
+- **useRoute() API** provides **chained route configuration**.
 
-🔗 [Learn more about PrismaQL Core](https://www.npmjs.com/package/prismaql)
+---
+
+## **🔌 Plugin System & Lifecycle Hooks**
+
+You can extend functionality with **custom plugins**. Each plugin can define:
+
+| Lifecycle Hook | Description                                                |
+| -------------- | ---------------------------------------------------------- |
+| `onInit`       | Runs **before server starts** – used for setup tasks.      |
+| `beforeStart`  | Runs **before listening** – useful for last checks.        |
+| `afterStart`   | Runs **after server starts** – ideal for background tasks. |
+
+### **Example Plugin**
+
+```ts
+export function myPlugin() {
+  return {
+    name: "myPlugin",
+    async onInit(context) {
+      console.log("myPlugin: Initialized!");
+    },
+    async afterStart(context) {
+      console.log("myPlugin: Server started!");
+    },
+  };
+}
+```
+
+Register it in `createApp`:
+
+```ts
+import { createApp } from "@tsdiapi/server";
+import { myPlugin } from "./api/plugins/myPlugin";
+
+await createApp({
+  plugins: [myPlugin()],
+});
+```
+
+---
+
+## **🔄 Configuration Management**
+
+TSDIAPI **automatically loads `.env` variables** for easy configuration.
+
+### **Example `.env` File**
+
+```
+PORT=3000
+HOST=localhost
+```
+
+### **Accessing Config**
+
+```ts
+const port = context.projectConfig.get("PORT", 3000);
+const host = context.projectConfig.get("HOST", "localhost");
+```
+
+---
+
+## **📖 API Documentation & Swagger**
+
+TSDIAPI **automatically generates OpenAPI documentation**.  
+Once your server is running, check **Swagger UI**:
+
+👉 `http://localhost:3000/docs`
 
 ---
 
@@ -181,125 +291,14 @@ This command validates the plugin’s configuration and ensures it follows best 
 
 ---
 
-## **Plugin Lifecycle Methods**
 
-Each plugin supports the following lifecycle methods:
+## **🎯 Contributing & Contact**
 
-Here’s the updated table of all **TSDIAPI CLI commands** with their descriptions, formatted for a `README.md` file:
-
----
-
-## **TSDIAPI CLI Commands**
-
-Below is a comprehensive list of all available commands in the TSDIAPI CLI, along with their descriptions.
-
-| **Command**                           | **Description**                                                        |
-| ------------------------------------- | ---------------------------------------------------------------------- |
-| `tsdiapi init [name]`                 | Initializes a new TSDIAPI project with an interactive setup.           |
-| `tsdiapi create <name>`               | Alias for `init`, creates a new project.                               |
-| `tsdiapi start <name>`                | Quickly creates a project with default settings and starts the server. |
-| `tsdiapi plugins add <pluginName>`    | Adds a plugin to the project.                                          |
-| `tsdiapi add <pluginName>`            | Alias for `plugins add`, adds a plugin to the project.                 |
-| `tsdiapi plugins config <pluginName>` | Configures an installed plugin.                                        |
-| `tsdiapi config <pluginName>`         | Alias for `plugins config`, configures a plugin.                       |
-| `tsdiapi plugins update <pluginName>` | Updates an installed plugin.                                           |
-| `tsdiapi generate <pluginArg> <name>` | Generates files using a plugin or built-in generator.                  |
-| `tsdiapi prisma`                      | Adds PrismaORM to the project.                                         |
-| `tsdiapi feature <name>`              | Alias for `generate feature <name>`, generates a new feature module.   |
-| `tsdiapi service <name> [feature]`    | Alias for `generate service <name>` with optional feature module.      |
-| `tsdiapi controller <name> [feature]` | Alias for `generate controller <name>` with optional feature module.   |
-
-### Developer Commands
-
-| **Command**                 | **Description**                                 |
-| --------------------------- | ----------------------------------------------- |
-| `tsdiapi dev plugin <name>` | Creates a new plugin with an interactive setup. |
-| `tsdiapi dev check`         | Validates the configuration of a plugin.        |
-
----
-
-### **Usage Examples**
-
-1. **Create a new project:**
-
-   ```bash
-   tsdiapi create my-api
-   ```
-
-2. **Add the plugin:**
-
-   ```bash
-   tsdiapi plugins add prisma
-   ```
-
-3. **Generate a feature:**
-
-   ```bash
-   tsdiapi generate feature user
-   ```
-
-   or
-
-   ```bash
-   tsdiapi feature user
-   ```
-
-4. **Add Prisma to the project:**
-   ```bash
-   tsdiapi prisma
-   ```
-
----
-
-### **Auto-loading Files**
-
-If a plugin supports auto-loading files, it should specify `bootstrapFilesGlobPath` in its configuration. This ensures that all matching files are automatically registered.
-
----
-
-## **Contributing & Contact**
-
-TSDIAPI is an open-source project. Contributions are always welcome! If you want to contribute, suggest features, or report issues, feel free to reach out.
+TSDIAPI is an **open-source project**. Contributions are welcome! 🚀
 
 📧 Contact: [unbywyd](https://unbywyd.com)
 
-🚀 Happy coding with **TSDIAPI CLI**!
-
 ---
 
-## **Getting Started**
-
-1. **Install the CLI:**
-
-   ```bash
-   npm install -g @tsdiapi/cli
-   ```
-
-2. **Create a new project:**
-
-   ```bash
-   tsdiapi init my-api
-   ```
-
-3. **Add Prisma support:**
-
-   ```bash
-   tsdiapi prisma
-   ```
-
-4. **Generate a new controller:**
-
-   ```bash
-   tsdiapi generate controller user
-   ```
-
-5. **Start your server:**
-
-   ```bash
-   cd my-api
-   npm start
-   ```
-
----
-
-With **TSDIAPI**, you can build scalable, maintainable, and modular APIs with ease. Dive in and start building your next project today! 🚀
+With **TSDIAPI**, you can build **fast, modular, and scalable** APIs with ease.  
+Dive in and start building today! 🚀

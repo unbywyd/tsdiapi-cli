@@ -1,7 +1,6 @@
 import path from 'path';
 import chalk from 'chalk';
-import { Project } from 'ts-morph';
-import { capitalize } from './format.js';
+import { Project, SyntaxKind } from 'ts-morph';
 // Utility function to ensure imports are present or add them if missing
 function ensureImports(sourceFile, imports) {
     imports.forEach(({ name, moduleSpecifier }) => {
@@ -29,49 +28,67 @@ function ensureImports(sourceFile, imports) {
 export async function addAppConfigParams(projectDir, params) {
     try {
         const appConfigPath = path.join(projectDir, 'src/app.config.ts');
-        // Initialize ts-morph project
-        const project = new Project();
-        const sourceFile = project.addSourceFileAtPath(appConfigPath);
-        // Ensure required imports are present
-        ensureImports(sourceFile, [
-            { name: 'Expose', moduleSpecifier: 'class-transformer' },
-            { name: 'Type', moduleSpecifier: 'class-transformer' },
-            { name: 'IsString', moduleSpecifier: 'class-validator' },
-            { name: 'IsNumber', moduleSpecifier: 'class-validator' },
-            { name: 'IsBoolean', moduleSpecifier: 'class-validator' },
-        ]);
-        // Find the class declaration
-        const classDeclaration = sourceFile.getClass('ConfigSchema');
-        if (!classDeclaration) {
+        const project = new Project({
+            tsConfigFilePath: path.join(projectDir, 'tsconfig.json'),
+        });
+        const sourceFile = project.addSourceFileAtPathIfExists(appConfigPath);
+        if (!sourceFile) {
+            console.log(chalk.red(`ERROR: File 'app.config.ts' not found at ${appConfigPath}.`));
             return;
         }
+        ensureImports(sourceFile, [{ name: 'Type', moduleSpecifier: '@sinclair/typebox' }]);
+        const configSchemaDecl = sourceFile
+            .getVariableDeclarations()
+            .find((v) => v.getName() === 'ConfigSchema');
+        if (!configSchemaDecl) {
+            console.log(chalk.red(`ERROR: 'ConfigSchema' variable not found in ${appConfigPath}.`));
+            return;
+        }
+        const initializer = configSchemaDecl.getInitializer();
+        if (!initializer) {
+            console.log(chalk.red(`ERROR: 'ConfigSchema' has no initializer.`));
+            return;
+        }
+        console.log(chalk.blue(`INFO: Found 'ConfigSchema' with initializer of type '${initializer.getKindName()}'.`));
+        if (!initializer.isKind(SyntaxKind.CallExpression)) {
+            console.log(chalk.red(`ERROR: 'ConfigSchema' is not a function call (Type.Object({...})).`));
+            return;
+        }
+        const callExpr = initializer;
+        const expressionText = callExpr.getExpression().getText();
+        if (expressionText !== 'Type.Object') {
+            console.log(chalk.red(`ERROR: 'ConfigSchema' is initialized with '${expressionText}', not 'Type.Object'.`));
+            return;
+        }
+        const args = callExpr.getArguments();
+        if (!args.length) {
+            console.log(chalk.red(`ERROR: 'Type.Object()' has no arguments.`));
+            return;
+        }
+        const objectArg = args[0];
+        if (!objectArg || !objectArg.isKind(SyntaxKind.ObjectLiteralExpression)) {
+            console.log(chalk.red(`ERROR: First argument to 'Type.Object()' is not an object literal.`));
+            return;
+        }
+        const objectLiteral = objectArg;
         params.forEach((param) => {
-            // Check if the property already exists
-            const existingProperty = classDeclaration.getProperty(param.key);
-            if (existingProperty) {
+            const existingProp = objectLiteral.getProperty(param.key);
+            if (existingProp) {
                 console.log(chalk.yellow(`Property '${param.key}' already exists in ConfigSchema.`));
                 return;
             }
-            // Add the new property with decorators based on the type
-            const typeMap = {
-                string: 'String',
-                number: 'Number',
-                boolean: 'Boolean',
+            const typeBoxMap = {
+                string: 'Type.String()',
+                number: 'Type.Number()',
+                boolean: 'Type.Boolean()',
             };
-            const property = classDeclaration.addProperty({
+            objectLiteral.addPropertyAssignment({
                 name: param.key,
-                type: param.type,
-            });
-            property.addDecorator({ name: 'Is' + capitalize(param.type), arguments: [] });
-            property.addDecorator({ name: 'Expose', arguments: [] });
-            property.addDecorator({
-                name: 'Type',
-                arguments: [`() => ${typeMap[param.type]}`],
+                initializer: typeBoxMap[param.type],
             });
         });
-        // Save the modified file
         await sourceFile.save();
-        console.log(chalk.green('app.config.ts has been successfully updated.'));
+        console.log(chalk.green('app.config.ts has been successfully updated (TypeBox).'));
     }
     catch (error) {
         console.error(chalk.red('An error occurred while updating app.config.ts:'), error.message);

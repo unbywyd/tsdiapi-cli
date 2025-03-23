@@ -9,7 +9,7 @@ export async function getPluginMetaDataFromRoot(packagePath) {
     else {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            const isValid = await validatePluginConfig(config);
+            const isValid = validatePluginConfig(config);
             if (!isValid) {
                 return null;
             }
@@ -32,7 +32,7 @@ export async function getPluginMetadata(currentDirectory, packageName) {
     else {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            const isValid = await validatePluginConfig(config);
+            const isValid = validatePluginConfig(config);
             if (!isValid) {
                 return null;
             }

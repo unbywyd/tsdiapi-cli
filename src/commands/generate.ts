@@ -5,7 +5,7 @@ import fs from "fs-extra";
 import { glob } from "glob";
 import ora from 'ora'
 import { getPackageName } from '../config.js';
-import { toCamelCase, toKebabCase, toPascalCase } from "../utils/format.js";
+import { toKebabCase, toPascalCase } from "../utils/format.js";
 import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer.js';
 import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration.js';
 import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd.js';
@@ -51,8 +51,7 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             )
         }
 
-        // Local generators
-        if ((pluginName === 'controller' || pluginName === 'service')) {
+        if ((pluginName === 'module' || pluginName === 'service')) {
             if (!fileName) {
                 console.log(chalk.bgRed.white.bold("⚠️ ERROR ") +
                     chalk.red(` Generator name is required!\n\n`) +
@@ -61,14 +60,12 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                 process.exit(1);
             }
             const output = toFeature ? path.join(currentDirectory, 'src/api/features', toFeature) : fileName;
-            return safeGenerate(pluginName, output, args, toFeature ? fileName : undefined);
+            return safeGenerate(pluginName, output, toFeature ? fileName : undefined);
         }
-
-
 
         const packageName = getPackageName(pluginName);
 
-        const isInstalled = await isPackageInstalled(currentDirectory, packageName);
+        const isInstalled = isPackageInstalled(currentDirectory, packageName);
         if (!isInstalled) {
             return console.log(
                 chalk.red(`Plugin ${pluginName} is not installed!`)
@@ -493,7 +490,7 @@ export async function generateFeature(name: string, projectDir?: string) {
 
         await fs.mkdirp(featurePath);
         const servicePath = await generateNewService(name, featurePath);
-        const controllerPath = await generateNewController(name, featurePath, true);
+        const controllerPath = await generateNewModule(name, featurePath);
 
         console.log(chalk.green.bold("\n✅ Feature successfully generated! 🎉\n"));
         console.log(chalk.yellow("🗂️ Created files:"));
@@ -516,7 +513,7 @@ export async function generateFeature(name: string, projectDir?: string) {
     }
 }
 
-export async function safeGenerate(pluginName: string, output: string, args: Record<string, any> = {}, fName?: string) {
+export async function safeGenerate(pluginName: string, output: string, fName?: string) {
     const cwd = path.isAbsolute(output) ? output : resolveTargetDirectory(process.cwd(), output);
     const name = fName || path.basename(output);
     try {
@@ -534,8 +531,8 @@ export async function safeGenerate(pluginName: string, output: string, args: Rec
             return;
         }
 
-        if (pluginName === 'controller') {
-            await generateNewController(name, cwd, args?.service || false);
+        if (pluginName === 'module') {
+            await generateNewModule(name, cwd);
 
         } else if (pluginName === 'service') {
             await generateNewService(name, cwd);
@@ -571,31 +568,26 @@ export async function generateNewService(name: string, dir: string): Promise<str
     }
 }
 
-export async function generateNewController(name: string, dir: string, withService = false) {
+export async function generateNewModule(name: string, dir: string): Promise<string | null> {
     try {
-        const pascalCase = toPascalCase(name);
         const kebabCaseName = toKebabCase(name);
-        const filename = `${kebabCaseName}.controller.ts`;
-        const className = `${pascalCase}Controller`;
+        const filename = `${kebabCaseName}.module.ts`;
+        const pascalCase = toPascalCase(name);
+        const className = `${pascalCase}Module`;
 
         const targetPath = path.join(dir, filename);
         if (fs.existsSync(targetPath)) {
-            console.log(chalk.red(`⚠️ The controller ${chalk.bold(filename)} already exists in the target directory.`));
+            console.log(
+                chalk.red(`⚠️ The service ${chalk.bold(filename)} already exists in the target directory.`)
+            );
             return null;
         }
-
-        const content = buildHandlebarsTemplate('generator/controller', {
-            className: className,
-            kebabCaseName: kebabCaseName,
-            serviceCamelCaseName: withService ? `${toCamelCase(name)}Service` : null,
-            serviceClassName: withService ? `${pascalCase}Service` : null,
-        });
-
+        const content = buildHandlebarsTemplate('generator/module', {className});
         await fs.outputFile(targetPath, content);
-        console.log(chalk.green(`✅ Controller generated at: ${targetPath}`));
+        console.log(chalk.green(`✅ Service generated at: ${targetPath}`));
         return targetPath;
     } catch (e) {
-        console.error(chalk.red('Error generating controller:', e));
+        console.error(chalk.red('Error generating service:', e));
         return null;
     }
 }

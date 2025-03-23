@@ -1,17 +1,17 @@
-import type { Logger } from "winston";
 import { PluginOptions } from "./index.js";
+import type { AppContext } from "@tsdiapi/server";
 
 export class {{pascalCase name}}Provider {
     private config: PluginOptions;
-    private logger: Logger;
+    private context: AppContext;
 
-    constructor(config: PluginOptions, logger: Logger) {
+    constructor(config: PluginOptions, ctx: AppContext) {
         this.config = config;
-        this.logger = logger;
+        this.context = ctx;
     }
 
     public init() {
-        this.logger.info(`Initializing {{pascalCase name}} provider...`);
+        this.context.fastify.log.info(`Initializing {{pascalCase name}} provider...`);
         // TODO: Your initialization logic here
     }
 }

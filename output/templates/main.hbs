@@ -1,18 +1,6 @@
 import { createApp } from "@tsdiapi/server";
-{{#if plugins}}
-{{#each plugins}}
-import {{importPackageName}} from "{{packageName}}";
-{{/each}}
-{{/if}}
+import { ConfigType, ConfigSchema } from "./app.config.js";
 
-{{#if plugins}}
-createApp({ 
-    plugins: [
-    {{#each plugins}}
-        {{importPackageName}}(),
-    {{/each}}
-    ]
+createApp<ConfigType>({
+    configSchema: ConfigSchema
 });
-{{else}}
-createApp();
-{{/if}}

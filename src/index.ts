@@ -8,6 +8,7 @@ import { promptPluginDetails } from './commands/dev-create-plg.js'
 import { addPlugin } from './commands/add-plugin.js'
 import { updatePlugin } from './commands/update-plugin.js'
 import { checkPluginConfig } from './commands/check-plugin-config.js'
+import { addAppConfigParams } from './utils/app.config.js'
 
 program.name('tsdiapi').description('CLI for managing TSDIAPI projects').version(CurrentVersion);
 program.command('init [name]').description('Initialize a new TSDIAPI project')
@@ -124,10 +125,10 @@ program
   });
 
 program
-  .command('controller <name> [feature]')
-  .description('Generate a new controller')
+  .command('module <name> [feature]')
+  .description('Generate a new module')
   .action(async (name, feature) => {
-    generate("controller", name, "", feature);
+    generate("module", name, "", feature);
   });
 program.parse(process.argv)
 

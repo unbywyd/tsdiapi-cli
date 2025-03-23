@@ -1,31 +1,11 @@
-import { Expose, Transform, Type } from 'class-transformer';
-import { IsString, IsNumber, IsBoolean } from 'class-validator';
+import { Type, Static } from '@sinclair/typebox';
 
-class ConfigSchema {
-    @IsString()
-    @Expose()
-    @Type(() => String)
-    NAME: string;
-    @IsString()
-    @Expose()
-    @Type(() => String)
-    VERSION: string;
-    @IsNumber()
-    @Expose()
-    @Type(() => Number)
-    PORT: number;
-    @IsString()
-    @Expose()
-    @Type(() => String)
-    HOST: string;
-    @IsString()
-    @Expose()
-    @Type(() => String)
-    API_PREFIX: string;
-    @IsString()
-    @Expose()
-    @Type(() => String)
-    DATABASE_URL: string;
-}
+export const ConfigSchema = Type.Object({
+    NAME: Type.String(),
+    VERSION: Type.String(),
+    PORT: Type.Number(),
+    HOST: Type.String(),
+    DATABASE_URL: Type.String()
+});
 
-export default ConfigSchema; 
+export type ConfigType = Static<typeof ConfigSchema>;

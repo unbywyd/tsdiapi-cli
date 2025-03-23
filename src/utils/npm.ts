@@ -129,27 +129,20 @@ export async function installBaseDependencies(projectDir: string) {
     console.log(chalk.blue("\n📦 Installing base dependencies...\n"));
 
     const baseDependencies = [
-        "axios",
         "@tsdiapi/server",
         "reflect-metadata",
-        "class-transformer",
-        "class-validator",
-        "routing-controllers",
-        "routing-controllers-openapi",
         "typedi",
-        "cross-env"
+        "cross-env",
+        "@sinclair/typebox"
     ];
 
     const devDependencies = [
         "@types/node",
         "cpy-cli",
-        "prisma-class-dto-generator",
-        "tsc-alias",
         "nodemon",
         "ts-node",
         "tslib",
-        "typescript",
-        "@types/express"
+        "typescript"
     ];
 
     const spinner = ora({

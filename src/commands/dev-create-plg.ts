@@ -74,20 +74,12 @@ export async function promptPluginDetails(sourcePluginName: string) {
                 name: "giturl",
                 message: "🔗 GitHub repository URL (leave empty if not needed):",
                 default: ""
-            },
-            {
-                type: "confirm",
-                name: "withBootstrapFiles",
-                message: "⚙️ Should this plugin support automatic file loading?",
-                default: false
             }
         ]);
         let variables: PluginConfigVariable[] = [],
             promptPost: string | null = null,
             promptScripts: Record<string, string> | null = null,
             afterInstall: CommandWithCondition | null = null,
-            requiredPackages: string[] = [],
-            requiredPaths: string[] = [],
             preMessages: string[] = [],
             postMessages: string[] = [];
 
@@ -99,24 +91,6 @@ export async function promptPluginDetails(sourcePluginName: string) {
                 process.exit(0);
             }
             console.error(chalk.red(`❌ Error while configuring plugin variables: ${error.message}`));
-        }
-        try {
-            requiredPackages = await promptRequiredPackages();
-        } catch (error) {
-            if (checkIfUserForsed(error)) {
-                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
-                process.exit(0);
-            }
-            console.error(chalk.red(`❌ Error while configuring required packages: ${error.message}`));
-        }
-        try {
-            requiredPaths = await promptRequiredPaths();
-        } catch (error) {
-            if (checkIfUserForsed(error)) {
-                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
-                process.exit(0);
-            }
-            console.error(chalk.red(`❌ Error while configuring required paths: ${error.message}`));
         }
         try {
             promptPost = await promptPostInstall(pluginName);
@@ -252,12 +226,6 @@ logs/*
         }
         if (afterInstall) {
             configData.afterInstall = afterInstall;
-        }
-        if (requiredPackages.length) {
-            configData.requiredPackages = requiredPackages;
-        }
-        if (requiredPaths.length) {
-            configData.requiredPaths = requiredPaths;
         }
         if (preMessages.length) {
             configData.preMessages = preMessages;

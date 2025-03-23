@@ -105,10 +105,10 @@ program
     generate("service", name, "", feature);
 });
 program
-    .command('controller <name> [feature]')
-    .description('Generate a new controller')
+    .command('module <name> [feature]')
+    .description('Generate a new module')
     .action(async (name, feature) => {
-    generate("controller", name, "", feature);
+    generate("module", name, "", feature);
 });
 program.parse(process.argv);
 //# sourceMappingURL=index.js.map
