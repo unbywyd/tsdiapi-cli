@@ -88,7 +88,6 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                     chalk.red(`Generator ${generatorName} not found in plugin ${pluginName}!`)
                 )
             } else {
-                // Мы не нашли генератор, но у нас всего один генератор, поэтому используем его уведомим пользователя о том, что мы взяли его
                 const selectedGeneratorName = generators[0].name;
                 console.log(chalk.yellow(`Generator ${generatorName} not found in plugin ${pluginName}! Using ${selectedGeneratorName} instead.`));
             }
@@ -164,7 +163,7 @@ export async function generate(pluginName: string, fileName: string, generatorNa
         if (currentGenerator.requiredPackages?.length) {
             console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
             for (const packageName of currentGenerator.requiredPackages) {
-                const isInstalled = await isPackageInstalled(currentDirectory, packageName);
+                const isInstalled = isPackageInstalled(currentDirectory, packageName);
                 if (!isInstalled) {
                     return console.log(
                         chalk.red(`Plugin ${packageName} is required for generator ${currentGenerator.name}!`)
@@ -367,18 +366,31 @@ export async function generate(pluginName: string, fileName: string, generatorNa
         console.error(chalk.red('Error generating plugin:', e));
     }
 }
+function getRootDirectory(filePath: string): string | null {
+    if (!filePath.includes('/') && !filePath.includes('\\')) {
+        return null;
+    }
+    const normalizedPath: string = filePath.replace(/\\/g, '/');
+    const trimmedPath: string = normalizedPath.replace(/^\/+/, '');
 
+    const segments: string[] = trimmedPath.split('/');
+    return segments[0] || null;
+}
 export async function generateFiles(currentGenerator: PluginGenerator, defaultObj: Record<string, any>, currentDirectory: string, plugFiles: PluginFileMapping[]): Promise<void> {
     try {
         const filesToGenerate = [];
-        const { name, packageName } = defaultObj;
-        const cwd = resolveTargetDirectory(process.cwd(), name);
+        const { packageName } = defaultObj;
+        const cwd = process.cwd();
         const packagePath = path.join(currentDirectory, 'node_modules', packageName);
 
         for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
             const toCwd = isRoot ? currentDirectory : cwd;
-            const destinationPrepared = destination.replace(/{{name}}/g, defaultObj.name);
-            const resolvedDest = path.resolve(toCwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, toKebabCase(defaultObj.name)));
+            const filename = path.basename(defaultObj.name);
+            const hasDirname = getRootDirectory(defaultObj.name);
+            const dirname = hasDirname ? path.dirname(defaultObj.name) : '';
+            const destinationPrepared = destination.replace(/{{name}}/g, filename);
+
+            const resolvedDest = path.resolve(toCwd, replacePlaceholdersInPath(destinationPrepared, defaultObj, dirname));
 
             const files = glob.sync(source, { cwd: packagePath });
             if (files.length === 0) {
@@ -389,9 +401,8 @@ export async function generateFiles(currentGenerator: PluginGenerator, defaultOb
                 const sourceFile = path.resolve(packagePath, file);
                 const fileName = path.basename(file);
 
-
                 const targetPath = isDirectoryPath(resolvedDest) ? path.join(resolvedDest, fileName) : resolvedDest;
-                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, toKebabCase(defaultObj.name));
+                const outputPath = replacePlaceholdersInPath(targetPath, defaultObj, dirname);
 
                 if (fs.existsSync(outputPath)) {
                     console.log(chalk.yellow(`⚠️ Skipping: File already exists: ${outputPath}`));
@@ -582,7 +593,7 @@ export async function generateNewModule(name: string, dir: string): Promise<stri
             );
             return null;
         }
-        const content = buildHandlebarsTemplate('generator/module', {className});
+        const content = buildHandlebarsTemplate('generator/module', { className });
         await fs.outputFile(targetPath, content);
         console.log(chalk.green(`✅ Service generated at: ${targetPath}`));
         return targetPath;
