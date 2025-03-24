@@ -93,6 +93,9 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
                 return;
             }
         }
+        else if (!generatorByName && generators?.length === 1) {
+            currentGenerator = generators[0];
+        }
         if (!currentGenerator) {
             return console.log(chalk.red(`Generator ${generatorName} not found in plugin ${pluginName}!`));
         }
