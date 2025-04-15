@@ -1,7 +1,7 @@
 {
   "name": "@tsdiapi/cli",
   "description": "A command-line tool for creating and managing scalable TSDIAPI projects with built-in plugin integration and configuration support.",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "main": "output/index.js",
   "types": "output/index.d.ts",
   "private": false,

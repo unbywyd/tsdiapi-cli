@@ -7,7 +7,7 @@
     "install:prod": "npm install --omit=optional",
     "build": "tsc && npm run copy-public",
     "copy-public": "cpy \"src/public/**/*\" \"dist/public\" --parents",
-    "start": "cross-env NODE_ENV=production node ./dist/main.js",
+    "start": "cross-env NODE_ENV=production node --import ./bin.js ./dist/main.js",
     "fast-dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
     "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'"
     {{#if scripts}},
