@@ -21,23 +21,28 @@ function resolveDirectoryImport(specifier) {
 
 export function resolve(specifier, context, defaultResolve) {
     try {
+        const isProduction = process.env.NODE_ENV === 'production';
+        const root = isProduction ? 'dist' : 'src';
         const alias = {
-            "@base": "src",
-            "@features": "src/api/features",
-            "@api": "src/api"
+            "@base": root,
+            "@features": root + "/api/features",
+            "@api": root + "/api"
         }
 
         for (const [key, value] of Object.entries(alias)) {
             if (specifier.startsWith(key + '/')) {
                 const relativePath = specifier.substring(key.length + 1);
                 let absolutePath = join(process.cwd(), value, relativePath);
-                absolutePath = absolutePath.replace(/\.js$/, '.ts');
+                if (!isProduction) {
+                    absolutePath = absolutePath.replace(/\.js$/, '.ts');
+                }
+
                 specifier = absolutePath;
                 break;
             }
         }
         if (specifier.endsWith('.js')) {
-            let tsPath = specifier.replace(/\.js$/, '.ts');
+            let tsPath = !isProduction ? specifier.replace(/\.js$/, '.ts') : specifier;
 
             if (!isAbsolute(tsPath)) {
                 const parentDir = context.parentURL ? dirname(fileURLToPath(context.parentURL)) : process.cwd();
