@@ -27,6 +27,7 @@ export const applyPrismaScripts = async (projectDir: string, prismaScripts: Arra
                 const result = await provider.multiApply(replaceSafeVariables(script.command, payload), {
                     save: true,
                     dryRun: false,
+                    forceApplyAll: true,
                 });
                 if (result?.length) {
                     for (const { result: r, error } of result) {
