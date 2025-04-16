@@ -257,9 +257,8 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             try {
                 const succesInstalled = await applyPrismaScripts(projectDir, prismaScripts, payload);
                 if (!succesInstalled) {
-                    console.error(chalk.redBright(`Skipping Installation of ${pluginName}.`));
-                    console.log(chalk.yellow(`Please fix the issue and try configuring the plugin again using the command ${chalk.cyan(`tsdiapi plugins config ${pluginName}`)}`));
-                    return false;
+                    console.error(chalk.redBright(`⚠️ Warning: There were errors during Prisma setup for ${pluginName}.`));
+                    console.log(chalk.yellow(`Please review the Prisma-related errors above. The plugin installation will continue, but you may need to manually fix Prisma issues later.`));
                 }
             }
             catch (e) {
