@@ -3,6 +3,8 @@ import ora from "ora";
 import util from 'util';
 import { exec } from 'child_process';
 import { Project, SyntaxKind } from "ts-morph";
+import { addSafeImport } from "./import-utils.js";
+import { getPluginMetadata } from "./plg-metadata.js";
 const execAsync = util.promisify(exec);
 export async function addPluginToApp(filePath, pluginName, pluginImportPath, projectDir) {
     const spinner = ora().start();
@@ -13,15 +15,25 @@ export async function addPluginToApp(filePath, pluginName, pluginImportPath, pro
         spinner.text = chalk.blue("🔍 Updating application entry file...");
         const project = new Project();
         const sourceFile = project.addSourceFileAtPath(filePath);
+        const config = await getPluginMetadata(projectDir, pluginImportPath);
+        // Get plugin registration details from config if available
+        const registration = config?.registration;
+        const pluginImportName = registration?.pluginImportName || pluginName;
+        const pluginArgs = registration?.pluginArgs || '';
+        const additionalImports = registration?.imports || [];
+        // Add additional imports if any
+        for (const importStatement of additionalImports) {
+            addSafeImport(sourceFile, importStatement);
+        }
         // Check if import already exists
         const existingImport = sourceFile.getImportDeclaration((imp) => imp.getModuleSpecifier().getLiteralValue() === pluginImportPath);
         if (existingImport) {
-            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginName} is already imported. Skipping.`));
+            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginImportName} is already imported. Skipping.`));
             return false;
         }
         // Add import statement
         sourceFile.addImportDeclaration({
-            defaultImport: pluginName,
+            defaultImport: pluginImportName,
             moduleSpecifier: pluginImportPath,
         });
         // Locate `createApp` function
@@ -37,11 +49,12 @@ export async function addPluginToApp(filePath, pluginName, pluginImportPath, pro
                 if (pluginsProperty) {
                     const pluginsArray = pluginsProperty.getFirstChildByKind(SyntaxKind.ArrayLiteralExpression);
                     if (pluginsArray) {
-                        if (pluginsArray.getText().includes(pluginName)) {
-                            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginName} is already registered. Skipping.`));
+                        if (pluginsArray.getText().includes(pluginImportName)) {
+                            spinner.warn(chalk.yellow(`⚠️ Plugin ${pluginImportName} is already registered. Skipping.`));
                             return false;
                         }
-                        pluginsArray.addElement(`${pluginName}()`);
+                        // Add plugin with arguments if provided
+                        pluginsArray.addElement(pluginArgs ? `${pluginImportName}(${pluginArgs})` : `${pluginImportName}()`);
                     }
                     else {
                         spinner.fail(chalk.red("❌ Failed to locate 'plugins' array in createApp."));
@@ -49,14 +62,18 @@ export async function addPluginToApp(filePath, pluginName, pluginImportPath, pro
                     }
                 }
                 else {
+                    // Add plugins property with the plugin and its arguments
                     argumentObject.addPropertyAssignment({
                         name: "plugins",
-                        initializer: `[${pluginName}()]`,
+                        initializer: pluginArgs ? `[${pluginImportName}(${pluginArgs})]` : `[${pluginImportName}()]`,
                     });
                 }
             }
             else {
-                createAppExpression?.addArgument(`{ plugins: [${pluginName}()] }`);
+                // Add new argument with plugins array
+                createAppExpression?.addArgument(pluginArgs
+                    ? `{ plugins: [${pluginImportName}(${pluginArgs})] }`
+                    : `{ plugins: [${pluginImportName}()] }`);
             }
         }
         else {
@@ -64,7 +81,7 @@ export async function addPluginToApp(filePath, pluginName, pluginImportPath, pro
             return false;
         }
         sourceFile.saveSync();
-        spinner.succeed(chalk.green(`✅ Plugin ${chalk.bold(pluginName)} successfully added to createApp!`));
+        spinner.succeed(chalk.green(`✅ Plugin ${chalk.bold(pluginImportName)} successfully added to createApp!`));
         return true;
     }
     catch (error) {

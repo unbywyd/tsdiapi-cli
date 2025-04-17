@@ -26,7 +26,8 @@ export function resolve(specifier, context, defaultResolve) {
         const alias = {
             "@base": root,
             "@features": root + "/api/features",
-            "@api": root + "/api"
+            "@api": root + "/api",
+            "@generated": "generated"
         }
 
         for (const [key, value] of Object.entries(alias)) {
@@ -34,7 +35,10 @@ export function resolve(specifier, context, defaultResolve) {
                 const relativePath = specifier.substring(key.length + 1);
                 let absolutePath = join(process.cwd(), value, relativePath);
                 if (!isProduction) {
-                    absolutePath = absolutePath.replace(/\.js$/, '.ts');
+                    const tsPath = absolutePath.replace(/\.js$/, '.ts');
+                    if (existsSync(tsPath)) {
+                        absolutePath = tsPath;
+                    }
                 }
 
                 specifier = absolutePath;

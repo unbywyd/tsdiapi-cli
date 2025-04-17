@@ -48,6 +48,12 @@ export interface PluginGenerator {
     prismaScripts?: PrismaScript[];
 }
 
+export interface PluginRegistration {
+    pluginImportName: string;
+    pluginArgs?: string;
+    imports?: string[];
+}
+
 
 export interface PluginFileMapping {
     source: string;
@@ -70,6 +76,7 @@ export interface PluginFileModification {
 export interface PluginMetadata {
     name: string;
     description?: string;
+    registration?: PluginRegistration;
     variables?: Array<PluginConfigVariable>;
     files?: Array<PluginFileMapping>;
     generators?: Array<PluginGenerator>;
@@ -90,6 +97,16 @@ export interface PluginMetadata {
 const pluginConfigSchema = {
     type: "object",
     properties: {
+        registration: {
+            type: "object",
+            properties: {
+                pluginImportName: { type: "string", minLength: 1 },
+                pluginArgs: { type: "string", nullable: true },
+                imports: { type: "array", items: { type: "string", minLength: 1 } }
+            },
+            required: ["pluginImportName"],
+            additionalProperties: false
+        },
         name: { type: "string", minLength: 1 },
         description: { type: "string", nullable: true },
         variables: {

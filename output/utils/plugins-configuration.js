@@ -4,6 +4,16 @@ import chalk from 'chalk';
 const pluginConfigSchema = {
     type: "object",
     properties: {
+        registration: {
+            type: "object",
+            properties: {
+                pluginImportName: { type: "string", minLength: 1 },
+                pluginArgs: { type: "string", nullable: true },
+                imports: { type: "array", items: { type: "string", minLength: 1 } }
+            },
+            required: ["pluginImportName"],
+            additionalProperties: false
+        },
         name: { type: "string", minLength: 1 },
         description: { type: "string", nullable: true },
         variables: {

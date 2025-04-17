@@ -42,6 +42,11 @@ export interface PluginGenerator {
     requiredPaths?: Array<string>;
     prismaScripts?: PrismaScript[];
 }
+export interface PluginRegistration {
+    pluginImportName: string;
+    pluginArgs?: string;
+    imports?: string[];
+}
 export interface PluginFileMapping {
     source: string;
     destination: string;
@@ -61,6 +66,7 @@ export interface PluginFileModification {
 export interface PluginMetadata {
     name: string;
     description?: string;
+    registration?: PluginRegistration;
     variables?: Array<PluginConfigVariable>;
     files?: Array<PluginFileMapping>;
     generators?: Array<PluginGenerator>;

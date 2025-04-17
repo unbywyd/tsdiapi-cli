@@ -1,1 +1,1 @@
-{"version":3,"file":"app-plg-to-app.d.ts","sourceRoot":"","sources":["../../src/utils/app-plg-to-app.ts"],"names":[],"mappings":"AAOA,wBAAsB,cAAc,CAChC,QAAQ,EAAE,MAAM,EAChB,UAAU,EAAE,MAAM,EAClB,gBAAgB,EAAE,MAAM,EACxB,UAAU,EAAE,MAAM,GACnB,OAAO,CAAC,OAAO,CAAC,CA2ElB"}
+{"version":3,"file":"app-plg-to-app.d.ts","sourceRoot":"","sources":["../../src/utils/app-plg-to-app.ts"],"names":[],"mappings":"AAUA,wBAAsB,cAAc,CAChC,QAAQ,EAAE,MAAM,EAChB,UAAU,EAAE,MAAM,EAClB,gBAAgB,EAAE,MAAM,EACxB,UAAU,EAAE,MAAM,GACnB,OAAO,CAAC,OAAO,CAAC,CAgGlB"}
