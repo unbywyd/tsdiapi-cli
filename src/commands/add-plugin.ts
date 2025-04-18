@@ -41,11 +41,11 @@ export const addPlugin = async (selectedPluginName: string) => {
 
         const isInstalled = isPackageInstalled(currentDirectory, packageName);
 
-        if (!isInstalled) {
-            spinner.text = chalk.blue(`📥 Installing ${packageName}...`);
-            await addPluginToApp(appFilePath, nameToImportName(selectedPluginName), packageName, currentDirectory);
-            spinner.succeed(chalk.green(`✅ Successfully added ${packageName} to the application.`));
-        }
+        // if (!isInstalled) {
+        spinner.text = chalk.blue(`📥 Installing ${packageName}...`);
+        await addPluginToApp(appFilePath, nameToImportName(selectedPluginName), packageName, currentDirectory);
+        spinner.succeed(chalk.green(`✅ Successfully added ${packageName} to the application.`));
+        //}
         spinner.text = chalk.blue(`🔍 Checking setup configuration for ${packageName}...`);
         const config = await getPluginMetadata(currentDirectory, packageName);
 
