@@ -295,7 +295,7 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
                 }
             }
             if ((payload && pluginConfig?.prisma?.scripts?.length) && !configAfterInstallCommand.includes('prisma')) {
-                const command = 'npx prisma generate';
+                const command = 'npm run prisma:generate';
                 console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
                 await runPostInstall(pluginName, projectDir, command);
                 console.log(chalk.green(`✅ Prisma client generated.`));

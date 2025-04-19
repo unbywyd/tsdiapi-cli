@@ -9,7 +9,8 @@
     "copy-public": "cpy \"src/public/**/*\" \"dist/public\" --parents",
     "start": "cross-env NODE_ENV=production node --import ./bin.js ./dist/main.js",
     "fast-dev": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
-    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'"
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext ts --exec 'node --import ./bin.js src/main.ts'",
+    "prisma:generate": "prisma generate && npx prisma-fastify-typebox-generator --output=../src/api/typebox-schemas"
     {{#if scripts}},
     {{#each scripts}}
     "{{name}}": "{{value}}"{{#unless @last}},{{/unless}}

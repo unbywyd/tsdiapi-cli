@@ -306,8 +306,7 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
         }
         const prismaScripts = currentGenerator.prismaScripts, afterGenerate = currentGenerator?.afterGenerate?.command || '';
         if ((prismaScripts?.length) && !afterGenerate.includes('prisma')) {
-            //const command = 'npm run prisma:generate';
-            const command = 'npx prisma generate';
+            const command = 'npm run prisma:generate';
             console.log(chalk.blueBright(`⚙️ Generating Prisma client...`));
             await runPostInstall(pluginName, currentDirectory, command);
             console.log(chalk.green(`✅ Prisma client generated.`));
