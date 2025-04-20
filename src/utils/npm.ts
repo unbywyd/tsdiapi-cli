@@ -30,7 +30,7 @@ export async function runPostInstall(pluginName: string, cwd: string, postInstal
     try {
         const { stdout, stderr } = await execAsync(postInstallCommand, { cwd });
         if (stdout) console.log(chalk.green(`✅ Output:\n${stdout}`));
-        if (stderr) console.log(chalk.red(`⚠️ Errors:\n${stderr}`));
+        if (stderr) console.log(stderr);
     } catch (error: any) {
         console.log(chalk.red(`❌ Failed to execute post-install script:`));
         console.error(chalk.red(`💥 Error: ${error.message}`));
@@ -130,6 +130,7 @@ export async function installBaseDependencies(projectDir: string) {
 
     const baseDependencies = [
         "@tsdiapi/server",
+        "prisma-fastify-typebox-generator",
         "reflect-metadata",
         "typedi",
         "cross-env",
