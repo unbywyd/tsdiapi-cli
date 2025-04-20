@@ -1,0 +1,9 @@
+
+import { Service } from "typedi";
+
+@Service()
+export default class {{className}} {
+    async getHello(): Promise<string> {
+        return "Hello World";
+    }
+}

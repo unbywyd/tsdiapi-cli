@@ -1,0 +1,27 @@
+import { AppContext } from "@tsdiapi/server";
+import { Type } from "@sinclair/typebox";
+import { Container } from "typedi";
+{{#if serviceClassName}}
+import {{serviceClassName}} from "./{{serviceFilename}}";
+{{/if}}
+
+export default function {{className}}({useRoute}: AppContext): void {
+    {{#if serviceClassName}}
+     useRoute("{{lowerCase name}}")
+        .get("/")
+        .code(200, Type.Object({
+            message: Type.String()
+        }))
+        .handler(async (req, res) => {
+            const service = Container.get({{serviceClassName}});
+            const hello = await service.getHello();
+            return {
+                status: 200,
+                data: {
+                    message: hello
+                }
+            }
+        })
+        .build();
+    {{/if}}
+}

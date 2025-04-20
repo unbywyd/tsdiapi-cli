@@ -138,7 +138,7 @@ export async function initProject(_installpath, options) {
                         message: "🚀 Enter the name of the feature:",
                         validate: (input) => input ? true : "❌ Feature name is required."
                     }]);
-                await generateFeature(featureName, projectDir);
+                await generateFeature(featureName, projectDir, true);
             }
         }
         catch (error) {

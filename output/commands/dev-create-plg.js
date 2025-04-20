@@ -67,7 +67,7 @@ export async function promptPluginDetails(sourcePluginName) {
                 default: ""
             }
         ]);
-        let variables = [], promptPost = null, promptScripts = null, afterInstall = null, preMessages = [], postMessages = [];
+        let variables = [], promptPost = null, promptScripts = null, afterInstall = null, preMessages = [], postMessages = [], prismaConfig = null;
         try {
             variables = await promptPluginVariables(packageName);
         }
@@ -127,6 +127,16 @@ export async function promptPluginDetails(sourcePluginName) {
                 process.exit(0);
             }
             console.error(chalk.red(`❌ Error while configuring post-install messages: ${error.message}`));
+        }
+        try {
+            prismaConfig = await promptPrismaDependency(pluginName);
+        }
+        catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
+            console.error(chalk.red(`❌ Error while configuring Prisma: ${error.message}`));
         }
         let files = [];
         try {
@@ -218,6 +228,9 @@ logs/*
         if (files.length) {
             configData.files = files;
         }
+        if (prismaConfig) {
+            configData.prisma = prismaConfig;
+        }
         const configName = "tsdiapi.config.json";
         const configPath = path.join(pluginDir, configName);
         if (!fs.existsSync(configPath)) {
@@ -258,7 +271,7 @@ ${chalk.cyan('📖 Refer to the official TSDIAPI documentation for best practice
 
 ${chalk.blue.bold('📢 Want to publish your plugin?')}
 - To publish your plugin on npm under the official @tsdiapi scope:
-  ✅ Ensure your plugin follows TSDIAPI’s best practices.
+  ✅ Ensure your plugin follows TSDIAPI's best practices.
   ✅ Contact me to be added as a maintainer for npm publishing.
   ✅ Once approved, your plugin will be publicly available!
 
@@ -809,6 +822,65 @@ export async function promptFiles(pluginName) {
         }
     }
     return mappings;
+}
+export async function promptPrismaDependency(pluginName) {
+    const { usePrisma } = await inquirer.prompt([
+        {
+            type: "confirm",
+            name: "usePrisma",
+            message: "🔌 Does your plugin require Prisma schema modifications?",
+            default: false
+        }
+    ]);
+    if (!usePrisma) {
+        return null;
+    }
+    const scripts = [];
+    const { addScripts } = await inquirer.prompt([
+        {
+            type: "confirm",
+            name: "addScripts",
+            message: "📜 Do you want to add PrismaQL commands?",
+            default: true
+        }
+    ]);
+    if (addScripts) {
+        while (true) {
+            const { command } = await inquirer.prompt([
+                {
+                    type: "input",
+                    name: "command",
+                    message: "📝 Enter PrismaQL command (e.g., 'ADD ENUM MediaType (IMAGE|VIDEO|DOCUMENT);'):"
+                }
+            ]);
+            const { description } = await inquirer.prompt([
+                {
+                    type: "input",
+                    name: "description",
+                    message: "📝 Enter description for this command:"
+                }
+            ]);
+            scripts.push({
+                command,
+                description
+            });
+            const { moreScripts } = await inquirer.prompt([
+                {
+                    type: "confirm",
+                    name: "moreScripts",
+                    message: "➕ Do you want to add another PrismaQL command?",
+                    default: false
+                }
+            ]);
+            if (!moreScripts) {
+                break;
+            }
+        }
+    }
+    return {
+        required: true,
+        ...(scripts.length ? { scripts } : {})
+    };
 }
 const checkIfUserForsed = (source) => {
     const text = "User force closed the prompt with 0 null";

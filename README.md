@@ -123,7 +123,7 @@ This will create a **UserController**.
 | `feature`  | Generate a new feature module.     |
 | `service`  | Generate a new service.            |
 | `module`   | Generate a new module.             |
-| `<plugin>` | Use a specific plugin’s generator. |
+| `<plugin>` | Use a specific plugin's generator. |
 
 ## **TSDIAPI CLI Commands**
 
@@ -131,26 +131,26 @@ Below is a comprehensive list of all available commands in the TSDIAPI CLI, alon
 
 | **Command**                         | **Description**                                                        |
 | ----------------------------------- | ---------------------------------------------------------------------- |
-| tsdiapi init [name]                 | Initializes a new TSDIAPI project with an interactive setup.           |
-| tsdiapi create <name>               | Alias for init, creates a new project.                                 |
-| tsdiapi start <name>                | Quickly creates a project with default settings and starts the server. |
-| tsdiapi plugins add <pluginName>    | Adds a plugin to the project.                                          |
-| tsdiapi add <pluginName>            | Alias for plugins add, adds a plugin to the project.                   |
-| tsdiapi plugins config <pluginName> | Configures an installed plugin.                                        |
-| tsdiapi config <pluginName>         | Alias for plugins config, configures a plugin.                         |
-| tsdiapi plugins update <pluginName> | Updates an installed plugin.                                           |
-| tsdiapi generate <pluginArg> <name> | Generates files using a plugin or built-in generator.                  |
-| tsdiapi prisma                      | Adds PrismaORM to the project.                                         |
-| tsdiapi feature <name>              | Alias for generate feature <name>, generates a new feature module.     |
-| tsdiapi service <name> [feature]    | Alias for generate service <name> with optional feature module.        |
-| tsdiapi controller <name> [feature] | Alias for generate controller <name> with optional feature module.     |
+| `tsdiapi init [name]`               | Initializes a new TSDIAPI project with an interactive setup.           |
+| `tsdiapi create <name>`             | Alias for init, creates a new project.                                 |
+| `tsdiapi start <name>`              | Quickly creates a project with default settings and starts the server. |
+| `tsdiapi plugins add <pluginName>`  | Adds a plugin to the project.                                          |
+| `tsdiapi add <pluginName>`          | Alias for plugins add, adds a plugin to the project.                   |
+| `tsdiapi plugins config <pluginName>`| Configures an installed plugin.                                        |
+| `tsdiapi config <pluginName>`       | Alias for plugins config, configures a plugin.                         |
+| `tsdiapi plugins update <pluginName>`| Updates an installed plugin.                                           |
+| `tsdiapi generate <pluginArg> <name>`| Generates files using a plugin or built-in generator.                  |
+| `tsdiapi prisma`                    | Adds PrismaORM to the project.                                         |
+| `tsdiapi feature <name>`            | Generates a new feature module.                                        |
+| `tsdiapi service <name> [feature]`  | Generates a new service with optional feature module.                  |
+| `tsdiapi module <name> [feature]`   | Generates a new module with optional feature module.                   |
 
 ### Developer Commands
 
 | **Command**               | **Description**                                 |
 | ------------------------- | ----------------------------------------------- |
-| tsdiapi dev plugin <name> | Creates a new plugin with an interactive setup. |
-| tsdiapi dev check         | Validates the configuration of a plugin.        |
+| `tsdiapi dev plugin <name>` | Creates a new plugin with an interactive setup. |
+| `tsdiapi dev check`         | Validates the configuration of a plugin.        |
 
 ---
 
@@ -281,13 +281,13 @@ Once configured, the CLI will generate the necessary files and set up a base plu
 
 ### **Validating Plugin Configuration**
 
-To check if a plugin’s configuration is correct, use:
+To check if a plugin's configuration is correct, use:
 
 ```bash
 tsdiapi dev check
 ```
 
-This command validates the plugin’s configuration and ensures it follows best practices.
+This command validates the plugin's configuration and ensures it follows best practices.
 
 ---
 

@@ -5,7 +5,7 @@ import fs from "fs-extra";
 import { glob } from "glob";
 import ora from 'ora';
 import { getPackageName } from '../config.js';
-import { toKebabCase, toPascalCase } from "../utils/format.js";
+import { toKebabCase, toLowerCase, toPascalCase } from "../utils/format.js";
 import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer.js';
 import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd.js';
 import { fileModifications } from '../utils/modifications.js';
@@ -408,7 +408,7 @@ export async function generateFiles(currentGenerator, defaultObj, currentDirecto
         console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
     }
 }
-export async function generateFeature(name, projectDir) {
+export async function generateFeature(name, projectDir, getstarted) {
     try {
         console.log(chalk.cyan.bold("\n🚀 Generating New Feature\n"));
         const currentDirectory = projectDir || await findTSDIAPIServerProject();
@@ -439,18 +439,18 @@ export async function generateFeature(name, projectDir) {
         }
         console.log(chalk.cyan("📂 Creating feature structure...\n"));
         await fs.mkdirp(featurePath);
-        const servicePath = await generateNewService(name, featurePath);
-        const controllerPath = await generateNewModule(name, featurePath);
+        const service = await generateNewService(name, featurePath, getstarted);
+        const controller = await generateNewModule(name, featurePath, service, getstarted);
         console.log(chalk.green.bold("\n✅ Feature successfully generated! 🎉\n"));
         console.log(chalk.yellow("🗂️ Created files:"));
         const relFeaturePath = path.relative(currentDirectory, featurePath);
         console.log(`   📂 Feature Path: ${chalk.blue(relFeaturePath)}`);
-        if (servicePath) {
-            const relPath = path.relative(currentDirectory, servicePath);
+        if (service) {
+            const relPath = path.relative(currentDirectory, service.path);
             console.log(`   📄 Service:      ${chalk.green(relPath)}`);
         }
-        if (controllerPath) {
-            const relPath = path.relative(currentDirectory, controllerPath);
+        if (controller) {
+            const relPath = path.relative(currentDirectory, controller.path);
             console.log(`   📄 Controller:   ${chalk.green(relPath)}`);
         }
         console.log(chalk.green.bold(`🚀 Feature ${chalk.bold(relFeaturePath)} is ready to use!\n`));
@@ -487,7 +487,7 @@ export async function safeGenerate(pluginName, output, fName) {
         console.error(chalk.red('Error generating plugin:', e));
     }
 }
-export async function generateNewService(name, dir) {
+export async function generateNewService(name, dir, getstarted) {
     try {
         const pascalCase = toPascalCase(name);
         const kebabCaseName = toKebabCase(name);
@@ -498,19 +498,24 @@ export async function generateNewService(name, dir) {
             console.log(chalk.red(`⚠️ The service ${chalk.bold(filename)} already exists in the target directory.`));
             return null;
         }
-        const content = buildHandlebarsTemplate('generator/service', {
+        const template = getstarted ? 'generator/service-getstarted' : 'generator/service';
+        const content = buildHandlebarsTemplate(template, {
             className: className,
         });
         await fs.outputFile(targetPath, content);
         console.log(chalk.green(`✅ Service generated at: ${targetPath}`));
-        return targetPath;
+        return {
+            className,
+            path: targetPath,
+            filename: `${kebabCaseName}.service.js`
+        };
     }
     catch (e) {
         console.error(chalk.red('Error generating service:', e));
         return null;
     }
 }
-export async function generateNewModule(name, dir) {
+export async function generateNewModule(name, dir, service, getstarted) {
     try {
         const kebabCaseName = toKebabCase(name);
         const filename = `${kebabCaseName}.module.ts`;
@@ -521,10 +526,20 @@ export async function generateNewModule(name, dir) {
             console.log(chalk.red(`⚠️ The service ${chalk.bold(filename)} already exists in the target directory.`));
             return null;
         }
-        const content = buildHandlebarsTemplate('generator/module', { className });
+        const template = getstarted ? 'generator/module-getstarted' : 'generator/module';
+        const content = buildHandlebarsTemplate(template, {
+            className,
+            serviceClassName: service?.className,
+            serviceFilename: service?.filename,
+            name: toLowerCase(name)
+        });
         await fs.outputFile(targetPath, content);
         console.log(chalk.green(`✅ Service generated at: ${targetPath}`));
-        return targetPath;
+        return {
+            className,
+            path: targetPath,
+            filename: `${kebabCaseName}.module.js`
+        };
     }
     catch (e) {
         console.error(chalk.red('Error generating service:', e));

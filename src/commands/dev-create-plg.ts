@@ -1,4 +1,3 @@
-
 import chalk from "chalk"
 import inquirer from "inquirer";
 import fs from "fs-extra";
@@ -9,7 +8,7 @@ import boxen from 'boxen';
 import { exec } from 'child_process'
 import { toConstantCase, toLowerCase } from "../utils/format.js";
 import { getPackageName } from '../config.js';
-import { CommandWithCondition, PluginConfigVariable, PluginFileMapping, PluginMetadata } from '../utils/plugins-configuration.js';
+import { CommandWithCondition, PluginConfigVariable, PluginFileMapping, PluginMetadata, PrismaScript } from '../utils/plugins-configuration.js';
 import { packageExistsOnNpm } from '../utils/npm.js';
 import { devBuildHandlebarsTemplate } from '../utils/handlebars.js';
 import { fileURLToPath } from 'url';
@@ -81,7 +80,8 @@ export async function promptPluginDetails(sourcePluginName: string) {
             promptScripts: Record<string, string> | null = null,
             afterInstall: CommandWithCondition | null = null,
             preMessages: string[] = [],
-            postMessages: string[] = [];
+            postMessages: string[] = [],
+            prismaConfig: { required: boolean; scripts?: Array<PrismaScript> } | null = null;
 
         try {
             variables = await promptPluginVariables(packageName);
@@ -136,6 +136,15 @@ export async function promptPluginDetails(sourcePluginName: string) {
                 process.exit(0);
             }
             console.error(chalk.red(`❌ Error while configuring post-install messages: ${error.message}`));
+        }
+        try {
+            prismaConfig = await promptPrismaDependency(pluginName);
+        } catch (error) {
+            if (checkIfUserForsed(error)) {
+                console.log(chalk.red(`❌ User force closed the prompt with 0 null`));
+                process.exit(0);
+            }
+            console.error(chalk.red(`❌ Error while configuring Prisma: ${error.message}`));
         }
         let files: Array<PluginFileMapping> = [];
         try {
@@ -236,6 +245,9 @@ logs/*
         if (files.length) {
             configData.files = files;
         }
+        if (prismaConfig) {
+            configData.prisma = prismaConfig;
+        }
         const configName = "tsdiapi.config.json";
         const configPath = path.join(pluginDir, configName);
         if (!fs.existsSync(configPath)) {
@@ -282,7 +294,7 @@ ${chalk.cyan('📖 Refer to the official TSDIAPI documentation for best practice
 
 ${chalk.blue.bold('📢 Want to publish your plugin?')}
 - To publish your plugin on npm under the official @tsdiapi scope:
-  ✅ Ensure your plugin follows TSDIAPI’s best practices.
+  ✅ Ensure your plugin follows TSDIAPI's best practices.
   ✅ Contact me to be added as a maintainer for npm publishing.
   ✅ Once approved, your plugin will be publicly available!
 
@@ -578,7 +590,7 @@ export async function promptProvideScripts(pluginName: string): Promise<Record<s
                 }
             }
         ]);
-        const [scriptName, scriptValue] = command.split(":")?.map((v: any) => v.trim());
+        const [scriptName, scriptValue] = command.split(":")?.map((v: string) => v.trim());
         if (!scriptName || !scriptValue) {
             console.log(chalk.red("❌ Invalid command format. Please provide a valid script name and value."));
             continue;
@@ -659,7 +671,7 @@ export async function promptPluginVariables(pluginName: string): Promise<PluginC
                     validate: (input) => input.includes(",") ? true : "❌ Enter at least two values, separated by commas."
                 }
             ]);
-            choices = enumValues.split(",").map((v: any) => v.trim());
+            choices = enumValues.split(",").map((v: string) => v.trim());
 
             const { defaultEnum } = await inquirer.prompt([
                 {
@@ -888,6 +900,74 @@ export async function promptFiles(pluginName: string): Promise<Array<PluginFileM
         }
     }
     return mappings;
+}
+
+export async function promptPrismaDependency(pluginName: string): Promise<{ required: boolean; scripts?: Array<PrismaScript> } | null> {
+    const { usePrisma } = await inquirer.prompt([
+        {
+            type: "confirm",
+            name: "usePrisma",
+            message: "🔌 Does your plugin require Prisma schema modifications?",
+            default: false
+        }
+    ]);
+
+    if (!usePrisma) {
+        return null;
+    }
+
+    const scripts: PrismaScript[] = [];
+    const { addScripts } = await inquirer.prompt([
+        {
+            type: "confirm",
+            name: "addScripts",
+            message: "📜 Do you want to add PrismaQL commands?",
+            default: true
+        }
+    ]);
+
+    if (addScripts) {
+        while (true) {
+            const { command } = await inquirer.prompt([
+                {
+                    type: "input",
+                    name: "command",
+                    message: "📝 Enter PrismaQL command (e.g., 'ADD ENUM MediaType (IMAGE|VIDEO|DOCUMENT);'):"
+                }
+            ]);
+
+            const { description } = await inquirer.prompt([
+                {
+                    type: "input",
+                    name: "description",
+                    message: "📝 Enter description for this command:"
+                }
+            ]);
+
+            scripts.push({
+                command,
+                description
+            });
+
+            const { moreScripts } = await inquirer.prompt([
+                {
+                    type: "confirm",
+                    name: "moreScripts",
+                    message: "➕ Do you want to add another PrismaQL command?",
+                    default: false
+                }
+            ]);
+
+            if (!moreScripts) {
+                break;
+            }
+        }
+    }
+
+    return {
+        required: true,
+        ...(scripts.length ? { scripts } : {})
+    };
 }
 
 const checkIfUserForsed = (source: Error) => {

@@ -162,7 +162,7 @@ export async function initProject(_installpath: string, options: CreateProjectOp
                     message: "🚀 Enter the name of the feature:",
                     validate: (input: string) => input ? true : "❌ Feature name is required."
                 }]);
-                await generateFeature(featureName, projectDir);
+                await generateFeature(featureName, projectDir, true);
             }
         } catch (error) {
             console.error(chalk.red("❌ An unexpected error occurred during project initialization."), error.message);
