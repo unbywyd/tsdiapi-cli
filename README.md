@@ -3,6 +3,8 @@
 A powerful and flexible **command-line interface (CLI)** for managing **TSDIAPI** projects.  
 TSDIAPI is a modern, **ESM-based** framework built with **TypeScript** and **Fastify**, focusing on **high performance, modularity, and flexibility**. The CLI enables developers to **rapidly build APIs** with a well-structured, plugin-based architecture.
 
+📚 **Documentation**: For detailed documentation, visit [https://tsdiapi.com/](https://tsdiapi.com/)
+
 ---
 
 ## **🚀 Overview**
