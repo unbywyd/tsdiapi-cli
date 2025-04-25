@@ -103,6 +103,7 @@ program
     generate(pluginName, name, generatorName);
   });
 
+
 program
   .command('prisma')
   .description('Add prisma to your project')

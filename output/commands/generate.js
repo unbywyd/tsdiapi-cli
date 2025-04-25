@@ -13,7 +13,7 @@ import { installNpmDependencies, runPostInstall } from '../utils/npm.js';
 import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars.js';
 import { isPackageInstalled } from '../utils/is-plg-installed.js';
 import { findTSDIAPIServerProject } from '../utils/app-finder.js';
-import { getPluginMetadata } from '../utils/plg-metadata.js';
+import { getPluginMetadata, getPluginMetaDataFromPath } from '../utils/plg-metadata.js';
 import { checkPrismaExist } from "../utils/check-prisma-exists.js";
 import { applyPrismaScripts } from "../utils/apply-prisma-scripts.js";
 import { updateAllEnvFilesWithVariable } from "../utils/env.js";
@@ -54,12 +54,35 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
             const output = toFeature ? path.join(currentDirectory, 'src/api/features', toFeature) : fileName;
             return safeGenerate(pluginName, output, toFeature ? fileName : undefined);
         }
-        const packageName = getPackageName(pluginName);
-        const isInstalled = isPackageInstalled(currentDirectory, packageName);
-        if (!isInstalled) {
+        const pluginNameIsPath = pluginName.includes('/') || pluginName.includes('.');
+        const localPackagePath = pluginNameIsPath ? pluginName : null;
+        let packageName = !pluginNameIsPath ? getPackageName(pluginName) : null;
+        let config = null;
+        if (pluginNameIsPath) {
+            config = await getPluginMetaDataFromPath(pluginName);
+            if (!config) {
+                return console.log(chalk.red(`Plugin ${pluginName} is not installed!`));
+            }
+            if (!config.name) {
+                return console.log(chalk.red(`Plugin name is not defined in the plugin configuration!`));
+            }
+            packageName = config.name;
+        }
+        if (!packageName) {
             return console.log(chalk.red(`Plugin ${pluginName} is not installed!`));
         }
-        const config = await getPluginMetadata(currentDirectory, packageName);
+        if (!pluginNameIsPath) {
+            const isInstalled = isPackageInstalled(currentDirectory, packageName);
+            if (!isInstalled) {
+                return console.log(chalk.red(`Plugin ${pluginName} is not installed!`));
+            }
+        }
+        if (!config) {
+            config = await getPluginMetadata(currentDirectory, packageName);
+        }
+        if (!config) {
+            return console.log(chalk.red(`Plugin ${pluginName} is not installed!`));
+        }
         const generators = config?.generators || [];
         if (!generators.length) {
             return console.log(chalk.red(`Plugin ${pluginName} does not have any generators!`));
@@ -284,7 +307,8 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
         catch (error) {
             console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
         }
-        await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles);
+        const packagePath = localPackagePath || path.join(currentDirectory, 'node_modules', packageName);
+        await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles, packagePath);
         if (currentGenerator.afterGenerate) {
             const spinner = ora().start();
             try {
@@ -336,12 +360,11 @@ function getRootDirectory(filePath) {
     const segments = trimmedPath.split('/');
     return segments[0] || null;
 }
-export async function generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles) {
+export async function generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles, packagePath) {
     try {
         const filesToGenerate = [];
         const { packageName } = defaultObj;
         const cwd = process.cwd();
-        const packagePath = path.join(currentDirectory, 'node_modules', packageName);
         for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
             const toCwd = isRoot ? currentDirectory : cwd;
             const filename = path.basename(defaultObj.name);

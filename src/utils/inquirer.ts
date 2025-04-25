@@ -1,10 +1,35 @@
 import Ajv from "ajv";
 const ajv = new Ajv.default({ allErrors: true, strict: false });
 import jexl from "jexl";
+import { toCamelCase, toKebabCase, toLowerCase, toPascalCase, toSnakeCase, toUpperCase } from "./format.js";
 
 jexl.addFunction('capitalize', (str: string) => {
     if (!str || typeof str !== "string") return str;
     return str.charAt(0).toUpperCase() + str.slice(1);
+});
+jexl.addFunction('camelCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toCamelCase(str);
+});
+jexl.addFunction('kebabCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toKebabCase(str);
+});
+jexl.addFunction('pascalCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toPascalCase(str);
+});
+jexl.addFunction('lowerCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toLowerCase(str);
+});
+jexl.addFunction('snakeCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toSnakeCase(str);
+});
+jexl.addFunction('upperCase', (str: string) => {
+    if (!str || typeof str !== "string") return str;
+    return toUpperCase(str);
 });
 
 export function validateInput(schema: Record<string, any> | string): (input: any) => boolean | string {

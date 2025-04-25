@@ -46,4 +46,26 @@ export async function getPluginMetadata(currentDirectory, packageName) {
         }
     }
 }
+export async function getPluginMetaDataFromPath(packagePath) {
+    const configPath = path.join(packagePath, 'tsdiapi.config.json');
+    if (!fs.existsSync(configPath)) {
+        return null;
+    }
+    else {
+        try {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const isValid = validatePluginConfig(config);
+            if (!isValid) {
+                return null;
+            }
+            else {
+                return config;
+            }
+        }
+        catch (error) {
+            console.error(`Error loading plugin configuration: ${error.message}`);
+            return null;
+        }
+    }
+}
 //# sourceMappingURL=plg-metadata.js.map

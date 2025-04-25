@@ -7,14 +7,14 @@ import ora from 'ora'
 import { getPackageName } from '../config.js';
 import { toKebabCase, toLowerCase, toPascalCase } from "../utils/format.js";
 import { applyTransform, convertWhenToFunction, validateInput } from '../utils/inquirer.js';
-import { PluginFileMapping, PluginGenerator } from '../utils/plugins-configuration.js';
+import { PluginFileMapping, PluginGenerator, PluginMetadata } from '../utils/plugins-configuration.js';
 import { isDirectoryPath, isValidRequiredPath, replacePlaceholdersInPath, resolveTargetDirectory } from '../utils/cwd.js';
 import { fileModifications } from '../utils/modifications.js';
 import { installNpmDependencies, runPostInstall } from '../utils/npm.js';
 import Handlebars, { buildHandlebarsTemplate, buildHandlebarsTemplateWithPath } from '../utils/handlebars.js';
 import { isPackageInstalled } from '../utils/is-plg-installed.js';
 import { findTSDIAPIServerProject } from '../utils/app-finder.js';
-import { getPluginMetadata } from '../utils/plg-metadata.js';
+import { getPluginMetadata, getPluginMetaDataFromPath } from '../utils/plg-metadata.js';
 import { checkPrismaExist } from "../utils/check-prisma-exists.js";
 import { applyPrismaScripts } from "../utils/apply-prisma-scripts.js";
 import { updateAllEnvFilesWithVariable } from "../utils/env.js";
@@ -43,6 +43,7 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             }
             return generateFeature(fileName!);
         }
+        
 
         const currentDirectory = await findTSDIAPIServerProject();
         if (!currentDirectory) {
@@ -63,23 +64,55 @@ export async function generate(pluginName: string, fileName: string, generatorNa
             return safeGenerate(pluginName, output, toFeature ? fileName : undefined);
         }
 
-        const packageName = getPackageName(pluginName);
+        const pluginNameIsPath = pluginName.includes('/') || pluginName.includes('.');
+        const localPackagePath = pluginNameIsPath ? pluginName : null;
 
-        const isInstalled = isPackageInstalled(currentDirectory, packageName);
-        if (!isInstalled) {
+        let packageName = !pluginNameIsPath ? getPackageName(pluginName) : null;
+        
+        let config: PluginMetadata | null = null;
+        if (pluginNameIsPath) {
+            config = await getPluginMetaDataFromPath(pluginName);
+            if (!config) {
+                return console.log(
+                    chalk.red(`Plugin ${pluginName} is not installed!`)
+                )
+            }
+            if (!config.name) {
+                return console.log(
+                    chalk.red(`Plugin name is not defined in the plugin configuration!`)
+                )
+            }
+            packageName = config.name;
+        }
+
+        if (!packageName) {
             return console.log(
                 chalk.red(`Plugin ${pluginName} is not installed!`)
             )
         }
 
-        const config = await getPluginMetadata(currentDirectory, packageName);
+        if (!pluginNameIsPath) {
+            const isInstalled = isPackageInstalled(currentDirectory, packageName);
+            if (!isInstalled) {
+                return console.log(
+                    chalk.red(`Plugin ${pluginName} is not installed!`)
+                )
+            }
+        }
+        if (!config) {
+            config = await getPluginMetadata(currentDirectory, packageName);
+        }
+        if (!config) {
+            return console.log(
+                chalk.red(`Plugin ${pluginName} is not installed!`)
+            )
+        }
         const generators = config?.generators || [];
         if (!generators.length) {
             return console.log(
                 chalk.red(`Plugin ${pluginName} does not have any generators!`)
             )
         }
-
 
         const generatorByName = generatorName ? generators.find((g) => g.name === generatorName) : null;
 
@@ -325,8 +358,8 @@ export async function generate(pluginName: string, fileName: string, generatorNa
         } catch (error) {
             console.error(`❌ ${currentGenerator.name} generator error: ${error.message}`);
         }
-        await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles);
-
+        const packagePath = localPackagePath || path.join(currentDirectory, 'node_modules', packageName);
+        await generateFiles(currentGenerator, defaultObj, currentDirectory, plugFiles, packagePath);
 
         if (currentGenerator.afterGenerate) {
             const spinner = ora().start();
@@ -379,12 +412,11 @@ function getRootDirectory(filePath: string): string | null {
     const segments: string[] = trimmedPath.split('/');
     return segments[0] || null;
 }
-export async function generateFiles(currentGenerator: PluginGenerator, defaultObj: Record<string, any>, currentDirectory: string, plugFiles: PluginFileMapping[]): Promise<void> {
+export async function generateFiles(currentGenerator: PluginGenerator, defaultObj: Record<string, any>, currentDirectory: string, plugFiles: PluginFileMapping[], packagePath: string): Promise<void> {
     try {
         const filesToGenerate = [];
         const { packageName } = defaultObj;
         const cwd = process.cwd();
-        const packagePath = path.join(currentDirectory, 'node_modules', packageName);
 
         for (const { source, destination, overwrite = false, isHandlebarsTemplate, isRoot } of plugFiles) {
             const toCwd = isRoot ? currentDirectory : cwd;
