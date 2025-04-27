@@ -372,14 +372,14 @@ export async function generate(pluginName: string, fileName: string, generatorNa
                     if (cond) {
                         spinner.text = chalk.blue(`⚙️ Running after-generate script...`);
                         await runPostInstall(pluginName, currentDirectory, currentGenerator.afterGenerate?.command);
-                        spinner.succeed(chalk.green(`✅ Completed after-generate script!`));
+                        spinner.succeed(chalk.green(`Completed after-generate script!`));
                     }
                 } catch (e) {
-                    spinner.fail(chalk.red(`❌ Error running after-generate script: ${e.message}`));
+                    spinner.fail(chalk.red(`Error running after-generate script: ${e.message}`));
                 }
 
             } catch (error) {
-                spinner.fail(chalk.red(`❌ Error running after-setup script: ${error.message}`));
+                spinner.fail(chalk.red(`Error running after-setup script: ${error.message}`));
             }
         }
         const prismaScripts = currentGenerator.prismaScripts, afterGenerate = currentGenerator?.afterGenerate?.command || '';

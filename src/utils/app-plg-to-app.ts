@@ -18,7 +18,7 @@ export async function addPluginToApp(
     try {
         spinner.text = chalk.blue(`📦 Installing ${chalk.bold(pluginImportPath)}...`);
         await execAsync(`npm install ${pluginImportPath}`, { cwd: projectDir });
-        spinner.succeed(chalk.green(`✅ Installed ${chalk.bold(pluginImportPath)} successfully!`));
+        spinner.succeed(chalk.green(`Installed ${chalk.bold(pluginImportPath)} successfully!`));
 
         spinner.text = chalk.blue("🔍 Updating application entry file...");
         const project = new Project();
@@ -78,7 +78,7 @@ export async function addPluginToApp(
                         // Add plugin with arguments if provided
                         pluginsArray.addElement(pluginArgs ? `${pluginImportName}(${pluginArgs})` : `${pluginImportName}()`);
                     } else {
-                        spinner.fail(chalk.red("❌ Failed to locate 'plugins' array in createApp."));
+                        spinner.fail(chalk.red("Failed to locate 'plugins' array in createApp."));
                         return false;
                     }
                 } else {
@@ -97,12 +97,12 @@ export async function addPluginToApp(
                 );
             }
         } else {
-            spinner.fail(chalk.red("❌ Failed to find 'createApp' function in main file."));
+            spinner.fail(chalk.red("Failed to find 'createApp' function in main file."));
             return false;
         }
 
         sourceFile.saveSync();
-        spinner.succeed(chalk.green(`✅ Plugin ${chalk.bold(pluginImportName)} successfully added to createApp!`));
+        spinner.succeed(chalk.green(`Plugin ${chalk.bold(pluginImportName)} successfully added to createApp!`));
 
         return true;
     } catch (error: any) {

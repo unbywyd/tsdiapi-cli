@@ -377,7 +377,7 @@ export function validatePluginConfig(config: PluginMetadata): boolean {
             return false;
         }
 
-        console.log(chalk.green("✅ Plugin configuration is valid."));
+        //console.log(chalk.green("✅ Plugin configuration is valid."));
         return true;
     } catch (error) {
         console.log(error)

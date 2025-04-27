@@ -277,7 +277,7 @@ export function validatePluginConfig(config) {
             console.log("\nPlease fix the errors and try again.\n");
             return false;
         }
-        console.log(chalk.green("✅ Plugin configuration is valid."));
+        //console.log(chalk.green("✅ Plugin configuration is valid."));
         return true;
     }
     catch (error) {

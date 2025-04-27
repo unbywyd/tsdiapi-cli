@@ -142,7 +142,7 @@ export async function initProject(_installpath: string, options: CreateProjectOp
         }).start();
 
         await installation(projectDir, answers as CreateProjectOptions);
-        spinner.succeed(chalk.green("✅ Project files generated successfully!"));
+        spinner.succeed(chalk.green("Project files generated successfully!"));
 
         // 🎯 Шаг 7: Финальный вывод
         const cdCommand = getCdCommand(installpath!);
@@ -222,7 +222,7 @@ export async function installation(projectDir: string, options: CreateProjectOpt
     try {
         const sourceDir = path.resolve(__dirname, "../files/root");
         await fs.copy(sourceDir, projectDir);
-        spinner.succeed(chalk.green("✅ Project files copied successfully!"));
+        spinner.succeed(chalk.green("Project files copied successfully!"));
 
         const payload = {
             ...options,

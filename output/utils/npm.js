@@ -28,7 +28,7 @@ export async function runPostInstall(pluginName, cwd, postInstallCommand) {
     try {
         const { stdout, stderr } = await execAsync(postInstallCommand, { cwd });
         if (stdout)
-            console.log(chalk.green(`✅ Output:\n${stdout}`));
+            console.log(stdout);
         if (stderr)
             console.log(stderr);
     }
@@ -106,15 +106,15 @@ export async function installNpmDependencies(projectDir, dependencies, devDepend
     try {
         if (dependencies.length > 0) {
             await execAsync(`npm install ${dependencies.join(" ")}`, { cwd: projectDir });
-            spinner.succeed(chalk.green("✅ Base dependencies installed!"));
+            spinner.succeed(chalk.green("Base dependencies installed!"));
         }
         if (devDependencies && devDependencies?.length > 0) {
             await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
-            spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
+            spinner.succeed(chalk.green("Dev dependencies installed!"));
         }
     }
     catch (error) {
-        spinner.fail(chalk.red("❌ Installation failed!"));
+        spinner.fail(chalk.red("Installation failed!"));
     }
     finally {
         spinner.stop();
@@ -144,14 +144,14 @@ export async function installBaseDependencies(projectDir) {
     }).start();
     try {
         await execAsync(`npm install ${baseDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk.green("✅ Base dependencies installed!"));
+        spinner.succeed(chalk.green("Base dependencies installed!"));
         spinner.text = chalk.yellow("🔧 Installing dev dependencies...");
         spinner.start();
         await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
+        spinner.succeed(chalk.green("Dev dependencies installed!"));
     }
     catch (error) {
-        spinner.fail(chalk.red("❌ Installation failed!"));
+        spinner.fail(chalk.red("Installation failed!"));
         console.error(chalk.red(`Error: ${error.message}`));
         process.exit(1);
     }
@@ -166,16 +166,16 @@ export async function packageExistsOnNpm(packageName, silent) {
     try {
         const response = await fetch(`https://registry.npmjs.org/${packageName}`);
         if (response.ok) {
-            spinner?.succeed(chalk.green(`✅ Package ${chalk.bold(packageName)} is available on NPM.`));
+            spinner?.succeed(chalk.green(`Package ${chalk.bold(packageName)} is available on NPM.`));
             return true;
         }
         else {
-            spinner?.fail(chalk.red(`❌ Package ${chalk.bold(packageName)} does not exist on NPM.`));
+            spinner?.fail(chalk.red(`Package ${chalk.bold(packageName)} does not exist on NPM.`));
             return false;
         }
     }
     catch (error) {
-        spinner?.fail(chalk.red(`❌ Failed to check package: ${error.message}`));
+        spinner?.fail(chalk.red(`Failed to check package: ${error.message}`));
         return false;
     }
 }

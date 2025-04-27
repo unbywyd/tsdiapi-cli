@@ -186,14 +186,15 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
             console.log(chalk.yellow(`No settings found for ${pluginName}. Skipping setup.`));
         }
         else {
-            const { setupCommon } = await inquirer.prompt([
+            const setupCommon = true;
+            /*const { setupCommon } = await inquirer.prompt([
                 {
                     type: 'confirm',
                     name: 'setupCommon',
                     message: `${chalk.cyan(`${chalk.bgBlue('Do you want')} to configure ${pluginName} settings?`)}`,
                     default: true,
                 },
-            ]);
+            ]);*/
             if (!setupCommon) {
                 console.log(chalk.yellow(`Setup of ${pluginName} settings has been skipped.`));
             }
@@ -220,7 +221,6 @@ ${[...packagesFailHints, ...pathFailHints].join('\n')}`);
                             const value = envAnswers[variable.name] ?? variable.default;
                             updateAllEnvFilesWithVariable(projectDir, variable.name, value);
                         });
-                        console.log(chalk.green('.env file has been successfully updated with settings.'));
                         const configParams = saveVars.map((v) => {
                             return { key: v.name, type: v.type };
                         });

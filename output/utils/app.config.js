@@ -49,7 +49,6 @@ export async function addAppConfigParams(projectDir, params) {
             console.log(chalk.red(`ERROR: 'ConfigSchema' has no initializer.`));
             return;
         }
-        console.log(chalk.blue(`INFO: Found 'ConfigSchema' with initializer of type '${initializer.getKindName()}'.`));
         if (!initializer.isKind(SyntaxKind.CallExpression)) {
             console.log(chalk.red(`ERROR: 'ConfigSchema' is not a function call (Type.Object({...})).`));
             return;

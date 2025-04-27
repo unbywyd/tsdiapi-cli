@@ -42,7 +42,6 @@ export function updateEnvVariable(envPath, key, value, onlyIfEmpty = false) {
         }
         // Write the updated content back to the .env file
         fs.writeFileSync(envPath, updatedLines.join('\n'), 'utf8');
-        console.log(chalk.green(`${key} updated in ${envFilename}.`));
     }
     catch (error) {
         console.error(chalk.red(`Failed to update ${key} in ${envFilename}:`), error.message);
@@ -61,5 +60,6 @@ export function updateAllEnvFilesWithVariable(projectDir, key, value, onlyIfEmpt
     if (fs.existsSync(envProductionPath)) {
         updateEnvVariable(envProductionPath, key, value, onlyIfEmpty);
     }
+    console.log(chalk.green(`${key} updated in all env files.`));
 }
 //# sourceMappingURL=env.js.map

@@ -305,15 +305,15 @@ export async function installDependencies(projectDir) {
     }).start();
     try {
         await execAsync(`npm install -D ${devDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk.green("✅ Dev dependencies installed!"));
+        spinner.succeed(chalk.green("Dev dependencies installed!"));
         spinner.text = chalk.yellow("🔗 Installing peer dependencies...");
         spinner.start();
         await execAsync(`npm install ${peerDependencies.join(" ")}`, { cwd: projectDir });
-        spinner.succeed(chalk.green("✅ Peer dependencies installed!"));
+        spinner.succeed(chalk.green("Peer dependencies installed!"));
         console.log(chalk.blue("🚀 Setup complete! Your project is now ready to go."));
     }
     catch (error) {
-        spinner.fail(chalk.red("❌ Installation failed!"));
+        spinner.fail(chalk.red("Installation failed!"));
         console.error(chalk.red(`Error: ${error.message}`));
         process.exit(1);
     }
