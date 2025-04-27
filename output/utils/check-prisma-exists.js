@@ -17,7 +17,7 @@ export const checkPrismaExist = async (projectDir) => {
     for (const requiredPath of requiredPaths) {
         const fullPath = path.join(projectDir, requiredPath);
         if (!fs.existsSync(fullPath)) {
-            results.push(`${chalk.red('❌')} ${chalk.gray(requiredPath)} - ${chalk.red('File or directory not found')}. Please install Prisma via ${chalk.cyan('npm install @tsdiapi/prisma')} or manually and run ${chalk.cyan('prisma init')}`);
+            results.push(`${chalk.red('❌')} ${chalk.gray(requiredPath)} - ${chalk.red('File or directory not found')}.`);
             prismaExist = false;
         }
         else {

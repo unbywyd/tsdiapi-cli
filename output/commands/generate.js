@@ -141,7 +141,7 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
             for (const script of prismaScripts) {
                 console.log(chalk.yellow(`- ${script.description}`));
             }
-            console.log(chalk.blue(`Checking required dependencies for plugin ${pluginName}...`));
+            console.log(chalk.blue(`Checking required prisma dependencies for plugin ${pluginName}...`));
             for (const message of prismaExists?.results) {
                 console.log(`- ${message}`);
             }
@@ -150,9 +150,13 @@ export async function generate(pluginName, fileName, generatorName, toFeature) {
                 return console.log(chalk.red(`Please install Prisma via ${chalk.cyan('tsdiapi plugins add @tsdiapi/prisma')} or manually and run ${chalk.cyan('prisma init')}`));
             }
         }
+        const dependencies = currentGenerator?.dependencies || [];
+        if (dependencies?.length) {
+            console.log(chalk.blue(`Checking required packages for generator ${currentGenerator.name}...`));
+        }
         try {
-            if (currentGenerator?.dependencies?.length) {
-                const toInstall = currentGenerator.dependencies;
+            if (dependencies?.length) {
+                const toInstall = dependencies;
                 await installNpmDependencies(currentDirectory, toInstall);
             }
         }
