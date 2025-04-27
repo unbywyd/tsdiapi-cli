@@ -3,7 +3,6 @@ import ora from "ora";
 import util from 'util'
 import { exec } from 'child_process'
 import { Project, SyntaxKind } from "ts-morph";
-import { PluginMetadata } from "./plugins-configuration.js";
 import { addSafeImport } from "./import-utils.js";
 import { getPluginMetadata } from "./plg-metadata.js";
 const execAsync = util.promisify(exec)
@@ -21,11 +20,26 @@ export async function addPluginToApp(
         spinner.succeed(chalk.green(`Installed ${chalk.bold(pluginImportPath)} successfully!`));
 
         spinner.text = chalk.blue("🔍 Updating application entry file...");
+        await extendMainFile(filePath, pluginName, pluginImportPath, projectDir);
+        return true;
+    } catch (error: any) {
+        spinner.fail(chalk.red(`❌ Error: ${error.message}`));
+        return false;
+    }
+}
+
+export async function extendMainFile(
+    filePath: string,
+    pluginName: string,
+    pluginImportPath: string,
+    projectDir: string
+): Promise<boolean> {
+    const spinner = ora().start();
+    try {
+        spinner.text = chalk.blue("🔍 Updating application entry file...");
         const project = new Project();
         const sourceFile = project.addSourceFileAtPath(filePath);
-
         const config = await getPluginMetadata(projectDir, pluginImportPath);
-
 
         // Get plugin registration details from config if available
         const registration = config?.registration;
@@ -110,5 +124,4 @@ export async function addPluginToApp(
         return false;
     }
 }
-
 

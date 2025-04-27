@@ -13,6 +13,18 @@ export async function addPluginToApp(filePath, pluginName, pluginImportPath, pro
         await execAsync(`npm install ${pluginImportPath}`, { cwd: projectDir });
         spinner.succeed(chalk.green(`Installed ${chalk.bold(pluginImportPath)} successfully!`));
         spinner.text = chalk.blue("🔍 Updating application entry file...");
+        await extendMainFile(filePath, pluginName, pluginImportPath, projectDir);
+        return true;
+    }
+    catch (error) {
+        spinner.fail(chalk.red(`❌ Error: ${error.message}`));
+        return false;
+    }
+}
+export async function extendMainFile(filePath, pluginName, pluginImportPath, projectDir) {
+    const spinner = ora().start();
+    try {
+        spinner.text = chalk.blue("🔍 Updating application entry file...");
         const project = new Project();
         const sourceFile = project.addSourceFileAtPath(filePath);
         const config = await getPluginMetadata(projectDir, pluginImportPath);

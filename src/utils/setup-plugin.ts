@@ -10,7 +10,7 @@ import { findNearestPackageJson, isDirectoryPath, replacePlaceholdersInPath } fr
 import { updateAllEnvFilesWithVariable } from './env.js';
 import { addAppConfigParams } from './app.config.js';
 import { fileModifications } from './modifications.js';
-import { toPascalCase } from './format.js';
+import { nameToImportName, toPascalCase } from './format.js';
 import Handlebars from './handlebars.js';
 import { findTSDIAPIServerProject } from './app-finder.js';
 import { isPackageInstalled } from './is-plg-installed.js';
@@ -19,6 +19,7 @@ import { checkPrismaExist } from './check-prisma-exists.js';
 import { applyPrismaScripts } from './apply-prisma-scripts.js';
 import boxen from 'boxen';
 import { runPostInstall } from './npm.js';
+import { addPluginToApp, extendMainFile } from './app-plg-to-app.js';
 
 function generateInquirerQuestion(variable: PluginConfigVariable) {
     return {
@@ -61,6 +62,12 @@ export async function toSetupPlugin(pluginName: string): Promise<void> {
             console.log(chalk.green(`${packageName} setup has been successfully completed.`));
         } else {
             console.log(chalk.blue(`Loaded configuration for ${packageName}`));
+
+            const appFilePath = path.resolve(`${currentDirectory}/src`, "main.ts");
+            if (fs.existsSync(appFilePath)) {
+                await extendMainFile(appFilePath, nameToImportName(pluginName), packageName, currentDirectory);
+            }
+
             await setupCommon(packageName, currentDirectory, config);
         }
     } catch (e) {
