@@ -40,7 +40,7 @@ export function lowerCase(string, options = { keepSpecialCharacters: true }) {
 export function upperCase(string, options = { keepSpecialCharacters: true }) {
     return splitAndPrefix(string, { ...options, prefix: ' ' }).join('').toUpperCase();
 }
-export const magicSplit = /^[a-zà-öø-ÿа-я]+|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+|[a-zà-öø-ÿа-я]+|[0-9]+|[A-ZÀ-ÖØ-ßА-Я]+(?![a-zà-öø-ÿа-я])/g;
+export const magicSplit = /^[a-zà-öø-ÿа-я]+|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+|[a-zà-öø-ÿа-я]+|[0-9]+|[A-ZÀ-ÖØ-ßА-Я]+(?![a-zà-öø-ÿа-я])|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+/g;
 export const spaceSplit = /\S+/g;
 export function splitAndPrefix(string, options) {
     const { keepSpecialCharacters = false, keep, prefix = '' } = options || {};

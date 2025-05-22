@@ -10,35 +10,35 @@ const __dirname = dirname(__filename);
 
 Handlebars.registerHelper("camelCase", (str) => {
     if (typeof str !== "string") return str;
-    return toCamelCase(str);
+    return toCamelCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("camelcase", (str) => {
     if (typeof str !== "string") return str;
-    return toCamelCase(str);
+    return toCamelCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("pascalcase", (str) => {
     if (typeof str !== "string") return str;
-    return toPascalCase(str);
+    return toPascalCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("pascalCase", (str) => {
     if (typeof str !== "string") return str;
-    return toPascalCase(str);
+    return toPascalCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("kebabcase", (str) => {
     if (typeof str !== "string") return str;
-    return toKebabCase(str);
+    return toKebabCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("kebabCase", (str) => {
     if (typeof str !== "string") return str;
-    return toKebabCase(str);
+    return toKebabCase(str).replace(/\s+/g, '');
 });
 Handlebars.registerHelper("lowerCase", (str) => {
     if (typeof str !== "string") return str;
-    return toLowerCase(str);
+    return toLowerCase(str).replace(/\s+/g, '_');
 });
 Handlebars.registerHelper("lowercase", (str) => {
     if (typeof str !== "string") return str;
-    return toLowerCase(str);
+    return toLowerCase(str).replace(/\s+/g, '_');
 });
 
 /**

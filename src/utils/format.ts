@@ -58,7 +58,7 @@ export function upperCase(string: string, options: { keepSpecialCharacters?: boo
     return splitAndPrefix(string, { ...options, prefix: ' ' }).join('').toUpperCase();
 }
 
-export const magicSplit: RegExp = /^[a-zà-öø-ÿа-я]+|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+|[a-zà-öø-ÿа-я]+|[0-9]+|[A-ZÀ-ÖØ-ßА-Я]+(?![a-zà-öø-ÿа-я])/g;
+export const magicSplit: RegExp = /^[a-zà-öø-ÿа-я]+|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+|[a-zà-öø-ÿа-я]+|[0-9]+|[A-ZÀ-ÖØ-ßА-Я]+(?![a-zà-öø-ÿа-я])|[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+[A-ZÀ-ÖØ-ßА-Я][a-zà-öø-ÿа-я]+/g;
 export const spaceSplit: RegExp = /\S+/g;
 
 type SplitOptions = { keepSpecialCharacters?: boolean; keep?: string[]; prefix?: string };
